@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background-color: #0A0A0F;
+  color: #E8E8F0;
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #12121A;
+}
+::-webkit-scrollbar-thumb {
+  background: #2A2A3E;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C8102E;
+}
+
+/* Markdown content styles */
+.prose-ptn h1, .prose-ptn h2, .prose-ptn h3 {
+  font-family: 'Rajdhani', sans-serif;
+  color: #E8E8F0;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+.prose-ptn p {
+  color: #9898B0;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+.prose-ptn code {
+  background: #1A1A26;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #00D4FF;
+}
+.prose-ptn a {
+  color: #00D4FF;
+  text-decoration: underline;
+}
+.prose-ptn blockquote {
+  border-left: 3px solid #C8102E;
+  padding-left: 1rem;
+  color: #9898B0;
+  margin: 1rem 0;
+}
+.prose-ptn ul, .prose-ptn ol {
+  color: #9898B0;
+  padding-left: 1.5rem;
+}
+.prose-ptn img {
+  border-radius: 8px;
+  max-width: 100%;
+}
+
+/* Tier list drag */
+.dragging {
+  opacity: 0.5;
+}

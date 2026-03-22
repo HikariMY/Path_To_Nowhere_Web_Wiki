@@ -1,0 +1,95 @@
+export const RARITY_COLORS: Record<string, string> = {
+  S: '#FFD700',
+  A: '#C084FC',
+  B: '#60A5FA',
+  C: '#6EE7B7',
+}
+
+export const RARITY_BG: Record<string, string> = {
+  S: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  A: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  B: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  C: 'bg-green-500/20 text-green-400 border-green-500/30',
+}
+
+export const RARITY_LABEL: Record<string, string> = {
+  S: 'S-Rank',
+  A: 'A-Rank',
+  B: 'B-Rank',
+  C: 'C-Rank',
+}
+
+export const JOB_CLASS_LABEL: Record<string, string> = {
+  arcane: 'อาร์เคน',
+  breaker: 'เบรคเกอร์',
+  fury: 'ฟิวรี',
+  guard: 'การ์ด',
+  inclusion: 'อินคลูชัน',
+  reticle: 'เรติเคิล',
+}
+
+export const JOB_CLASS_COLORS: Record<string, string> = {
+  arcane:    'text-violet-400',
+  breaker:   'text-orange-400',
+  fury:      'text-red-400',
+  guard:     'text-blue-400',
+  inclusion: 'text-green-400',
+  reticle:   'text-yellow-400',
+}
+
+export const FACTION_LABEL: Record<string, string> = {
+  mbcc:           'MBCC',
+  criminal:       'ผู้ต้องหา',
+  mercenary:      'รับจ้าง',
+  underground:    'ใต้ดิน',
+  other:          'อื่นๆ',
+}
+
+export const EVENT_TYPE_LABEL: Record<string, string> = {
+  story:       'อีเวนต์เนื้อเรื่อง',
+  rerun:       'อีเวนต์รีรัน',
+  collab:      'อีเวนต์ความร่วมมือ',
+  maintenance: 'บำรุงรักษา',
+  other:       'อีเวนต์อื่นๆ',
+}
+
+export const EVENT_TYPE_COLORS: Record<string, string> = {
+  story:       'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  rerun:       'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  collab:      'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  maintenance: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+  other:       'bg-green-500/20 text-green-400 border-green-500/30',
+}
+
+export const FORUM_CATEGORY_ICONS: Record<string, string> = {
+  general:    'MessageSquare',
+  strategy:   'Swords',
+  characters: 'Users',
+  events:     'Calendar',
+  media:      'Image',
+  bug:        'Bug',
+  trade:      'ArrowLeftRight',
+}
+
+export const TIER_COLORS = [
+  { label: 'SS', color: '#FF4444' },
+  { label: 'S',  color: '#FFD700' },
+  { label: 'A',  color: '#C084FC' },
+  { label: 'B',  color: '#60A5FA' },
+  { label: 'C',  color: '#6EE7B7' },
+  { label: 'D',  color: '#9898B0' },
+]
+
+export const ROLE_LABEL: Record<string, string> = {
+  admin:     'แอดมิน',
+  moderator: 'โมเดอเรเตอร์',
+  user:      'สมาชิก',
+}
+
+export const ROLE_COLORS: Record<string, string> = {
+  admin:     'bg-red-500/20 text-red-400 border-red-500/30',
+  moderator: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+  user:      'bg-gray-500/20 text-gray-400 border-gray-500/30',
+}
+
+export const PAGE_SIZE = 20
