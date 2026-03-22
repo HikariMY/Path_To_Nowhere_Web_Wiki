@@ -1,62 +1,118 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ChevronLeft, Star, Sword, Shield, Zap, Heart } from 'lucide-react'
+import { ChevronLeft, Star, Shield, Heart, Sword, Zap, Wind } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import type { Character, CharacterStats, CharacterSkill } from '../../types'
+import type { Character, CharacterStats, CharacterSkill, ShackleBreak } from '../../types'
 import { Badge } from '../../components/ui/Badge'
-import { Tabs } from '../../components/ui/Tabs'
 import { Card } from '../../components/ui/Card'
 import { PageLoader } from '../../components/ui/Spinner'
 import { RARITY_COLORS, JOB_CLASS_LABEL, FACTION_LABEL } from '../../lib/constants'
 import { formatDate } from '../../lib/utils'
 
-const DEMO_CHAR: Character = {
-  id: '1', name: 'Rahu', slug: 'rahu', rarity: 'S', faction: 'mbcc', job_class: 'breaker',
-  portrait_url: null, splash_url: null,
-  overview: 'Rahu เป็นหัวหน้าทีม MBCC ผู้มีพลังชนิดพิเศษที่สามารถทำลายแนวป้องกันของศัตรูได้อย่างมีประสิทธิภาพ เธอเป็นตัวละครหลักในเนื้อเรื่องที่มีบทบาทสำคัญในการนำทีม MBCC เข้าต่อสู้กับ Sinners และภัยคุกคามต่างๆ\n\nด้วยทักษะการต่อสู้ระยะประชิดที่เชี่ยวชาญ Rahu สามารถสร้างความเสียหายได้อย่างมหาศาล และยังมีความสามารถในการควบคุมศัตรูอีกด้วย',
-  stats: {
-    hp: 4850, atk: 782, def: 412, res: 280, spd: 115
-  },
-  skills: [
-    {
-      name: 'Breaker Strike',
-      name_th: 'การโจมตีของเบรคเกอร์',
-      type: 'active',
-      cost: 3,
-      description_th: 'โจมตีศัตรูเดี่ยว สร้างความเสียหายทางกายภาพ 200% และลดเกราะของเป้าหมาย 20% เป็นเวลา 2 รอบ',
-    },
-    {
-      name: 'Armor Shatter',
-      name_th: 'ทุบเกราะ',
-      type: 'active',
-      cost: 5,
-      description_th: 'โจมตีศัตรูทั้งหมดในพื้นที่ สร้างความเสียหาย 150% และลดทอนความต้านทานของศัตรูที่โดนโจมตี',
-    },
-    {
-      name: 'Unbreakable Will',
-      name_th: 'เจตจำนงที่ไม่หักพัง',
-      type: 'passive',
-      description_th: 'เมื่อ HP ต่ำกว่า 30% จะได้รับการเพิ่มพลังโจมตี 30% และดาเมจที่ได้รับลดลง 15%',
-    },
-  ],
-  shackles: [
-    { stage: 1, cost: 5, bonus: 'ATK +10%', bonus_th: 'พลังโจมตีเพิ่มขึ้น 10%' },
-    { stage: 2, cost: 8, bonus: 'HP +15%', bonus_th: 'HP เพิ่มขึ้น 15%' },
-    { stage: 3, cost: 12, bonus: 'Breaker Strike DMG +25%', bonus_th: 'ดาเมจสกิล Breaker Strike เพิ่มขึ้น 25%' },
-    { stage: 4, cost: 15, bonus: 'DEF +20%, SPD +5', bonus_th: 'ป้องกันเพิ่ม 20% และความเร็วเพิ่ม 5' },
-    { stage: 5, cost: 20, bonus: 'Ultimate Upgrade', bonus_th: 'อัปเกรดสกิล Ultimate ให้มีพื้นที่โจมตีขยายขึ้น' },
-  ],
-  tags: ['ดาเมจ', 'แนวหน้า', 'ลดเกราะ'],
-  is_limited: false,
-  release_date: '2022-09-28',
-  created_at: '', updated_at: '',
+// ---- Tabs ----------------------------------------------------------------
+
+const TABS = [
+  { id: 'info',     label: 'ข้อมูล' },
+  { id: 'skills',   label: 'สกิล' },
+  { id: 'shackles', label: 'Shackles' },
+  { id: 'story',    label: 'เรื่องราว' },
+]
+
+// ---- Stat rows -----------------------------------------------------------
+
+const STAT_ROWS = [
+  { key: 'hp',  label: 'HP',          icon: Heart,  color: '#10B981' },
+  { key: 'atk', label: 'Attack',      icon: Sword,  color: '#C8102E' },
+  { key: 'def', label: 'Defense',     icon: Shield, color: '#60A5FA' },
+  { key: 'res', label: 'Magic Res.',  icon: Shield, color: '#C084FC' },
+  { key: 'spd', label: 'Atk. Speed', icon: Wind,   color: '#F59E0B' },
+]
+
+// ---- Shackle icon --------------------------------------------------------
+
+function ShackleIcon({ stage, color }: { stage: number; color: string }) {
+  return (
+    <div
+      className="shrink-0 w-9 h-9 rounded-full border-2 flex items-center justify-center font-heading font-bold text-sm"
+      style={{ borderColor: color, color }}
+    >
+      S{stage}
+    </div>
+  )
 }
+
+// ---- SkillCard -----------------------------------------------------------
+
+function SkillCard({ skill }: { skill: CharacterSkill }) {
+  const isActive = skill.type === 'active'
+  return (
+    <div className="border border-ptn-border rounded-lg overflow-hidden bg-ptn-surface">
+      <div className="flex items-stretch">
+        {/* Thumbnail */}
+        <div className="shrink-0 w-16 h-16 bg-ptn-elevated border-r border-ptn-border flex items-center justify-center">
+          {skill.image_url ? (
+            <img src={skill.image_url} alt={skill.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg border border-ptn-border flex items-center justify-center">
+              {isActive ? <Zap size={16} className="text-ptn-cyan" /> : <Shield size={16} className="text-ptn-purple" />}
+            </div>
+          )}
+        </div>
+
+        {/* Header */}
+        <div className="flex-1 px-4 py-3 flex items-center gap-3 border-b border-ptn-border">
+          <span className="font-heading font-semibold text-ptn-text">{skill.name}</span>
+          {skill.name_th && skill.name_th !== skill.name && (
+            <span className="text-xs text-ptn-muted">({skill.name_th})</span>
+          )}
+          <div className="flex items-center gap-1.5 ml-auto shrink-0">
+            <span className={`text-xs px-2 py-0.5 rounded border font-medium ${
+              isActive
+                ? 'text-ptn-cyan border-ptn-cyan/40 bg-ptn-cyan/10'
+                : 'text-ptn-purple border-ptn-purple/40 bg-ptn-purple/10'
+            }`}>
+              {isActive ? 'Active' : 'Passive'}
+            </span>
+            {skill.cost != null && (
+              <span className="text-xs px-2 py-0.5 rounded border border-ptn-gold/40 bg-ptn-gold/10 text-ptn-gold font-medium">
+                {skill.cost} Energy
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Description */}
+      <div className="px-4 py-3">
+        <p className="text-sm text-ptn-muted leading-relaxed">{skill.description_th}</p>
+        {skill.levels && skill.levels.length > 0 && (
+          <details className="mt-2">
+            <summary className="text-xs text-ptn-disabled cursor-pointer hover:text-ptn-muted select-none">
+              แสดงเลเวล ({skill.levels.length} ระดับ)
+            </summary>
+            <div className="mt-2 space-y-1">
+              {skill.levels.map(lv => (
+                <div key={lv.level} className="flex gap-3 text-xs">
+                  <span className="text-ptn-disabled w-8 shrink-0">Lv.{lv.level}</span>
+                  <span className="text-ptn-muted">{lv.effect}</span>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ---- Main Page -----------------------------------------------------------
 
 export function CharacterDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const [character, setCharacter] = useState<Character | null>(null)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('info')
 
   useEffect(() => {
     const fetch = async () => {
@@ -65,7 +121,7 @@ export function CharacterDetailPage() {
         .select('*')
         .eq('slug', slug)
         .single()
-      setCharacter(data || (slug === 'rahu' ? DEMO_CHAR : null))
+      setCharacter(data || null)
       setLoading(false)
     }
     fetch()
@@ -86,206 +142,218 @@ export function CharacterDetailPage() {
 
   const rarityColor = RARITY_COLORS[character.rarity]
   const stats = character.stats as CharacterStats | null
-  const skills = character.skills as CharacterSkill[] | null
-  const shackles = character.shackles as Array<{ stage: number; cost: number; bonus: string; bonus_th: string }> | null
-
-  const maxStat = stats ? Math.max(stats.hp / 30, stats.atk, stats.def, stats.res, stats.spd * 5) : 1000
+  const skills = (character.skills as CharacterSkill[] | null) || []
+  const shackles = (character.shackles as ShackleBreak[] | null) || []
+  const tags = (character.tags as string[] | null) || []
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Back */}
-      <Link to="/characters" className="flex items-center gap-1.5 text-sm text-ptn-muted hover:text-ptn-text mb-6 w-fit">
-        <ChevronLeft size={16} /> กลับไปหน้าตัวละคร
+      <Link
+        to="/characters"
+        className="flex items-center gap-1.5 text-xs text-ptn-muted hover:text-ptn-text mb-5 w-fit transition-colors"
+      >
+        <ChevronLeft size={14} /> ตัวละคร
       </Link>
 
-      {/* Hero Section */}
-      <div className="rounded-xl border bg-ptn-surface overflow-hidden mb-6" style={{ borderColor: `${rarityColor}40` }}>
+      {/* ── Hero bar ── */}
+      <div
+        className="rounded-xl border overflow-hidden mb-1"
+        style={{ borderColor: `${rarityColor}30` }}
+      >
         <div
-          className="relative p-6 md:p-8"
-          style={{ background: `linear-gradient(135deg, ${rarityColor}15 0%, #12121A 60%)` }}
+          className="flex items-center gap-4 px-5 py-4"
+          style={{ background: `linear-gradient(90deg, ${rarityColor}18 0%, #12121A 55%)` }}
         >
-          <div className="flex flex-col md:flex-row gap-6 items-start">
-            {/* Portrait */}
-            <div
-              className="shrink-0 w-32 h-40 md:w-40 md:h-52 rounded-lg border overflow-hidden flex items-center justify-center bg-ptn-elevated"
-              style={{ borderColor: `${rarityColor}60` }}
-            >
-              {character.portrait_url ? (
-                <img src={character.portrait_url} alt={character.name} className="w-full h-full object-cover" />
-              ) : (
-                <div
-                  className="flex flex-col items-center justify-center gap-2"
-                  style={{ color: rarityColor }}
+          {/* Portrait thumbnail */}
+          <div
+            className="shrink-0 w-14 h-14 rounded-lg border overflow-hidden bg-ptn-elevated"
+            style={{ borderColor: `${rarityColor}50` }}
+          >
+            {character.portrait_url ? (
+              <img src={character.portrait_url} alt={character.name} className="w-full h-full object-cover" />
+            ) : (
+              <div
+                className="w-full h-full flex items-center justify-center font-heading font-bold text-xl"
+                style={{ color: rarityColor }}
+              >
+                {character.name[0]}
+              </div>
+            )}
+          </div>
+
+          {/* Name + meta */}
+          <div className="flex-1 min-w-0">
+            <h1 className="font-heading text-2xl font-bold leading-tight" style={{ color: rarityColor }}>
+              {character.name}
+            </h1>
+            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              {tags.map(tag => (
+                <span
+                  key={tag}
+                  className="text-xs px-2 py-0.5 rounded border border-ptn-border text-ptn-muted bg-ptn-elevated"
                 >
-                  <div
-                    className="w-20 h-20 rounded-full border-2 flex items-center justify-center font-heading font-bold text-4xl"
-                    style={{ borderColor: rarityColor }}
-                  >
-                    {character.name[0]}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <Badge variant="rarity" value={character.rarity} />
-                {character.is_limited && (
-                  <span className="flex items-center gap-1 text-xs text-ptn-gold">
-                    <Star size={12} className="fill-ptn-gold" /> Limited
-                  </span>
-                )}
-                {character.tags && (character.tags as string[]).map(tag => (
-                  <span key={tag} className="text-xs bg-ptn-elevated border border-ptn-border text-ptn-muted px-2 py-0.5 rounded">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              <h1 className="font-heading text-3xl md:text-4xl font-bold mb-2" style={{ color: rarityColor }}>
-                {character.name}
-              </h1>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-                <InfoItem label="อาชีพ" value={JOB_CLASS_LABEL[character.job_class] || character.job_class} />
-                <InfoItem label="ฝ่าย" value={FACTION_LABEL[character.faction] || character.faction.toUpperCase()} />
-                {character.release_date && (
-                  <InfoItem label="วันที่ออก" value={formatDate(character.release_date, { year: 'numeric', month: 'short', day: 'numeric' })} />
-                )}
-              </div>
-
-              {character.overview && (
-                <p className="text-ptn-muted text-sm leading-relaxed line-clamp-3 md:line-clamp-none">
-                  {character.overview.split('\n')[0]}
-                </p>
+                  {tag}
+                </span>
+              ))}
+              {character.is_limited && (
+                <span className="flex items-center gap-1 text-xs text-ptn-gold">
+                  <Star size={11} className="fill-ptn-gold" /> Limited
+                </span>
               )}
             </div>
           </div>
+
+          {/* Right — rank + class + faction */}
+          <div className="shrink-0 flex items-center gap-2">
+            <span className="text-sm text-ptn-muted">{FACTION_LABEL[character.faction] || character.faction.toUpperCase()}</span>
+            <span className="text-ptn-border">·</span>
+            <span className="text-sm text-ptn-muted">{JOB_CLASS_LABEL[character.job_class] || character.job_class}</span>
+            <span className="text-ptn-border">·</span>
+            <Badge variant="rarity" value={character.rarity} />
+          </div>
+        </div>
+
+        {/* ── Tab bar ── */}
+        <div className="flex border-t border-ptn-border bg-ptn-bg">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? 'border-ptn-red text-ptn-text'
+                  : 'border-transparent text-ptn-muted hover:text-ptn-text hover:border-ptn-border'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs
-        tabs={[
-          { id: 'overview', label: 'ภาพรวม' },
-          { id: 'skills', label: 'สกิล' },
-          { id: 'stats', label: 'สถิติ' },
-          { id: 'shackles', label: 'Shackle Break' },
-        ]}
-        defaultTab="overview"
-      >
-        {(activeTab) => (
-          <>
-            {activeTab === 'overview' && (
-              <Card className="p-6">
-                <h2 className="font-heading text-lg font-semibold text-ptn-text mb-3">เรื่องราว</h2>
-                {character.overview ? (
-                  <div className="text-ptn-muted leading-relaxed whitespace-pre-line">
-                    {character.overview}
-                  </div>
-                ) : (
-                  <p className="text-ptn-disabled">ยังไม่มีข้อมูล</p>
-                )}
-              </Card>
-            )}
+      {/* ── Tab content ── */}
+      <div className="mt-4 space-y-4">
 
-            {activeTab === 'skills' && (
-              <div className="space-y-4">
-                {skills && skills.length > 0 ? skills.map((skill, i) => (
-                  <Card key={i} className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="shrink-0 w-10 h-10 rounded-lg bg-ptn-elevated border border-ptn-border flex items-center justify-center">
-                        {skill.type === 'active' ? (
-                          <Zap size={18} className="text-ptn-cyan" />
-                        ) : (
-                          <Shield size={18} className="text-ptn-purple" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-heading font-semibold text-ptn-text">{skill.name_th}</h3>
-                          <span className="text-xs text-ptn-muted">({skill.name})</span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded border ${skill.type === 'active' ? 'text-ptn-cyan border-ptn-cyan/30 bg-ptn-cyan/10' : 'text-ptn-purple border-ptn-purple/30 bg-ptn-purple/10'}`}>
-                            {skill.type === 'active' ? 'แอคทีฟ' : 'พาสซีฟ'}
-                          </span>
-                          {skill.cost && (
-                            <span className="text-xs text-ptn-gold">Cost: {skill.cost}</span>
-                          )}
-                        </div>
-                        <p className="text-sm text-ptn-muted leading-relaxed">{skill.description_th}</p>
-                      </div>
-                    </div>
-                  </Card>
-                )) : (
-                  <Card className="p-6 text-center text-ptn-disabled">ยังไม่มีข้อมูลสกิล</Card>
-                )}
-              </div>
-            )}
+        {/* INFO TAB */}
+        {activeTab === 'info' && (
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Left — basic info */}
+            <Card className="p-5">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-ptn-disabled mb-4">ข้อมูลพื้นฐาน</h2>
+              <table className="w-full text-sm">
+                <tbody className="divide-y divide-ptn-border">
+                  {[
+                    { label: 'อาชีพ',   value: JOB_CLASS_LABEL[character.job_class] || character.job_class },
+                    { label: 'ฝ่าย',    value: FACTION_LABEL[character.faction] || character.faction.toUpperCase() },
+                    { label: 'Rank',    value: `${character.rarity}-Rank` },
+                    ...(character.release_date
+                      ? [{ label: 'วันที่ออก', value: formatDate(character.release_date, { year: 'numeric', month: 'long', day: 'numeric' }) }]
+                      : []),
+                    ...(character.is_limited ? [{ label: 'ประเภท', value: 'Limited' }] : []),
+                    ...(tags.length > 0 ? [{ label: 'แท็ก', value: tags.join(', ') }] : []),
+                  ].map(row => (
+                    <tr key={row.label}>
+                      <td className="py-2.5 pr-4 text-ptn-disabled w-28">{row.label}</td>
+                      <td className="py-2.5 text-ptn-text font-medium">{row.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
 
-            {activeTab === 'stats' && (
-              <Card className="p-6">
-                <h2 className="font-heading text-lg font-semibold text-ptn-text mb-4">สถิติพื้นฐาน</h2>
-                {stats ? (
-                  <div className="space-y-4">
-                    {[
-                      { key: 'hp', label: 'HP', icon: Heart, value: stats.hp, max: maxStat * 30, color: '#10B981' },
-                      { key: 'atk', label: 'พลังโจมตี', icon: Sword, value: stats.atk, max: maxStat, color: '#C8102E' },
-                      { key: 'def', label: 'ป้องกัน', icon: Shield, value: stats.def, max: maxStat, color: '#60A5FA' },
-                      { key: 'res', label: 'ต้านทาน', icon: Shield, value: stats.res, max: maxStat, color: '#6B5CE7' },
-                      { key: 'spd', label: 'ความเร็ว', icon: Zap, value: stats.spd, max: maxStat / 5, color: '#F59E0B' },
-                    ].map(({ key, label, icon: Icon, value, max, color }) => (
-                      <div key={key}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="flex items-center gap-2 text-sm text-ptn-muted">
-                            <Icon size={14} style={{ color }} />{label}
-                          </span>
-                          <span className="text-sm font-medium text-ptn-text">{value}</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-ptn-elevated overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min((value / max) * 100, 100)}%`, background: color }}
-                          />
-                        </div>
+            {/* Right — stats */}
+            <Card className="p-5">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-ptn-disabled mb-4">สถิติ</h2>
+              {stats ? (
+                <div className="divide-y divide-ptn-border">
+                  {STAT_ROWS.map(({ key, label, icon: Icon, color }) => {
+                    const val = stats[key as keyof CharacterStats]
+                    if (val == null) return null
+                    return (
+                      <div key={key} className="flex items-center gap-3 py-2.5">
+                        <Icon size={14} style={{ color }} className="shrink-0" />
+                        <span className="flex-1 text-sm text-ptn-muted">{label}</span>
+                        <span className="font-heading font-bold text-ptn-text">{val}</span>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-ptn-disabled text-center">ยังไม่มีข้อมูลสถิติ</p>
-                )}
-              </Card>
-            )}
-
-            {activeTab === 'shackles' && (
-              <div className="space-y-3">
-                {shackles && shackles.length > 0 ? shackles.map((s) => (
-                  <Card key={s.stage} className="p-4 flex items-start gap-4">
-                    <div className="shrink-0 w-10 h-10 rounded-full border-2 border-ptn-red/50 bg-ptn-red/10 flex items-center justify-center">
-                      <span className="font-heading font-bold text-ptn-red text-sm">{s.stage}</span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-ptn-text">{s.bonus_th}</p>
-                      <p className="text-xs text-ptn-muted mt-0.5">{s.bonus} · ต้องการ {s.cost} Shackle Stones</p>
-                    </div>
-                  </Card>
-                )) : (
-                  <Card className="p-6 text-center text-ptn-disabled">ยังไม่มีข้อมูล Shackle Break</Card>
-                )}
-              </div>
-            )}
-          </>
+                    )
+                  })}
+                  {(stats.crit_rate != null || stats.crit_dmg != null) && (
+                    <>
+                      {stats.crit_rate != null && (
+                        <div className="flex items-center gap-3 py-2.5">
+                          <Zap size={14} style={{ color: '#FB923C' }} className="shrink-0" />
+                          <span className="flex-1 text-sm text-ptn-muted">Crit Rate</span>
+                          <span className="font-heading font-bold text-ptn-text">{stats.crit_rate}%</span>
+                        </div>
+                      )}
+                      {stats.crit_dmg != null && (
+                        <div className="flex items-center gap-3 py-2.5">
+                          <Zap size={14} style={{ color: '#F43F5E' }} className="shrink-0" />
+                          <span className="flex-1 text-sm text-ptn-muted">Crit DMG</span>
+                          <span className="font-heading font-bold text-ptn-text">{stats.crit_dmg}%</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ) : (
+                <p className="text-ptn-disabled text-sm text-center py-6">ยังไม่มีข้อมูลสถิติ</p>
+              )}
+            </Card>
+          </div>
         )}
-      </Tabs>
-    </div>
-  )
-}
 
-function InfoItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-ptn-elevated rounded-lg border border-ptn-border p-2.5">
-      <p className="text-xs text-ptn-disabled mb-0.5">{label}</p>
-      <p className="text-sm font-medium text-ptn-text">{value}</p>
+        {/* SKILLS TAB */}
+        {activeTab === 'skills' && (
+          <div className="space-y-3">
+            {skills.length > 0 ? (
+              skills.map((skill, i) => <SkillCard key={i} skill={skill} />)
+            ) : (
+              <Card className="p-8 text-center text-ptn-disabled">ยังไม่มีข้อมูลสกิล</Card>
+            )}
+          </div>
+        )}
+
+        {/* SHACKLES TAB */}
+        {activeTab === 'shackles' && (
+          <div className="space-y-2">
+            {shackles.length > 0 ? (
+              shackles.map((s) => (
+                <Card key={s.stage} className="p-4">
+                  <div className="flex items-start gap-4">
+                    <ShackleIcon stage={s.stage} color={rarityColor} />
+                    <div className="flex-1 min-w-0 pt-1">
+                      <p className="font-medium text-ptn-text leading-snug">{s.bonus_th || s.bonus}</p>
+                      {s.bonus_th && s.bonus !== s.bonus_th && (
+                        <p className="text-xs text-ptn-disabled mt-0.5">{s.bonus}</p>
+                      )}
+                    </div>
+                    {s.cost > 0 && (
+                      <span className="shrink-0 text-xs text-ptn-disabled mt-1">{s.cost} หิน</span>
+                    )}
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <Card className="p-8 text-center text-ptn-disabled">ยังไม่มีข้อมูล Shackle Break</Card>
+            )}
+          </div>
+        )}
+
+        {/* STORY TAB */}
+        {activeTab === 'story' && (
+          <Card className="p-6">
+            {character.overview ? (
+              <p className="text-ptn-muted leading-relaxed whitespace-pre-line text-sm">
+                {character.overview}
+              </p>
+            ) : (
+              <p className="text-ptn-disabled text-center py-6">ยังไม่มีข้อมูลเรื่องราว</p>
+            )}
+          </Card>
+        )}
+      </div>
     </div>
   )
 }

@@ -68,6 +68,19 @@ export interface Database {
           start_date: string
           end_date: string
           is_active: boolean
+          is_featured: boolean
+          image_position: string | null
+          created_at: string
+        }
+        Insert: Record<string, Json>
+        Update: Record<string, Json>
+      }
+      announcements: {
+        Row: {
+          id: string
+          content: string
+          is_active: boolean
+          sort_order: number
           created_at: string
         }
         Insert: Record<string, Json>

@@ -94,15 +94,17 @@ create policy "Only admins can delete characters"
 -- EVENTS
 -- ============================================================
 create table public.events (
-  id            uuid primary key default uuid_generate_v4(),
-  title         text not null,
-  description   text,
-  event_type    text not null check (event_type in ('story', 'rerun', 'collab', 'maintenance', 'other')),
-  banner_url    text,
-  start_date    timestamptz not null,
-  end_date      timestamptz not null,
-  is_active     boolean not null default true,
-  created_at    timestamptz not null default now()
+  id             uuid primary key default uuid_generate_v4(),
+  title          text not null,
+  description    text,
+  event_type     text not null check (event_type in ('story', 'rerun', 'collab', 'maintenance', 'other')),
+  banner_url     text,
+  start_date     timestamptz not null,
+  end_date       timestamptz not null,
+  is_active      boolean not null default true,
+  is_featured    boolean not null default false,
+  image_position text not null default '50% 50%',
+  created_at     timestamptz not null default now()
 );
 
 alter table public.events enable row level security;
@@ -349,6 +351,35 @@ create policy "Only admins can view logs"
 create policy "Only admins can insert logs"
   on public.admin_logs for insert
   with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+-- ============================================================
+-- ANNOUNCEMENTS
+-- ============================================================
+create table public.announcements (
+  id          uuid primary key default uuid_generate_v4(),
+  content     text not null,
+  is_active   boolean not null default true,
+  sort_order  integer not null default 0,
+  created_at  timestamptz not null default now()
+);
+
+alter table public.announcements enable row level security;
+
+create policy "Announcements are viewable by everyone"
+  on public.announcements for select using (true);
+
+create policy "Admins can insert announcements"
+  on public.announcements for insert
+  with check (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')));
+
+create policy "Admins can update announcements"
+  on public.announcements for update
+  using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')))
+  with check (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')));
+
+create policy "Admins can delete announcements"
+  on public.announcements for delete
+  using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')));
 
 -- ============================================================
 -- INDEXES
