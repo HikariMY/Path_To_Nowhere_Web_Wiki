@@ -4,6 +4,7 @@ export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Character = Database['public']['Tables']['characters']['Row']
 export type GameEvent = Database['public']['Tables']['events']['Row'] & {
   is_featured?: boolean
+  image_position?: string
 }
 export type ForumCategory = Database['public']['Tables']['forum_categories']['Row']
 export type ForumPost = Database['public']['Tables']['forum_posts']['Row']

@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
-import { Plus, Edit2, Search } from 'lucide-react'
+import { Plus, Edit2, Search, Download, Trash2 } from 'lucide-react'
+import { SEED_CHARACTERS } from '../../lib/seedData'
 import { supabase } from '../../lib/supabase'
 import type { Character } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -124,6 +125,19 @@ export function AdminCharactersPage() {
     setDeleting(null)
   }
 
+  const handleSeedData = async () => {
+    if (!confirm(`นำเข้าตัวละครทั้งหมด ${SEED_CHARACTERS.length} ตัวลงฐานข้อมูล?\n(จะไม่ทับข้อมูลที่มีอยู่แล้ว)`)) return
+    setSaving(true)
+    const { data: existing } = await supabase.from('characters').select('slug')
+    const existingSlugs = new Set((existing || []).map((c: any) => c.slug))
+    const toInsert = SEED_CHARACTERS.filter(c => !existingSlugs.has(c.slug))
+    if (toInsert.length === 0) { toast('ไม่มีข้อมูลใหม่ที่ต้องนำเข้า', 'info'); setSaving(false); return }
+    const { error } = await supabase.from('characters').insert(toInsert as never)
+    setSaving(false)
+    if (error) toast('เกิดข้อผิดพลาด: ' + error.message, 'error')
+    else { toast(`นำเข้าสำเร็จ ${toInsert.length} ตัว`, 'success'); fetchChars() }
+  }
+
   const set = (field: keyof CharForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [field]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value }))
   }
@@ -136,11 +150,18 @@ export function AdminCharactersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="font-heading text-2xl font-bold text-ptn-text">จัดการตัวละคร</h1>
-        <Button onClick={openCreate} size="sm">
-          <Plus size={14} /> เพิ่มตัวละคร
-        </Button>
+        <div className="flex gap-2">
+          {characters.length === 0 && (
+            <Button onClick={handleSeedData} loading={saving} variant="ghost" size="sm">
+              <Download size={14} /> นำเข้าข้อมูลเริ่มต้น ({SEED_CHARACTERS.length} ตัว)
+            </Button>
+          )}
+          <Button onClick={openCreate} size="sm">
+            <Plus size={14} /> เพิ่มตัวละคร
+          </Button>
+        </div>
       </div>
 
       <div className="mb-4">

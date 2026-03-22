@@ -132,8 +132,11 @@ export function HomePage() {
         {currentEvent?.banner_url && (
           <>
             <div
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-              style={{ backgroundImage: `url(${currentEvent.banner_url})` }}
+              className="absolute inset-0 bg-cover bg-no-repeat"
+              style={{
+                backgroundImage: `url(${currentEvent.banner_url})`,
+                backgroundPosition: currentEvent.image_position || '50% 50%',
+              }}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg via-ptn-bg/85 to-ptn-bg/40" />
             <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg via-transparent to-ptn-bg/60" />
@@ -299,40 +302,45 @@ function EventBannerCard({
   const characterName = parts[1] || null
 
   return (
-    <div className="relative rounded-lg overflow-hidden border border-ptn-border group">
+    <div className="relative rounded-xl overflow-hidden border border-ptn-border group cursor-pointer h-[160px]">
       {/* Background image */}
       {event.banner_url ? (
         <img
           src={event.banner_url}
           alt={event.title}
-          className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          style={{ objectPosition: event.image_position || '50% 50%' }}
         />
       ) : (
         <div className="absolute inset-0 bg-ptn-elevated" />
       )}
 
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg/90 via-ptn-bg/70 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg/60 via-transparent to-transparent" />
+      {/* Gradient: strong left fade for text readability */}
+      <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg via-ptn-bg/80 to-ptn-bg/20" />
+      <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg/50 to-transparent" />
 
-      {/* Content */}
-      <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-4">
-        {/* Left: names + type */}
-        <div className="flex-1 min-w-0">
-          {characterName && (
-            <p className="text-xs text-ptn-muted/80 mb-0.5 font-medium">{characterName}</p>
-          )}
-          <h3 className="font-heading font-bold text-ptn-text text-lg leading-tight drop-shadow">
-            {eventName}
-          </h3>
-          <p className="text-xs text-ptn-muted/70 mt-0.5">
-            {EVENT_TYPE_LABEL[event.event_type] || event.event_type}
-          </p>
-        </div>
+      {/* Content pinned to bottom-left */}
+      <div className="absolute inset-0 flex flex-col justify-end px-5 pb-4">
+        <div className="flex items-end justify-between gap-4">
+          {/* Left: text */}
+          <div className="min-w-0">
+            {characterName && (
+              <p className="text-xs text-ptn-cyan/90 font-medium tracking-widest uppercase mb-1">{characterName}</p>
+            )}
+            <h3 className="font-heading font-bold text-white text-2xl leading-tight drop-shadow-lg">
+              {eventName}
+            </h3>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-xs text-white/50 bg-white/10 px-2 py-0.5 rounded-full">
+                {EVENT_TYPE_LABEL[event.event_type] || event.event_type}
+              </span>
+            </div>
+          </div>
 
-        {/* Right: countdown blocks */}
-        <div className="shrink-0">
-          <EventCountdown targetDate={countdownTarget} label={countdownLabel} />
+          {/* Right: countdown */}
+          <div className="shrink-0 pb-0.5">
+            <EventCountdown targetDate={countdownTarget} label={countdownLabel} />
+          </div>
         </div>
       </div>
     </div>

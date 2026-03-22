@@ -19,11 +19,71 @@ import { formatDate } from '../../lib/utils'
 type EventForm = {
   title: string; description: string; event_type: GameEvent['event_type']
   banner_url: string; start_date: string; end_date: string; is_active: boolean
+  image_position: string
 }
 
 const defaultForm: EventForm = {
   title: '', description: '', event_type: 'story',
   banner_url: '', start_date: '', end_date: '', is_active: true,
+  image_position: '50% 50%',
+}
+
+// 3×3 position picker
+const POSITIONS = [
+  ['0% 0%',   '50% 0%',   '100% 0%'  ],
+  ['0% 50%',  '50% 50%',  '100% 50%' ],
+  ['0% 100%', '50% 100%', '100% 100%'],
+]
+const POSITION_LABELS: Record<string, string> = {
+  '0% 0%':'↖', '50% 0%':'↑', '100% 0%':'↗',
+  '0% 50%':'←', '50% 50%':'●', '100% 50%':'→',
+  '0% 100%':'↙', '50% 100%':'↓', '100% 100%':'↘',
+}
+
+function ImagePositionPicker({ position, onChange, previewUrl }: {
+  position: string
+  onChange: (pos: string) => void
+  previewUrl?: string
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-ptn-muted mb-1.5">ตำแหน่งโฟกัสภาพ</label>
+      <div className="flex gap-4 items-start">
+        <div className="grid grid-cols-3 gap-1">
+          {POSITIONS.flat().map(pos => (
+            <button
+              key={pos}
+              type="button"
+              title={pos}
+              onClick={() => onChange(pos)}
+              className={`w-9 h-9 rounded text-sm font-bold transition-all border ${
+                position === pos
+                  ? 'border-ptn-cyan bg-ptn-cyan/20 text-ptn-cyan'
+                  : 'border-ptn-border text-ptn-muted hover:border-ptn-muted hover:text-ptn-text'
+              }`}
+            >
+              {POSITION_LABELS[pos]}
+            </button>
+          ))}
+        </div>
+        {previewUrl && (
+          <div className="flex-1 h-[108px] rounded overflow-hidden border border-ptn-border">
+            <img
+              src={previewUrl}
+              alt="preview"
+              className="w-full h-full object-cover transition-all"
+              style={{ objectPosition: position }}
+            />
+          </div>
+        )}
+        {!previewUrl && (
+          <div className="flex-1 h-[108px] rounded border border-dashed border-ptn-border flex items-center justify-center text-xs text-ptn-disabled">
+            อัปโหลดรูปเพื่อดูตัวอย่าง
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function AdminEventsPage() {
@@ -56,6 +116,7 @@ export function AdminEventsPage() {
       title: ev.title, description: ev.description || '', event_type: ev.event_type,
       banner_url: ev.banner_url || '', start_date: ev.start_date.slice(0, 16),
       end_date: ev.end_date.slice(0, 16), is_active: ev.is_active,
+      image_position: ev.image_position || '50% 50%',
     })
     setModalOpen(true)
   }
@@ -70,6 +131,7 @@ export function AdminEventsPage() {
       event_type: form.event_type, banner_url: form.banner_url.trim() || null,
       start_date: new Date(form.start_date).toISOString(),
       end_date: new Date(form.end_date).toISOString(), is_active: form.is_active,
+      image_position: form.image_position,
     }
     let error
     if (editingEvent) {
@@ -183,6 +245,11 @@ export function AdminEventsPage() {
             currentUrl={form.banner_url || null}
             aspectRatio="banner"
             onUpload={url => setForm(prev => ({ ...prev, banner_url: url }))}
+          />
+          <ImagePositionPicker
+            position={form.image_position}
+            onChange={pos => setForm(prev => ({ ...prev, image_position: pos }))}
+            previewUrl={form.banner_url || undefined}
           />
           <Textarea label="คำอธิบาย" value={form.description} onChange={set('description')} placeholder="รายละเอียดอีเวนต์..." rows={3} />
           <label className="flex items-center gap-2 cursor-pointer">
