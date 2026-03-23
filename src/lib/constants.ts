@@ -20,12 +20,21 @@ export const RARITY_LABEL: Record<string, string> = {
 }
 
 export const JOB_CLASS_LABEL: Record<string, string> = {
-  arcane: 'อาร์เคน',
-  breaker: 'เบรคเกอร์',
-  fury: 'ฟิวรี',
-  guard: 'การ์ด',
-  inclusion: 'อินคลูชัน',
-  reticle: 'เรติเคิล',
+  arcane:    'Arcane',
+  breaker:   'Umbra',
+  fury:      'Fury',
+  guard:     'Endura',
+  inclusion: 'Catalyst',
+  reticle:   'Reticle',
+}
+
+export const TENDENCY_ICON: Record<string, string> = {
+  arcane:    '/TenIcon/arcane.png',
+  breaker:   '/TenIcon/umbra.png',
+  fury:      '/TenIcon/fury.png',
+  guard:     '/TenIcon/endura.png',
+  inclusion: '/TenIcon/catalyst.png',
+  reticle:   '/TenIcon/reticle.png',
 }
 
 export const JOB_CLASS_COLORS: Record<string, string> = {
@@ -43,6 +52,44 @@ export const FACTION_LABEL: Record<string, string> = {
   mercenary:      'รับจ้าง',
   underground:    'ใต้ดิน',
   other:          'อื่นๆ',
+}
+
+export const ALIGNMENT_LABEL: Record<string, string> = {
+  violence:   'Violence',
+  love:       'Love',
+  greed:      'Greed',
+  treachery:  'Treachery',
+  limbo:      'Limbo',
+  anger:      'Anger',
+  sloth:      'Sloth',
+  fraud:      'Fraud',
+  heresy:     'Heresy',
+  immortal:   'Immortal',
+  pestilence: 'Pestilence',
+  infinite:   'Infinite',
+  famine:     'Famine',
+  war:        'War',
+  death:      'Death',
+  sequester:  'Sequester',
+}
+
+export const ALIGNMENT_ICON: Record<string, string> = {
+  violence:   '/ALIcon/violence.jpg',
+  love:       '/ALIcon/love.jpg',
+  greed:      '/ALIcon/greed.jpg',
+  treachery:  '/ALIcon/treachery.jpg',
+  limbo:      '/ALIcon/limbo.jpg',
+  anger:      '/ALIcon/anger.jpg',
+  sloth:      '/ALIcon/sloth.jpg',
+  fraud:      '/ALIcon/fraud.jpg',
+  heresy:     '/ALIcon/heresy.jpg',
+  immortal:   '/ALIcon/immortal.jpg',
+  pestilence: '/ALIcon/libram-pestilence.jpg',
+  infinite:   '/ALIcon/libram-infinite.jpg',
+  famine:     '/ALIcon/libram-famine.jpg',
+  war:        '/ALIcon/libram-war.jpg',
+  death:      '/ALIcon/libram-death.jpg',
+  sequester:  '/ALIcon/sequester.jpg',
 }
 
 export const EVENT_TYPE_LABEL: Record<string, string> = {

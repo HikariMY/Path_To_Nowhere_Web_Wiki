@@ -16,7 +16,7 @@ import { ImageUpload } from '../../components/ui/ImageUpload'
 import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../contexts/AuthContext'
 import { slugify } from '../../lib/utils'
-import { JOB_CLASS_LABEL } from '../../lib/constants'
+import { JOB_CLASS_LABEL, ALIGNMENT_LABEL } from '../../lib/constants'
 
 type CharForm = {
   name: string; rarity: 'S' | 'A' | 'B' | 'C'; faction: string; job_class: string
@@ -24,7 +24,7 @@ type CharForm = {
 }
 
 const defaultForm: CharForm = {
-  name: '', rarity: 'A', faction: 'mbcc', job_class: 'breaker',
+  name: '', rarity: 'A', faction: 'anger', job_class: 'breaker',
   overview: '', portrait_url: '', is_limited: false, release_date: '', tags: '',
 }
 
@@ -175,8 +175,8 @@ export function AdminCharactersPage() {
               <tr className="border-b border-ptn-border bg-ptn-elevated">
                 <th className="text-left p-3 text-ptn-muted font-medium">ชื่อ</th>
                 <th className="text-left p-3 text-ptn-muted font-medium">Rank</th>
-                <th className="text-left p-3 text-ptn-muted font-medium hidden sm:table-cell">อาชีพ</th>
-                <th className="text-left p-3 text-ptn-muted font-medium hidden md:table-cell">ฝ่าย</th>
+                <th className="text-left p-3 text-ptn-muted font-medium hidden sm:table-cell">Tendencies</th>
+                <th className="text-left p-3 text-ptn-muted font-medium hidden md:table-cell">Alignments</th>
                 <th className="text-right p-3 text-ptn-muted font-medium">จัดการ</th>
               </tr>
             </thead>
@@ -192,7 +192,7 @@ export function AdminCharactersPage() {
                   </td>
                   <td className="p-3"><Badge variant="rarity" value={c.rarity} /></td>
                   <td className="p-3 text-ptn-muted hidden sm:table-cell">{JOB_CLASS_LABEL[c.job_class] || c.job_class}</td>
-                  <td className="p-3 text-ptn-muted hidden md:table-cell">{c.faction.toUpperCase()}</td>
+                  <td className="p-3 text-ptn-muted hidden md:table-cell">{ALIGNMENT_LABEL[c.faction] || c.faction.toUpperCase()}</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
                       <Button size="sm" variant="ghost" onClick={() => openEdit(c)}><Edit2 size={13} /></Button>
@@ -217,11 +217,11 @@ export function AdminCharactersPage() {
             <Select label="Rank" value={form.rarity} onChange={set('rarity')}>
               {['S','A','B','C'].map(r => <option key={r} value={r}>{r}-Rank</option>)}
             </Select>
-            <Select label="อาชีพ" value={form.job_class} onChange={set('job_class')}>
+            <Select label="Tendencies" value={form.job_class} onChange={set('job_class')}>
               {Object.entries(JOB_CLASS_LABEL).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
             </Select>
-            <Select label="ฝ่าย" value={form.faction} onChange={set('faction')}>
-              {['mbcc','criminal','mercenary','underground','other'].map(f => <option key={f} value={f}>{f.toUpperCase()}</option>)}
+            <Select label="Alignments" value={form.faction} onChange={set('faction')}>
+              {Object.entries(ALIGNMENT_LABEL).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
             </Select>
             <ImageUpload
               bucket="characters"

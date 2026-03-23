@@ -25,18 +25,23 @@ export type TierListWithAuthor = TierList & {
   user_voted?: boolean
 }
 
-// Skill schema
+// Skill range grid schema
+export interface SkillRange {
+  rows: number
+  cols: number
+  cells: number[]  // 0=empty, 1=active, 2=self position (red)
+}
+
+// Skill schema (new)
 export interface CharacterSkill {
+  id?: string
   name: string
-  name_th: string
-  type: 'active' | 'passive'
-  cost?: number
-  description_th: string
-  levels?: Array<{
-    level: number
-    effect: string
-  }>
-  image_url?: string
+  order?: number        // 1st / 2nd / 3rd / 4th unlock slot
+  tags?: string[]       // e.g. ['Normal ATK'] or ['Ultimate', '18 Energy', '1 Core Damage']
+  description?: string
+  icon_url?: string
+  levels?: string[]     // 10 entries indexed 0-9 (LV1-LV10), empty string = no change
+  range?: SkillRange
 }
 
 // Stats schema

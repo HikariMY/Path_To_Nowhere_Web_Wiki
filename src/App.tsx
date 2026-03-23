@@ -29,6 +29,7 @@ import { AdminEventsPage } from './pages/admin/AdminEventsPage'
 import { AdminForumPage } from './pages/admin/AdminForumPage'
 import { AdminLogsPage } from './pages/admin/AdminLogsPage'
 import { AdminAnnouncementsPage } from './pages/admin/AdminAnnouncementsPage'
+import { AdminSkillsPage } from './pages/admin/AdminSkillsPage'
 
 export default function App() {
   return (
@@ -96,6 +97,7 @@ export default function App() {
               <Route path="events" element={<AdminEventsPage />} />
               <Route path="announcements" element={<AdminAnnouncementsPage />} />
               <Route path="forum" element={<AdminForumPage />} />
+              <Route path="skills" element={<AdminSkillsPage />} />
               <Route path="logs" element={<AdminLogsPage />} />
             </Route>
           </Routes>

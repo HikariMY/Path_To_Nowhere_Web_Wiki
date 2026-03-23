@@ -7,7 +7,7 @@ import type { Character, CharacterStats, CharacterSkill, ShackleBreak } from '..
 import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { PageLoader } from '../../components/ui/Spinner'
-import { RARITY_COLORS, JOB_CLASS_LABEL, FACTION_LABEL } from '../../lib/constants'
+import { RARITY_COLORS, JOB_CLASS_LABEL, ALIGNMENT_LABEL, ALIGNMENT_ICON, TENDENCY_ICON } from '../../lib/constants'
 import { formatDate } from '../../lib/utils'
 
 // ---- Tabs ----------------------------------------------------------------
@@ -42,64 +42,152 @@ function ShackleIcon({ stage, color }: { stage: number; color: string }) {
   )
 }
 
+// ---- helpers -------------------------------------------------------------
+
+const ORDINAL = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th']
+
+function tagStyle(tag: string) {
+  const t = tag.toLowerCase()
+  if (t === 'ultimate')           return 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+  if (t.includes('energy'))       return 'bg-orange-500/20 text-orange-400 border-orange-500/40'
+  if (t.includes('core damage'))  return 'bg-red-500/20 text-red-400 border-red-500/40'
+  if (t === 'passive')            return 'bg-zinc-600/30 text-zinc-400 border-zinc-600/40'
+  return 'bg-zinc-700/40 text-zinc-300 border-zinc-600/40'
+}
+
+// ---- RangeGrid -----------------------------------------------------------
+
+function RangeGrid({ range }: { range: { rows: number; cols: number; cells: number[] } }) {
+  return (
+    <div className="flex items-center gap-4 px-4 py-3 bg-black/40 border-b border-ptn-border">
+      <span className="text-[10px] tracking-widest text-ptn-disabled font-mono shrink-0">RANGE</span>
+      <div
+        className="inline-grid gap-0.5"
+        style={{ gridTemplateColumns: `repeat(${range.cols}, 1.75rem)` }}
+      >
+        {range.cells.map((cell, i) => (
+          <div
+            key={i}
+            className={`w-7 h-7 border flex items-center justify-center ${
+              cell === 2
+                ? 'bg-red-800/80 border-red-600'
+                : cell === 1
+                  ? 'bg-zinc-600/60 border-zinc-500'
+                  : 'bg-transparent border-zinc-700/40'
+            }`}
+          >
+            {cell === 2 && <div className="w-2.5 h-2.5 rounded-full bg-red-400" />}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ---- SkillCard -----------------------------------------------------------
 
 function SkillCard({ skill }: { skill: CharacterSkill }) {
-  const isActive = skill.type === 'active'
+  const [activeLevel, setActiveLevel] = useState(1)
+  const [showLevels, setShowLevels] = useState(false)
+
+  const ordStr = skill.order ? (ORDINAL[skill.order - 1] ?? `${skill.order}th`) : null
+  const levelDesc = skill.levels?.[activeLevel - 1]
+  const hasAnyLevel = skill.levels?.some(Boolean)
+
   return (
     <div className="border border-ptn-border rounded-lg overflow-hidden bg-ptn-surface">
+
+      {/* ── Header row ── */}
       <div className="flex items-stretch">
-        {/* Thumbnail */}
-        <div className="shrink-0 w-16 h-16 bg-ptn-elevated border-r border-ptn-border flex items-center justify-center">
-          {skill.image_url ? (
-            <img src={skill.image_url} alt={skill.name} className="w-full h-full object-cover" />
+        {/* Icon */}
+        <div className="shrink-0 w-16 h-16 bg-black/60 border-r border-ptn-border flex items-center justify-center">
+          {skill.icon_url ? (
+            <img src={skill.icon_url} alt={skill.name} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-8 h-8 rounded-lg border border-ptn-border flex items-center justify-center">
-              {isActive ? <Zap size={16} className="text-ptn-cyan" /> : <Shield size={16} className="text-ptn-purple" />}
-            </div>
+            <Zap size={18} className="text-ptn-disabled" />
           )}
         </div>
 
-        {/* Header */}
-        <div className="flex-1 px-4 py-3 flex items-center gap-3 border-b border-ptn-border">
-          <span className="font-heading font-semibold text-ptn-text">{skill.name}</span>
-          {skill.name_th && skill.name_th !== skill.name && (
-            <span className="text-xs text-ptn-muted">({skill.name_th})</span>
-          )}
-          <div className="flex items-center gap-1.5 ml-auto shrink-0">
-            <span className={`text-xs px-2 py-0.5 rounded border font-medium ${
-              isActive
-                ? 'text-ptn-cyan border-ptn-cyan/40 bg-ptn-cyan/10'
-                : 'text-ptn-purple border-ptn-purple/40 bg-ptn-purple/10'
-            }`}>
-              {isActive ? 'Active' : 'Passive'}
-            </span>
-            {skill.cost != null && (
-              <span className="text-xs px-2 py-0.5 rounded border border-ptn-gold/40 bg-ptn-gold/10 text-ptn-gold font-medium">
-                {skill.cost} Energy
+        {/* Name + meta + tags */}
+        <div className="flex-1 px-4 py-2.5 border-b border-ptn-border">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="font-heading font-bold text-ptn-text">{skill.name}</span>
+            <div className="ml-auto flex items-center gap-1.5 shrink-0">
+              {ordStr && (
+                <span className="text-[11px] px-1.5 py-0.5 rounded border border-ptn-border text-ptn-muted font-mono">
+                  ↑ {ordStr}
+                </span>
+              )}
+              <span className="text-[11px] px-1.5 py-0.5 rounded border border-ptn-border text-ptn-muted font-mono">
+                lv. {activeLevel}
               </span>
-            )}
+            </div>
           </div>
+          {skill.tags && skill.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {skill.tags.map(tag => (
+                <span key={tag} className={`text-xs px-2 py-0.5 rounded border font-medium ${tagStyle(tag)}`}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Description */}
+      {/* ── LVL tabs ── */}
+      <div className="flex border-b border-ptn-border bg-ptn-bg">
+        <span className="px-3 py-1.5 text-[11px] text-ptn-disabled border-r border-ptn-border font-mono shrink-0">LVL</span>
+        {Array.from({ length: 10 }, (_, i) => i + 1).map(lv => (
+          <button
+            key={lv}
+            onClick={() => setActiveLevel(lv)}
+            className={`flex-1 py-1.5 text-xs transition-colors font-mono ${
+              activeLevel === lv
+                ? 'text-ptn-text bg-ptn-elevated'
+                : 'text-ptn-disabled hover:text-ptn-muted'
+            }`}
+          >
+            {lv}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Range ── */}
+      {skill.range && skill.range.cells?.length > 0 && (
+        <RangeGrid range={skill.range} />
+      )}
+
+      {/* ── Description ── */}
       <div className="px-4 py-3">
-        <p className="text-sm text-ptn-muted leading-relaxed">{skill.description_th}</p>
-        {skill.levels && skill.levels.length > 0 && (
-          <details className="mt-2">
-            <summary className="text-xs text-ptn-disabled cursor-pointer hover:text-ptn-muted select-none">
-              แสดงเลเวล ({skill.levels.length} ระดับ)
-            </summary>
-            <div className="mt-2 space-y-1">
-              {skill.levels.map(lv => (
-                <div key={lv.level} className="flex gap-3 text-xs">
-                  <span className="text-ptn-disabled w-8 shrink-0">Lv.{lv.level}</span>
-                  <span className="text-ptn-muted">{lv.effect}</span>
-                </div>
-              ))}
-            </div>
-          </details>
+        <p className="text-sm text-ptn-muted leading-relaxed">{skill.description}</p>
+
+        {levelDesc && (
+          <p className="text-xs text-ptn-cyan mt-2 pt-2 border-t border-ptn-border">
+            LVL {activeLevel}: {levelDesc}
+          </p>
+        )}
+
+        {hasAnyLevel && (
+          <>
+            <button
+              onClick={() => setShowLevels(v => !v)}
+              className="flex items-center gap-1 text-xs text-ptn-disabled hover:text-ptn-muted mt-2 transition-colors"
+            >
+              <span className="font-mono">{showLevels ? '▽▽' : '▷▷'}</span>
+              {showLevels ? 'Hide Levels' : 'Show Levels'}
+            </button>
+            {showLevels && (
+              <div className="mt-2 pt-2 border-t border-ptn-border space-y-1">
+                {skill.levels!.map((desc, i) => desc ? (
+                  <div key={i} className="flex gap-3 text-xs">
+                    <span className="text-ptn-disabled font-mono w-12 shrink-0">LVL {i + 1}</span>
+                    <span className="text-ptn-muted">{desc}</span>
+                  </div>
+                ) : null)}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -206,9 +294,19 @@ export function CharacterDetailPage() {
 
           {/* Right — rank + class + faction */}
           <div className="shrink-0 flex items-center gap-2">
-            <span className="text-sm text-ptn-muted">{FACTION_LABEL[character.faction] || character.faction.toUpperCase()}</span>
+            <span className="flex items-center gap-1.5 text-sm text-ptn-muted">
+              {ALIGNMENT_ICON[character.faction] && (
+                <img src={ALIGNMENT_ICON[character.faction]} alt={character.faction} className="w-5 h-5 object-contain opacity-80 rounded-sm" />
+              )}
+              {ALIGNMENT_LABEL[character.faction] || character.faction.toUpperCase()}
+            </span>
             <span className="text-ptn-border">·</span>
-            <span className="text-sm text-ptn-muted">{JOB_CLASS_LABEL[character.job_class] || character.job_class}</span>
+            <span className="flex items-center gap-1.5 text-sm text-ptn-muted">
+              {TENDENCY_ICON[character.job_class] && (
+                <img src={TENDENCY_ICON[character.job_class]} alt={character.job_class} className="w-5 h-5 object-contain opacity-80" />
+              )}
+              {JOB_CLASS_LABEL[character.job_class] || character.job_class}
+            </span>
             <span className="text-ptn-border">·</span>
             <Badge variant="rarity" value={character.rarity} />
           </div>
@@ -244,8 +342,28 @@ export function CharacterDetailPage() {
               <table className="w-full text-sm">
                 <tbody className="divide-y divide-ptn-border">
                   {[
-                    { label: 'อาชีพ',   value: JOB_CLASS_LABEL[character.job_class] || character.job_class },
-                    { label: 'ฝ่าย',    value: FACTION_LABEL[character.faction] || character.faction.toUpperCase() },
+                    {
+                      label: 'Tendencies',
+                      value: (
+                        <span className="flex items-center gap-2">
+                          {TENDENCY_ICON[character.job_class] && (
+                            <img src={TENDENCY_ICON[character.job_class]} alt={character.job_class} className="w-9 h-9 object-contain" />
+                          )}
+                          {JOB_CLASS_LABEL[character.job_class] || character.job_class}
+                        </span>
+                      )
+                    },
+                    {
+                      label: 'Alignments',
+                      value: (
+                        <span className="flex items-center gap-2">
+                          {ALIGNMENT_ICON[character.faction] && (
+                            <img src={ALIGNMENT_ICON[character.faction]} alt={character.faction} className="w-7 h-7 object-contain rounded-sm" />
+                          )}
+                          {ALIGNMENT_LABEL[character.faction] || character.faction.toUpperCase()}
+                        </span>
+                      )
+                    },
                     { label: 'Rank',    value: `${character.rarity}-Rank` },
                     ...(character.release_date
                       ? [{ label: 'วันที่ออก', value: formatDate(character.release_date, { year: 'numeric', month: 'long', day: 'numeric' }) }]
