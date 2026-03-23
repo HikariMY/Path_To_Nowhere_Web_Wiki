@@ -6,8 +6,46 @@ import type { Character } from '../../types'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 import { PageLoader } from '../../components/ui/Spinner'
-import { JOB_CLASS_LABEL } from '../../lib/constants'
+import { JOB_CLASS_LABEL, FACTION_LABEL } from '../../lib/constants'
 import { cn } from '../../lib/utils'
+
+// ── Class SVG icons (simplified game icons) ──────────────────────────────
+const CLASS_ICON: Record<string, JSX.Element> = {
+  fury: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
+      <path d="M5 5l14 14M19 5L5 19" />
+    </svg>
+  ),
+  arcane: (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
+      <path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z M12 14l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3z" />
+    </svg>
+  ),
+  breaker: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
+      <path d="M12 3v14M6 11l6 6 6-6" />
+      <path d="M7 20h10" strokeLinecap="round" />
+    </svg>
+  ),
+  guard: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
+      <path d="M12 3C12 3 5 6 5 12c0 4.5 3.5 8 7 9 3.5-1 7-4.5 7-9 0-6-7-9-7-9z" />
+    </svg>
+  ),
+  inclusion: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
+      <path d="M12 2v8M8 6l4-4 4 4" />
+      <circle cx="12" cy="13" r="3" />
+      <path d="M7 21h10M12 16v5" />
+    </svg>
+  ),
+  reticle: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-full h-full">
+      <path d="M5 12h4M15 12h4M12 5v4M12 15v4" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
+}
 
 const G = (n: string) =>
   `https://raw.githubusercontent.com/NowhereArchive/NowhereImages/main/CroppedSplash/${n}.png`
@@ -178,7 +216,14 @@ const DEMO_CHARACTERS: C[] = [
 ]
 
 const RARITY_COLOR: Record<string, string> = {
-  S: '#FFD700', A: '#C8102E', B: '#00D4FF', C: '#888888',
+  S: '#FFD700', A: '#C084FC', B: '#60A5FA', C: '#6EE7B7',
+}
+
+// NEW badge threshold: within last 60 days
+const isNew = (char: Character) => {
+  if (!char.release_date) return false
+  const d = new Date(char.release_date)
+  return (Date.now() - d.getTime()) < 60 * 24 * 60 * 60 * 1000
 }
 
 export function CharactersPage() {
@@ -213,44 +258,54 @@ export function CharactersPage() {
   if (loading) return <PageLoader />
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-6">
-        <h1 className="font-heading text-3xl font-bold text-ptn-text flex items-center gap-3">
-          <Users size={28} className="text-ptn-cyan" />
-          ฐานข้อมูลตัวละคร
-        </h1>
-        <p className="text-ptn-muted mt-1">ตัวละครทั้งหมด {characters.length} ตัว</p>
-      </div>
+    <div className="mx-auto max-w-7xl px-4 py-6">
+      {/* ── Top bar: search + filters ── */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex-1 min-w-[200px] max-w-sm">
+          <Input
+            placeholder="ค้นหาตัวละคร..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            icon={<Search size={14} />}
+          />
+        </div>
 
-      {/* Filters */}
-      <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Input placeholder="ค้นหาตัวละคร..." value={search}
-          onChange={e => setSearch(e.target.value)} icon={<Search size={14} />} />
-        <Select value={filterClass} onChange={e => setFilterClass(e.target.value)}>
+        <Select value={filterClass} onChange={e => setFilterClass(e.target.value)} className="w-36">
           <option value="">ทุกอาชีพ</option>
           {classes.map(c => <option key={c} value={c}>{JOB_CLASS_LABEL[c] || c}</option>)}
         </Select>
-        <Select value={filterFaction} onChange={e => setFilterFaction(e.target.value)}>
+
+        <Select value={filterFaction} onChange={e => setFilterFaction(e.target.value)} className="w-32">
           <option value="">ทุกฝ่าย</option>
-          {factions.map(f => <option key={f} value={f}>{f.toUpperCase()}</option>)}
+          {factions.map(f => <option key={f} value={f}>{FACTION_LABEL[f] || f.toUpperCase()}</option>)}
         </Select>
       </div>
 
-      {/* Rarity quick filter */}
-      <div className="flex items-center gap-2 mb-6 flex-wrap">
-        <Filter size={14} className="text-ptn-muted" />
-        {['', 'S', 'A', 'B'].map(r => (
-          <button key={r} onClick={() => setFilterRarity(r)}
+      {/* Rarity filter + count */}
+      <div className="flex items-center gap-2 mb-5 flex-wrap">
+        <Filter size={13} className="text-ptn-disabled" />
+        {[
+          { v: '', label: 'ทั้งหมด', color: '#888' },
+          { v: 'S', label: 'S-Rank', color: '#FFD700' },
+          { v: 'A', label: 'A-Rank', color: '#C084FC' },
+          { v: 'B', label: 'B-Rank', color: '#60A5FA' },
+          { v: 'C', label: 'C-Rank', color: '#6EE7B7' },
+        ].map(({ v, label, color }) => (
+          <button
+            key={v}
+            onClick={() => setFilterRarity(v)}
             className={cn(
-              'px-3 py-1 rounded text-xs font-bold border transition-colors',
-              filterRarity === r
-                ? 'border-ptn-red bg-ptn-red/10 text-ptn-red'
-                : 'border-ptn-border text-ptn-muted hover:border-ptn-red/40'
-            )}>
-            {r ? `${r}-Rank` : 'ทั้งหมด'}
+              'px-3 py-1 rounded text-xs font-medium border transition-all',
+              filterRarity === v
+                ? 'text-white'
+                : 'border-ptn-border text-ptn-muted hover:border-ptn-border/80'
+            )}
+            style={filterRarity === v ? { borderColor: color, background: `${color}20`, color } : {}}
+          >
+            {label}
           </button>
         ))}
-        <span className="text-xs text-ptn-disabled ml-2">{filtered.length} ตัว</span>
+        <span className="text-xs text-ptn-disabled ml-1">{filtered.length} ตัว</span>
       </div>
 
       {filtered.length === 0 ? (
@@ -270,63 +325,99 @@ export function CharactersPage() {
 function CharacterCard({ character }: { character: Character }) {
   const color = RARITY_COLOR[character.rarity] || '#888'
   const mbccId = (character.tags as string[])?.[0] || ''
-  const isCN = character.is_limited && character.faction === 'collab'
+  const isCN = character.faction === 'collab'
+  const unreleased = !character.portrait_url
+  const charIsNew = isNew(character)
+  const classIcon = CLASS_ICON[character.job_class]
 
   return (
     <Link to={`/characters/${character.slug}`} className="group block">
-      <div className="relative rounded-lg overflow-hidden aspect-[2/3] bg-ptn-elevated border border-white/5
-        transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-white/20">
-
+      {/* outer wrapper: colored border rarity */}
+      <div
+        className="relative rounded-lg overflow-hidden aspect-[2/3] bg-ptn-elevated
+          transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl"
+        style={{
+          border: `1px solid ${color}35`,
+          boxShadow: `0 0 0 0px ${color}00`,
+        }}
+        onMouseEnter={e => (e.currentTarget.style.border = `1px solid ${color}80`)}
+        onMouseLeave={e => (e.currentTarget.style.border = `1px solid ${color}35`)}
+      >
         {/* Art */}
         {character.portrait_url ? (
-          <img src={character.portrait_url} alt={character.name}
+          <img
+            src={character.portrait_url}
+            alt={character.name}
             className="absolute inset-0 w-full h-full object-cover object-top
               transition-transform duration-500 group-hover:scale-105"
-            loading="lazy" />
+            loading="lazy"
+          />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center"
-            style={{ background: `linear-gradient(180deg,${color}18 0%,#0A0A0F 100%)` }}>
-            <span className="font-heading font-bold text-5xl opacity-20" style={{ color }}>
-              {character.name[0]}
-            </span>
+          <div
+            className="absolute inset-0"
+            style={{ background: `linear-gradient(180deg,${color}12 0%,#0D0D14 100%)` }}
+          />
+        )}
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
+
+        {/* Class icon — center-bottom area */}
+        {classIcon && (
+          <div
+            className="absolute left-1/2 -translate-x-1/2 w-8 h-8 opacity-30 group-hover:opacity-50 transition-opacity"
+            style={{ bottom: '52px', color: 'white' }}
+          >
+            {classIcon}
           </div>
         )}
 
-        {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
         {/* Rarity diamond — top right */}
-        <div className="absolute top-2 right-2 drop-shadow">
-          <svg width="16" height="16" viewBox="0 0 16 16">
-            <polygon points="8,1 15,8 8,15 1,8" fill={color} />
+        <div className="absolute top-2 right-2 drop-shadow-md">
+          <svg width="14" height="14" viewBox="0 0 14 14">
+            <polygon points="7,0.5 13.5,7 7,13.5 0.5,7" fill={color} />
           </svg>
         </div>
 
         {/* Badges — top left */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
           {isCN && (
-            <span className="text-[8px] font-bold bg-ptn-red text-white px-1 py-0.5 rounded tracking-wider leading-none">
-              CN
+            <span className="text-[8px] font-bold bg-ptn-red text-white px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
+              CN Exclusive
+            </span>
+          )}
+          {unreleased && !isCN && (
+            <span className="text-[8px] font-bold bg-black/70 text-ptn-muted border border-ptn-border px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
+              Unreleased
+            </span>
+          )}
+          {charIsNew && !unreleased && !isCN && (
+            <span className="text-[8px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
+              New
             </span>
           )}
           {character.is_limited && !isCN && (
-            <span className="text-[8px] font-bold bg-ptn-gold text-ptn-bg px-1 py-0.5 rounded tracking-wider leading-none">
-              LTD
+            <span className="text-[8px] font-bold border text-ptn-gold border-ptn-gold/40 bg-ptn-gold/10 px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
+              Limited
             </span>
           )}
         </div>
 
         {/* Bottom info */}
-        <div className="absolute bottom-0 left-0 right-0 px-2 pb-2 pt-6">
+        <div className="absolute bottom-0 left-0 right-0 px-2 pb-1.5 pt-8">
           <p className="font-heading font-bold text-white text-sm leading-tight drop-shadow truncate">
             {character.name}
           </p>
-          <p className="text-[10px] mt-0.5 truncate" style={{ color: `${color}aa` }}>
+          <p className="text-[10px] mt-0.5 truncate" style={{ color: `${color}99` }}>
             {mbccId}
           </p>
-          {/* Rarity color bar at bottom */}
-          <div className="mt-1.5 h-[2px] rounded-full w-full" style={{ background: color, opacity: 0.6 }} />
         </div>
+
+        {/* Bottom rarity line */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-[2px]"
+          style={{ background: color, opacity: 0.5 }}
+        />
       </div>
     </Link>
   )
