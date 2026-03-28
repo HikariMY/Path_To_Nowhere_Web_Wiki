@@ -354,45 +354,13 @@ export function AdminCharactersPage() {
             <Select label="Alignments" value={form.faction} onChange={set('faction')}>
               {Object.entries(ALIGNMENT_LABEL).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
             </Select>
-            <div className="space-y-3">
-              <ImageUpload
-                bucket="characters"
-                label="รูปภาพ (Portrait)"
-                currentUrl={form.portrait_url || null}
-                aspectRatio="portrait"
-                onUpload={url => setForm(prev => ({ ...prev, portrait_url: url }))}
-              />
-              {form.portrait_url && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-ptn-muted">ปรับตำแหน่งภาพในการ์ด</p>
-                  {/* Preview */}
-                  <div className="relative w-full h-36 rounded-lg overflow-hidden border border-ptn-border bg-ptn-elevated">
-                    <img
-                      src={form.portrait_url}
-                      alt="preview"
-                      className="absolute inset-0 w-full h-full object-cover"
-                      style={{ objectPosition: `${form.portrait_pos_x}% ${form.portrait_pos_y}%` }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    <span className="absolute bottom-1 right-2 text-xs text-white/50">{form.portrait_pos_x}% {form.portrait_pos_y}%</span>
-                  </div>
-                  {/* X slider */}
-                  <div>
-                    <label className="text-xs text-ptn-muted">ซ้าย / ขวา ({form.portrait_pos_x}%)</label>
-                    <input type="range" min={0} max={100} value={form.portrait_pos_x}
-                      onChange={e => setForm(p => ({ ...p, portrait_pos_x: Number(e.target.value) }))}
-                      className="w-full accent-ptn-cyan" />
-                  </div>
-                  {/* Y slider */}
-                  <div>
-                    <label className="text-xs text-ptn-muted">บน / ล่าง ({form.portrait_pos_y}%)</label>
-                    <input type="range" min={0} max={100} value={form.portrait_pos_y}
-                      onChange={e => setForm(p => ({ ...p, portrait_pos_y: Number(e.target.value) }))}
-                      className="w-full accent-ptn-cyan" />
-                  </div>
-                </div>
-              )}
-            </div>
+            <ImageUpload
+              bucket="characters"
+              label="รูปภาพ (Portrait)"
+              currentUrl={form.portrait_url || null}
+              aspectRatio="portrait"
+              onUpload={url => setForm(prev => ({ ...prev, portrait_url: url }))}
+            />
             <Input label="วันที่ออก" type="date" value={form.release_date} onChange={set('release_date')} />
             <Input label="แท็ก (คั่นด้วยเครื่องหมาย ,)" value={form.tags} onChange={set('tags')} placeholder="ดาเมจ, แนวหน้า" />
             <div className="flex items-end">
@@ -400,6 +368,41 @@ export function AdminCharactersPage() {
                 <input type="checkbox" checked={form.is_limited} onChange={e => setForm(prev => ({...prev, is_limited: e.target.checked}))} className="accent-ptn-gold" />
                 <span className="text-sm text-ptn-text">Limited</span>
               </label>
+            </div>
+          </div>
+          {/* Portrait position sliders */}
+          <div className="rounded-lg border border-ptn-border bg-ptn-elevated/40 p-4 space-y-3">
+            <p className="text-sm font-medium text-ptn-text">ตำแหน่งภาพในการ์ด (Portrait Position)</p>
+            <div className="flex gap-4">
+              {/* Preview */}
+              <div className="relative w-28 h-36 rounded-lg overflow-hidden border border-ptn-border bg-ptn-elevated shrink-0">
+                {form.portrait_url ? (
+                  <img
+                    src={form.portrait_url}
+                    alt="preview"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ objectPosition: `${form.portrait_pos_x}% ${form.portrait_pos_y}%` }}
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-xs text-ptn-disabled text-center px-2">ยังไม่มีรูป</div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              </div>
+              {/* Sliders */}
+              <div className="flex-1 space-y-4 pt-1">
+                <div>
+                  <label className="text-xs text-ptn-muted block mb-1">ซ้าย ↔ ขวา ({form.portrait_pos_x}%)</label>
+                  <input type="range" min={0} max={100} value={form.portrait_pos_x}
+                    onChange={e => setForm(p => ({ ...p, portrait_pos_x: Number(e.target.value) }))}
+                    className="w-full accent-ptn-cyan" />
+                </div>
+                <div>
+                  <label className="text-xs text-ptn-muted block mb-1">บน ↕ ล่าง ({form.portrait_pos_y}%)</label>
+                  <input type="range" min={0} max={100} value={form.portrait_pos_y}
+                    onChange={e => setForm(p => ({ ...p, portrait_pos_y: Number(e.target.value) }))}
+                    className="w-full accent-ptn-cyan" />
+                </div>
+              </div>
             </div>
           </div>
           {/* ── Character Bio Details ── */}
