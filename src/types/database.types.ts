@@ -47,6 +47,7 @@ export interface Database {
           faction: string
           job_class: string
           portrait_url: string | null
+          portrait_pos: string | null
           splash_url: string | null
           overview: string | null
           stats: Json

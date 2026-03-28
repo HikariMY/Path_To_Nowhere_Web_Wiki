@@ -30,7 +30,7 @@ type CharStats = { health: StatPair; attack: StatPair; defense: StatPair; magic_
 
 type CharForm = {
   name: string; rarity: 'S' | 'A' | 'B' | 'C'; faction: string; job_class: string
-  portrait_url: string; is_limited: boolean; release_date: string
+  portrait_url: string; portrait_pos_x: number; portrait_pos_y: number; is_limited: boolean; release_date: string
   tags: string; ability_tags: string[]; trivia: string[]; crimebrand_sets: CrimebrandSet[]
   char_details: CharDetails
   char_stats: CharStats
@@ -76,7 +76,7 @@ const blankMaterials = (): MaterialsData => ({
 
 const defaultForm: CharForm = {
   name: '', rarity: 'A', faction: 'anger', job_class: 'breaker',
-  portrait_url: '', is_limited: false, release_date: '', tags: '',
+  portrait_url: '', portrait_pos_x: 50, portrait_pos_y: 20, is_limited: false, release_date: '', tags: '',
   ability_tags: [], trivia: [], crimebrand_sets: [],
   char_details: blankDetails(),
   char_stats: blankStats(),
@@ -166,6 +166,8 @@ export function AdminCharactersPage() {
       faction: char.faction,
       job_class: char.job_class,
       portrait_url: char.portrait_url || '',
+      portrait_pos_x: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[0]) : 50,
+      portrait_pos_y: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[1]) : 20,
       is_limited: char.is_limited,
       release_date: char.release_date || '',
       tags: (char.tags as string[] || []).join(', '),
@@ -204,6 +206,7 @@ export function AdminCharactersPage() {
       faction: form.faction,
       job_class: form.job_class,
       portrait_url: form.portrait_url.trim() || null,
+      portrait_pos: `${form.portrait_pos_x}% ${form.portrait_pos_y}%`,
       is_limited: form.is_limited,
       release_date: form.release_date || null,
       tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
@@ -351,13 +354,45 @@ export function AdminCharactersPage() {
             <Select label="Alignments" value={form.faction} onChange={set('faction')}>
               {Object.entries(ALIGNMENT_LABEL).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
             </Select>
-            <ImageUpload
-              bucket="characters"
-              label="รูปภาพ (Portrait)"
-              currentUrl={form.portrait_url || null}
-              aspectRatio="portrait"
-              onUpload={url => setForm(prev => ({ ...prev, portrait_url: url }))}
-            />
+            <div className="space-y-3">
+              <ImageUpload
+                bucket="characters"
+                label="รูปภาพ (Portrait)"
+                currentUrl={form.portrait_url || null}
+                aspectRatio="portrait"
+                onUpload={url => setForm(prev => ({ ...prev, portrait_url: url }))}
+              />
+              {form.portrait_url && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-ptn-muted">ปรับตำแหน่งภาพในการ์ด</p>
+                  {/* Preview */}
+                  <div className="relative w-full h-36 rounded-lg overflow-hidden border border-ptn-border bg-ptn-elevated">
+                    <img
+                      src={form.portrait_url}
+                      alt="preview"
+                      className="absolute inset-0 w-full h-full object-cover"
+                      style={{ objectPosition: `${form.portrait_pos_x}% ${form.portrait_pos_y}%` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <span className="absolute bottom-1 right-2 text-xs text-white/50">{form.portrait_pos_x}% {form.portrait_pos_y}%</span>
+                  </div>
+                  {/* X slider */}
+                  <div>
+                    <label className="text-xs text-ptn-muted">ซ้าย / ขวา ({form.portrait_pos_x}%)</label>
+                    <input type="range" min={0} max={100} value={form.portrait_pos_x}
+                      onChange={e => setForm(p => ({ ...p, portrait_pos_x: Number(e.target.value) }))}
+                      className="w-full accent-ptn-cyan" />
+                  </div>
+                  {/* Y slider */}
+                  <div>
+                    <label className="text-xs text-ptn-muted">บน / ล่าง ({form.portrait_pos_y}%)</label>
+                    <input type="range" min={0} max={100} value={form.portrait_pos_y}
+                      onChange={e => setForm(p => ({ ...p, portrait_pos_y: Number(e.target.value) }))}
+                      className="w-full accent-ptn-cyan" />
+                  </div>
+                </div>
+              )}
+            </div>
             <Input label="วันที่ออก" type="date" value={form.release_date} onChange={set('release_date')} />
             <Input label="แท็ก (คั่นด้วยเครื่องหมาย ,)" value={form.tags} onChange={set('tags')} placeholder="ดาเมจ, แนวหน้า" />
             <div className="flex items-end">

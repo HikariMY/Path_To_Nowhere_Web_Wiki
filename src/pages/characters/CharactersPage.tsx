@@ -462,8 +462,8 @@ function CharacterCard({ character }: { character: Character }) {
           <img
             src={character.portrait_url}
             alt={character.name}
-            className="absolute inset-0 w-full h-full object-cover object-top
-              transition-transform duration-500 group-hover:scale-105"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            style={{ objectPosition: character.portrait_pos || '50% 20%' }}
             loading="lazy"
           />
         ) : (
