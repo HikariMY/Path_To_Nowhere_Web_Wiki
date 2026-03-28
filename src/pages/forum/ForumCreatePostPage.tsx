@@ -10,6 +10,7 @@ import { Textarea } from '../../components/ui/Textarea'
 import { Select } from '../../components/ui/Select'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { MultiImageUpload } from '../../components/ui/MultiImageUpload'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/ui/Toast'
 
@@ -23,6 +24,7 @@ export function ForumCreatePostPage() {
   const [categoryId, setCategoryId] = useState('')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [imageUrls, setImageUrls] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -60,16 +62,19 @@ export function ForumCreatePostPage() {
         author_id: user!.id,
         title: title.trim(),
         content: content.trim(),
+        image_urls: imageUrls,
       })
       .select('id, category:forum_categories(slug)')
       .single()
 
     setSubmitting(false)
-    if (error) {
-      toast('เกิดข้อผิดพลาด: ' + error.message, 'error')
+    if (error || !newPost) {
+      toast('เกิดข้อผิดพลาด: ' + (error?.message || 'ไม่ทราบสาเหตุ'), 'error')
     } else {
       toast('ตั้งกระทู้สำเร็จ!', 'success')
-      const slug = (newPost.category as { slug: string })?.slug || categorySlug || 'general'
+      const cat = newPost.category
+      const catSlug = Array.isArray(cat) ? cat[0]?.slug : (cat as any)?.slug
+      const slug = catSlug || categorySlug || 'general'
       navigate(`/forum/${slug}/${newPost.id}`)
     }
   }
@@ -115,6 +120,11 @@ export function ForumCreatePostPage() {
             error={errors.content}
             rows={12}
           />
+
+          <div>
+            <p className="text-sm font-medium text-ptn-text mb-2">รูปภาพประกอบ</p>
+            <MultiImageUpload urls={imageUrls} onChange={setImageUrls} />
+          </div>
 
           <div className="flex gap-3">
             <Button type="submit" loading={submitting} size="lg">

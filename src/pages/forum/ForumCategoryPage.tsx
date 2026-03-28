@@ -41,17 +41,30 @@ export function ForumCategoryPage() {
     if (!category) return
     const fetchPosts = async () => {
       setLoading(true)
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('forum_posts')
-        .select('*, author:profiles(id, username, avatar_url, role)')
+        .select('*')
         .eq('category_id', category.id)
-        .eq('is_deleted', false)
         .order('is_pinned', { ascending: false })
-        .order('last_reply_at', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
 
-      const newPosts = (data || []) as ForumPostWithAuthor[]
+      const filtered = ((data || []) as ForumPostWithAuthor[]).filter(p => p.is_deleted !== true)
+
+      // Fetch authors separately
+      const authorIds = [...new Set(filtered.map(p => p.author_id))]
+      let authorsMap: Record<string, any> = {}
+      if (authorIds.length) {
+        const { data: authorsData } = await supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, role')
+          .in('id', authorIds)
+        authorsMap = Object.fromEntries((authorsData || []).map(a => [a.id, a]))
+      }
+      const newPosts = filtered.map(p => ({
+        ...p,
+        author: authorsMap[p.author_id] || { id: p.author_id, username: 'ไม่ทราบ', avatar_url: null, role: 'user' }
+      }))
       setPosts(prev => page === 0 ? newPosts : [...prev, ...newPosts])
       setHasMore(newPosts.length === PAGE_SIZE)
       setLoading(false)
@@ -102,7 +115,7 @@ export function ForumCategoryPage() {
           <Link key={post.id} to={`/forum/${categorySlug}/${post.id}`}>
             <Card hover className="p-4">
               <div className="flex items-start gap-3">
-                <Avatar src={post.author.avatar_url} username={post.author.username} size="md" className="shrink-0 mt-0.5" />
+                <Avatar src={post.author?.avatar_url} username={post.author?.username ?? '?'} size="md" className="shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     {post.is_pinned && <Pin size={12} className="text-ptn-gold" />}
@@ -115,7 +128,7 @@ export function ForumCategoryPage() {
                     </h3>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-ptn-muted flex-wrap">
-                    <span>{post.author.username}</span>
+                    <span>{post.author?.display_name || post.author?.username || 'ไม่ทราบ'}</span>
                     <span>·</span>
                     <span>{formatRelativeTime(post.created_at)}</span>
                     {post.reply_count > 0 && (

@@ -184,7 +184,7 @@ export function HomePage() {
       </section>
 
       {/* Stats bar */}
-      <section className="border-y border-ptn-border bg-ptn-surface">
+      <section className="border-y border-ptn-border/20 bg-black/5 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 py-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[

@@ -15,6 +15,7 @@ export function SettingsPage() {
   const { profile, user } = useAuth()
   const { toast } = useToast()
 
+  const [displayName, setDisplayName] = useState(profile?.display_name || '')
   const [bio, setBio] = useState(profile?.bio || '')
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '')
   const [savingProfile, setSavingProfile] = useState(false)
@@ -36,7 +37,7 @@ export function SettingsPage() {
     setSavingProfile(true)
     const { error } = await supabase
       .from('profiles')
-      .update({ bio: bio.trim() || null, avatar_url: avatarUrl || null, updated_at: new Date().toISOString() } as never)
+      .update({ display_name: displayName.trim() || null, bio: bio.trim() || null, avatar_url: avatarUrl || null, updated_at: new Date().toISOString() } as never)
       .eq('id', profile.id)
     setSavingProfile(false)
     if (error) toast('เกิดข้อผิดพลาด: ' + error.message, 'error')
@@ -94,6 +95,18 @@ export function SettingsPage() {
             {profile.username}
             <span className="ml-2 text-xs">(เปลี่ยนไม่ได้)</span>
           </div>
+        </div>
+
+        {/* Display Name */}
+        <div className="mb-4">
+          <Input
+            label="ชื่อแสดง (Display Name)"
+            value={displayName}
+            onChange={e => setDisplayName(e.target.value)}
+            placeholder={profile.username}
+            maxLength={32}
+          />
+          <p className="text-xs text-ptn-muted mt-1">ชื่อที่แสดงในกระทู้และความคิดเห็น ถ้าไม่กรอกจะใช้ชื่อผู้ใช้แทน</p>
         </div>
 
         {/* Email (readonly) */}

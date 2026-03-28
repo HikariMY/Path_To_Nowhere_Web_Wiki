@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ToastProvider } from './components/ui/Toast'
+import { ThemeProvider } from './contexts/ThemeContext'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { Layout } from './components/layout/Layout'
 import { AdminLayout } from './components/layout/AdminLayout'
@@ -20,6 +21,11 @@ import { ForumPostPage } from './pages/forum/ForumPostPage'
 import { ForumCreatePostPage } from './pages/forum/ForumCreatePostPage'
 import { ProfilePage } from './pages/profile/ProfilePage'
 import { SettingsPage } from './pages/profile/SettingsPage'
+import { GameInfoPage } from './pages/GameInfoPage'
+import { CrimebrandsPage } from './pages/crimebrands/CrimebrandsPage'
+import { CrimebrandDetailPage } from './pages/crimebrands/CrimebrandDetailPage'
+import { AdminCrimebrandsPage } from './pages/admin/AdminCrimebrandsPage'
+import { AdminCrimebrandBuildsPage } from './pages/admin/AdminCrimebrandBuildsPage'
 
 // Admin Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
@@ -30,10 +36,13 @@ import { AdminForumPage } from './pages/admin/AdminForumPage'
 import { AdminLogsPage } from './pages/admin/AdminLogsPage'
 import { AdminAnnouncementsPage } from './pages/admin/AdminAnnouncementsPage'
 import { AdminSkillsPage } from './pages/admin/AdminSkillsPage'
+import { AdminShacklesPage } from './pages/admin/AdminShacklesPage'
+import { AdminGameInfoPage } from './pages/admin/AdminGameInfoPage'
 
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
           <Routes>
@@ -46,6 +55,13 @@ export default function App() {
               {/* Characters */}
               <Route path="characters" element={<CharactersPage />} />
               <Route path="characters/:slug" element={<CharacterDetailPage />} />
+
+              {/* Game Info */}
+              <Route path="game-info" element={<GameInfoPage />} />
+
+              {/* Crimebrands */}
+              <Route path="crimebrands" element={<CrimebrandsPage />} />
+              <Route path="crimebrands/:slug" element={<CrimebrandDetailPage />} />
 
               {/* Tier Lists */}
               <Route path="tier-lists" element={<TierListsPage />} />
@@ -98,11 +114,16 @@ export default function App() {
               <Route path="announcements" element={<AdminAnnouncementsPage />} />
               <Route path="forum" element={<AdminForumPage />} />
               <Route path="skills" element={<AdminSkillsPage />} />
+              <Route path="shackles" element={<AdminShacklesPage />} />
+              <Route path="game-info" element={<AdminGameInfoPage />} />
+              <Route path="crimebrands" element={<AdminCrimebrandsPage />} />
+              <Route path="crimebrand-builds" element={<AdminCrimebrandBuildsPage />} />
               <Route path="logs" element={<AdminLogsPage />} />
             </Route>
           </Routes>
         </ToastProvider>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

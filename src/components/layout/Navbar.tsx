@@ -1,20 +1,24 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { Menu, X, Shield, LogOut, User, Settings, ChevronDown } from 'lucide-react'
+import { Menu, X, Shield, LogOut, User, Settings, ChevronDown, Palette } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { useTheme } from '../../contexts/ThemeContext'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/utils'
 
 const navLinks = [
-  { to: '/',           label: 'หน้าแรก',    exact: true },
-  { to: '/characters', label: 'ตัวละคร',    exact: false },
-  { to: '/tier-lists', label: 'เทียร์ลิสต์', exact: false },
-  { to: '/forum',      label: 'ฟอรัม',       exact: false },
+  { to: '/',            label: 'หน้าแรก',    exact: true },
+  { to: '/characters',  label: 'ตัวละคร',    exact: false },
+  { to: '/crimebrands', label: 'Crimebrands', exact: false },
+  { to: '/game-info',   label: 'ข้อมูลเกม',  exact: false },
+  { to: '/tier-lists',  label: 'เทียร์ลิสต์', exact: false },
+  { to: '/forum',       label: 'ฟอรัม',       exact: false },
 ]
 
 export function Navbar() {
   const { user, profile, isAdmin, signOut } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -30,12 +34,10 @@ export function Navbar() {
       <div className="mx-auto max-w-7xl px-4">
         <div className="flex h-14 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-ptn-red">
-              <Shield size={16} className="text-white" />
-            </div>
-            <span className="font-heading text-lg font-bold text-ptn-text tracking-wide">
-              PTN <span className="text-ptn-red">WIKI</span>
+          <Link to="/" className="flex items-center gap-2.5">
+            <img src="/web-logo.png" alt="Project Duck" className="h-9 w-auto object-contain" />
+            <span className="font-heading text-xl font-bold tracking-wide duck-logo-text">
+              PROJECT DUCK
             </span>
           </Link>
 
@@ -68,7 +70,7 @@ export function Navbar() {
                 >
                   <Avatar src={profile.avatar_url} username={profile.username} size="sm" />
                   <span className="hidden sm:block text-sm text-ptn-text max-w-[120px] truncate">
-                    {profile.username}
+                    {profile.display_name || profile.username}
                   </span>
                   <ChevronDown size={14} className="text-ptn-muted hidden sm:block" />
                 </button>
@@ -78,7 +80,7 @@ export function Navbar() {
                     <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
                     <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-ptn-border bg-ptn-surface shadow-ptn-card z-20">
                       <div className="p-3 border-b border-ptn-border">
-                        <p className="text-sm font-medium text-ptn-text truncate">{profile.username}</p>
+                        <p className="text-sm font-medium text-ptn-text truncate">{profile.display_name || profile.username}</p>
                         <p className="text-xs text-ptn-muted capitalize">{profile.role}</p>
                       </div>
                       <div className="p-1">
@@ -126,6 +128,19 @@ export function Navbar() {
                 </Button>
               </div>
             )}
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              title={theme === 'duck' ? 'เปลี่ยนเป็นธีมเดิม' : 'เปลี่ยนเป็นธีม Duck'}
+              className="p-2 rounded text-ptn-muted hover:text-ptn-text hover:bg-ptn-elevated transition-colors"
+            >
+              {theme === 'duck' ? (
+                <span className="text-sm">🌙</span>
+              ) : (
+                <span className="text-sm">🦆</span>
+              )}
+            </button>
 
             {/* Mobile menu toggle */}
             <button

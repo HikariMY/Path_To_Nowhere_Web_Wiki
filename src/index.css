@@ -19,13 +19,68 @@ body {
   color: #E8E8F0;
   font-family: 'Inter', sans-serif;
   min-height: 100vh;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* Scrollbar styling */
+/* ── Duck Theme ────────────────────────────────────────────── */
+html.theme-duck body {
+  background-color: #1a0a2e;
+  color: #f0e8ff;
+}
+
+/* Override ptn-* colors via CSS variables in duck theme */
+html.theme-duck .bg-ptn-bg       { background-color: #1a0a2e !important; }
+html.theme-duck .bg-ptn-surface  { background-color: #2a1040 !important; }
+html.theme-duck .bg-ptn-elevated { background-color: #341550 !important; }
+html.theme-duck .border-ptn-border { border-color: #7c3aed55 !important; }
+html.theme-duck .text-ptn-text   { color: #f0e8ff !important; }
+html.theme-duck .text-ptn-muted  { color: #c4a8e8 !important; }
+html.theme-duck .text-ptn-disabled { color: #7c5aa8 !important; }
+html.theme-duck .text-ptn-red    { color: #f472b6 !important; }
+html.theme-duck .bg-ptn-red      { background-color: #9333ea !important; }
+html.theme-duck .border-ptn-red  { border-color: #9333ea !important; }
+
+/* Duck theme scrollbar */
+html.theme-duck ::-webkit-scrollbar-track { background: #2a1040; }
+html.theme-duck ::-webkit-scrollbar-thumb { background: #7c3aed; }
+html.theme-duck ::-webkit-scrollbar-thumb:hover { background: #f472b6; }
+
+/* Duck theme navbar/footer bg */
+html.theme-duck header,
+html.theme-duck footer,
+html.theme-duck aside {
+  background-color: #2a1040 !important;
+  border-color: #7c3aed44 !important;
+}
+
+/* Duck theme cards */
+html.theme-duck .bg-ptn-surface,
+html.theme-duck [class*="bg-ptn-surface"] {
+  background-color: #2a1040 !important;
+}
+
+/* Duck theme accent glow */
+html.theme-duck .text-ptn-cyan { color: #f472b6 !important; }
+
+/* Duck logo text gradient */
+html.theme-duck .duck-logo-text {
+  background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #c77dff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(199, 125, 255, 0.6));
+}
+
+/* Default logo text */
+.duck-logo-text {
+  color: inherit;
+}
+
+/* ── Scrollbar styling ─────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -41,7 +96,7 @@ body {
   background: #C8102E;
 }
 
-/* Markdown content styles */
+/* ── Markdown content styles ───────────────────────────────── */
 .prose-ptn h1, .prose-ptn h2, .prose-ptn h3 {
   font-family: 'Rajdhani', sans-serif;
   color: #E8E8F0;

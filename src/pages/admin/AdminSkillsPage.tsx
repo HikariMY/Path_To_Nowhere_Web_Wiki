@@ -32,6 +32,24 @@ type SkillForm = {
 
 const DEFAULT_RANGE: SkillRange = { rows: 3, cols: 3, cells: Array(9).fill(0) }
 
+type ExclusiveForm = {
+  name: string
+  image_url: string
+  description: string
+  flavor_text: string
+  hasRange: boolean
+  range: SkillRange
+}
+
+const blankExclusive = (): ExclusiveForm => ({
+  name: '',
+  image_url: '',
+  description: '',
+  flavor_text: '',
+  hasRange: false,
+  range: { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
+})
+
 const newId = () => `skill_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
 
 const blankForm = (): SkillForm => ({
@@ -51,6 +69,7 @@ const GRID_PRESETS = [
   { label: '3×3', rows: 3, cols: 3 },
   { label: '3×4', rows: 3, cols: 4 },
   { label: '3×5', rows: 3, cols: 5 },
+  { label: '5×5', rows: 5, cols: 5 },
 ]
 
 // ── range grid editor ────────────────────────────────────────────────────────
@@ -88,7 +107,7 @@ function RangeGridEditor({ range, onChange }: {
         ))}
       </div>
       <div
-        className="inline-grid gap-0.5 p-2 bg-black/50 rounded border border-ptn-border"
+        className="inline-grid gap-[3px] p-2 bg-black/50 rounded border border-ptn-border"
         style={{ gridTemplateColumns: `repeat(${range.cols}, 2rem)` }}
       >
         {range.cells.map((cell, i) => (
@@ -97,12 +116,12 @@ function RangeGridEditor({ range, onChange }: {
             type="button"
             onClick={() => toggle(i)}
             title={cell === 0 ? 'ว่าง → คลิกเพื่อเปิด' : cell === 1 ? 'ช่วงโจมตี → คลิกเพื่อตั้งเป็นตำแหน่งตัวละคร' : 'ตำแหน่งตัวละคร → คลิกเพื่อล้าง'}
-            className={`w-8 h-8 border flex items-center justify-center transition-colors ${
+            className={`w-8 h-8 border rounded-sm flex items-center justify-center transition-colors ${
               cell === 2
                 ? 'bg-red-700 border-red-500'
                 : cell === 1
                   ? 'bg-zinc-600 border-zinc-400'
-                  : 'bg-zinc-900/60 border-zinc-700 opacity-60'
+                  : 'bg-zinc-900/60 border-zinc-700/70'
             }`}
           >
             {cell === 2 && <div className="w-3 h-3 rounded-full bg-red-300" />}
@@ -132,13 +151,15 @@ export function AdminSkillsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<SkillForm>(blankForm())
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [exclusiveForm, setExclusiveForm] = useState<ExclusiveForm>(blankExclusive())
+  const [savingExclusive, setSavingExclusive] = useState(false)
 
   useEffect(() => { fetchChars() }, [])
 
   const fetchChars = async () => {
     const { data } = await supabase
       .from('characters')
-      .select('id, name, slug, rarity, faction, job_class, portrait_url, skills')
+      .select('id, name, slug, rarity, faction, job_class, portrait_url, skills, exclusive_crimebrand')
       .order('rarity').order('name')
     setCharacters(data || [])
     setLoadingChars(false)
@@ -147,6 +168,15 @@ export function AdminSkillsPage() {
   const selectCharacter = (char: Character) => {
     setSelectedChar(char)
     setSkills(Array.isArray(char.skills) ? (char.skills as CharacterSkill[]) : [])
+    const ec = char.exclusive_crimebrand as ExclusiveForm | null
+    setExclusiveForm(ec ? {
+      name: ec.name || '',
+      image_url: ec.image_url || '',
+      description: ec.description || '',
+      flavor_text: ec.flavor_text || '',
+      hasRange: !!ec.hasRange,
+      range: ec.range ? { ...ec.range, cells: [...ec.range.cells] } : { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
+    } : blankExclusive())
   }
 
   const persistSkills = async (updated: CharacterSkill[]) => {
@@ -168,6 +198,34 @@ export function AdminSkillsPage() {
       target_id: selectedChar.id,
     } as never)
     return true
+  }
+
+  const persistExclusive = async () => {
+    if (!selectedChar) return
+    setSavingExclusive(true)
+    const payload = {
+      name: exclusiveForm.name.trim(),
+      image_url: exclusiveForm.image_url.trim(),
+      description: exclusiveForm.description.trim(),
+      flavor_text: exclusiveForm.flavor_text.trim(),
+      hasRange: exclusiveForm.hasRange,
+      range: exclusiveForm.hasRange ? exclusiveForm.range : null,
+    }
+    const { error } = await supabase
+      .from('characters')
+      .update({ exclusive_crimebrand: payload, updated_at: new Date().toISOString() } as never)
+      .eq('id', selectedChar.id)
+    setSavingExclusive(false)
+    if (error) { toast('เกิดข้อผิดพลาด: ' + error.message, 'error'); return }
+    toast('บันทึก Exclusive Crimebrand สำเร็จ', 'success')
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, exclusive_crimebrand: payload } : c))
+    setSelectedChar(prev => prev ? { ...prev, exclusive_crimebrand: payload } : prev)
+    await supabase.from('admin_logs').insert({
+      admin_id: profile!.id,
+      action: `แก้ไข Exclusive Crimebrand: ${selectedChar.name}`,
+      target_table: 'characters',
+      target_id: selectedChar.id,
+    } as never)
   }
 
   const openCreate = () => {
@@ -360,6 +418,65 @@ export function AdminSkillsPage() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </Card>
+            {/* ── Exclusive Crimebrand section ─────────────────────── */}
+            <Card className="overflow-hidden mt-4">
+              <div className="px-4 py-3 border-b border-ptn-border bg-amber-900/10">
+                <h3 className="font-heading text-sm font-bold text-amber-400/80 uppercase tracking-widest">Exclusive Crimebrand</h3>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Input
+                    label="ชื่อ Exclusive Crimebrand"
+                    value={exclusiveForm.name}
+                    onChange={e => setExclusiveForm(p => ({ ...p, name: e.target.value }))}
+                    placeholder="เช่น Regicide"
+                  />
+                  <div className="sm:col-span-2">
+                    <ImageUpload
+                      bucket="characters"
+                      label="รูป Exclusive Crimebrand"
+                      currentUrl={exclusiveForm.image_url || null}
+                      aspectRatio="square"
+                      onUpload={url => setExclusiveForm(p => ({ ...p, image_url: url }))}
+                    />
+                  </div>
+                </div>
+                <Textarea
+                  label="คำอธิบาย"
+                  value={exclusiveForm.description}
+                  onChange={e => setExclusiveForm(p => ({ ...p, description: e.target.value }))}
+                  rows={3}
+                  placeholder="อธิบายผลของ Exclusive Crimebrand..."
+                />
+                <Textarea
+                  label="Flavor Text (แสดงเป็นตัวเอียง)"
+                  value={exclusiveForm.flavor_text}
+                  onChange={e => setExclusiveForm(p => ({ ...p, flavor_text: e.target.value }))}
+                  rows={2}
+                  placeholder="ข้อความบรรยายบรรยากาศ..."
+                />
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer mb-3">
+                    <input
+                      type="checkbox"
+                      checked={exclusiveForm.hasRange}
+                      onChange={e => setExclusiveForm(p => ({ ...p, hasRange: e.target.checked }))}
+                      className="accent-ptn-cyan"
+                    />
+                    <span className="text-sm font-medium text-ptn-text">มี Range Grid</span>
+                  </label>
+                  {exclusiveForm.hasRange && (
+                    <RangeGridEditor
+                      range={exclusiveForm.range}
+                      onChange={range => setExclusiveForm(p => ({ ...p, range }))}
+                    />
+                  )}
+                </div>
+                <Button onClick={persistExclusive} loading={savingExclusive} size="sm">
+                  บันทึก Exclusive Crimebrand
+                </Button>
               </div>
             </Card>
           </>

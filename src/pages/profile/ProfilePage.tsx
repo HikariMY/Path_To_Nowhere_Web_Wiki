@@ -52,7 +52,7 @@ export function ProfilePage() {
           <Avatar src={profile.avatar_url} username={profile.username} size="xl" />
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1 flex-wrap">
-              <h1 className="font-heading text-2xl font-bold text-ptn-text">{profile.username}</h1>
+              <h1 className="font-heading text-2xl font-bold text-ptn-text">{profile.display_name || profile.username}</h1>
               <Badge variant="role" value={profile.role} />
             </div>
             {profile.bio && <p className="text-ptn-muted text-sm mb-3">{profile.bio}</p>}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Filter, Users } from 'lucide-react'
+import { Search, Filter, Users, ChevronDown, SlidersHorizontal } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Character } from '../../types'
 import { Input } from '../../components/ui/Input'
@@ -8,6 +8,7 @@ import { Select } from '../../components/ui/Select'
 import { PageLoader } from '../../components/ui/Spinner'
 import { JOB_CLASS_LABEL, ALIGNMENT_LABEL, ALIGNMENT_ICON } from '../../lib/constants'
 import { cn } from '../../lib/utils'
+import { ABILITY_TAG_GROUPS } from '../../lib/abilityTags'
 
 // ── Tendency icons from /TenIcon/ ────────────────────────────────────────
 const TENDENCY_ICON_PATH: Record<string, string> = {
@@ -264,6 +265,14 @@ export function CharactersPage() {
   const [filterRarity, setFilterRarity] = useState('')
   const [filterClass, setFilterClass] = useState('')
   const [filterFaction, setFilterFaction] = useState('')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [showTagFilter, setShowTagFilter] = useState(false)
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    )
+  }
 
   useEffect(() => {
     supabase.from('characters').select('*')
@@ -289,6 +298,10 @@ export function CharactersPage() {
     if (filterRarity && c.rarity !== filterRarity) return false
     if (filterClass && c.job_class !== filterClass) return false
     if (filterFaction && c.faction !== filterFaction) return false
+    if (selectedTags.length > 0) {
+      const charTags = (c.ability_tags as string[] | null) || []
+      if (!selectedTags.some(t => charTags.includes(t))) return false
+    }
     return true
   })
 
@@ -348,6 +361,58 @@ export function CharactersPage() {
         <span className="text-xs text-ptn-disabled ml-1">{filtered.length} ตัว</span>
       </div>
 
+      {/* ── Ability Tags filter ── */}
+      <div className="mb-5">
+        <button
+          onClick={() => setShowTagFilter(v => !v)}
+          className="flex items-center gap-2 text-sm text-ptn-muted hover:text-ptn-text transition-colors"
+        >
+          <SlidersHorizontal size={13} />
+          ตัวกรองความสามารถ
+          {selectedTags.length > 0 && (
+            <span className="text-xs text-ptn-cyan font-medium">({selectedTags.length})</span>
+          )}
+          <ChevronDown size={13} className={`transition-transform ${showTagFilter ? 'rotate-180' : ''}`} />
+        </button>
+
+        {showTagFilter && (
+          <div className="mt-3 p-4 bg-ptn-elevated rounded-lg border border-ptn-border space-y-4">
+            {ABILITY_TAG_GROUPS.map(group => (
+              <div key={group.label}>
+                <p className="text-xs font-semibold mb-2" style={{ color: group.text }}>{group.label}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.tags.map(tag => {
+                    const active = selectedTags.includes(tag)
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => toggleTag(tag)}
+                        style={{
+                          background: active ? group.bg : 'transparent',
+                          borderColor: active ? group.border : '#2a2a3a',
+                          color: active ? group.text : '#555',
+                        }}
+                        className="text-xs px-2.5 py-1 rounded border transition-all hover:opacity-90"
+                      >
+                        {tag}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+            {selectedTags.length > 0 && (
+              <button
+                onClick={() => setSelectedTags([])}
+                className="text-xs text-ptn-red hover:underline"
+              >
+                ล้างตัวกรอง
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {filtered.length === 0 ? (
         <div className="text-center py-20 text-ptn-muted">
           <Users size={48} className="mx-auto mb-4 opacity-30" />
@@ -369,19 +434,28 @@ function CharacterCard({ character }: { character: Character }) {
   const unreleased = !character.portrait_url
   const charIsNew = isNew(character)
   const tendencyIcon = TENDENCY_ICON_PATH[character.job_class]
+  const hasCoreDMG = ((character.ability_tags as string[] | null) || []).includes('Core DMG')
+  const isLimited = character.is_limited && !isCN
+
+  const borderDefault = isLimited ? '2px solid #C8860A' : `1px solid ${color}35`
+  const borderHover   = isLimited ? '2px solid #F5A623' : `1px solid ${color}80`
+  const shadowDefault = isLimited ? '0 0 10px 2px rgba(200,134,10,0.45), 0 0 0 1px rgba(200,134,10,0.15)' : 'none'
+  const shadowHover   = isLimited ? '0 0 18px 5px rgba(245,166,35,0.6), 0 0 0 1px rgba(245,166,35,0.25)' : 'none'
 
   return (
     <Link to={`/characters/${character.slug}`} className="group block">
-      {/* outer wrapper: colored border rarity */}
       <div
         className="relative rounded-lg overflow-hidden aspect-[2/3] bg-ptn-elevated
-          transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl"
-        style={{
-          border: `1px solid ${color}35`,
-          boxShadow: `0 0 0 0px ${color}00`,
+          transition-all duration-300 hover:-translate-y-0.5"
+        style={{ border: borderDefault, boxShadow: shadowDefault }}
+        onMouseEnter={e => {
+          e.currentTarget.style.border = borderHover
+          e.currentTarget.style.boxShadow = shadowHover
         }}
-        onMouseEnter={e => (e.currentTarget.style.border = `1px solid ${color}80`)}
-        onMouseLeave={e => (e.currentTarget.style.border = `1px solid ${color}35`)}
+        onMouseLeave={e => {
+          e.currentTarget.style.border = borderDefault
+          e.currentTarget.style.boxShadow = shadowDefault
+        }}
       >
         {/* Art */}
         {character.portrait_url ? (
@@ -412,12 +486,18 @@ function CharacterCard({ character }: { character: Character }) {
           </div>
         )}
 
-        {/* Rarity diamond — top right */}
-        <div className="absolute top-2 right-2 drop-shadow-md">
-          <svg width="14" height="14" viewBox="0 0 14 14">
-            <polygon points="7,0.5 13.5,7 7,13.5 0.5,7" fill={color} />
-          </svg>
-        </div>
+        {/* Core DMG indicator — top right */}
+        {hasCoreDMG && (
+          <div className="absolute top-2 right-2">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{
+                background: 'radial-gradient(circle, #FFD700 0%, #F97316 70%)',
+                boxShadow: '0 0 7px 3px rgba(251,146,60,0.75)',
+              }}
+            />
+          </div>
+        )}
 
         {/* Badges — top left */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">

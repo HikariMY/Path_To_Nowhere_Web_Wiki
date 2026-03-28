@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useToast } from './Toast'
 
 interface ImageUploadProps {
-  bucket: 'avatars' | 'characters' | 'events'
+  bucket: 'avatars' | 'characters' | 'events' | 'forum'
   currentUrl?: string | null
   onUpload: (url: string) => void
   label?: string

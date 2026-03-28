@@ -31,11 +31,24 @@ export function ForumPage() {
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase
+      const { data: cats } = await supabase
         .from('forum_categories')
         .select('*')
         .order('sort_order')
-      setCategories(data && data.length > 0 ? data : DEMO_CATEGORIES)
+
+      if (!cats?.length) { setCategories(DEMO_CATEGORIES); setLoading(false); return }
+
+      // Count actual posts per category
+      const { data: counts } = await supabase
+        .from('forum_posts')
+        .select('category_id')
+
+      const countMap: Record<string, number> = {}
+      for (const row of counts || []) {
+        countMap[row.category_id] = (countMap[row.category_id] || 0) + 1
+      }
+
+      setCategories(cats.map(c => ({ ...c, post_count: countMap[c.id] || 0 })))
       setLoading(false)
     }
     fetch()

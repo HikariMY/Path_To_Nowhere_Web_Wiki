@@ -12,16 +12,16 @@ export type AdminLog = Database['public']['Tables']['admin_logs']['Row']
 
 // Extended types with joins
 export type ForumPostWithAuthor = ForumPost & {
-  author: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'role'>
+  author: Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'role'>
   category?: Pick<ForumCategory, 'id' | 'name' | 'slug' | 'color'>
 }
 
 export type ForumReplyWithAuthor = ForumReply & {
-  author: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'role'>
+  author: Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'role'>
 }
 
 export type TierListWithAuthor = TierList & {
-  author: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'role'>
+  author: Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'role'>
   user_voted?: boolean
 }
 
@@ -61,6 +61,8 @@ export interface ShackleBreak {
   cost: number
   bonus: string
   bonus_th: string
+  name?: string
+  icon_url?: string
 }
 
 // Tier list tiers schema

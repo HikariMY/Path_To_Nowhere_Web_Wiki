@@ -6,12 +6,10 @@ export function Footer() {
     <footer className="border-t border-ptn-border bg-ptn-surface mt-auto">
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-ptn-red">
-              <Shield size={12} className="text-white" />
-            </div>
-            <span className="font-heading font-bold text-ptn-text">
-              PTN <span className="text-ptn-red">WIKI TH</span>
+          <div className="flex items-center gap-2.5">
+            <img src="/web-logo.png" alt="Project Duck" className="h-8 w-auto object-contain" />
+            <span className="font-heading text-lg font-bold tracking-wide duck-logo-text">
+              PROJECT DUCK
             </span>
           </div>
 
@@ -23,7 +21,7 @@ export function Footer() {
           </div>
 
           <p className="text-xs text-ptn-disabled text-center">
-            © 2025 PTN Wiki TH — แฟนเมดเว็บไซต์ ไม่เกี่ยวข้องกับ Ik4rUs / Kuro Games
+            © 2025 Project Duck — Community Website ไม่เกี่ยวข้องกับ AISNO
           </p>
         </div>
       </div>

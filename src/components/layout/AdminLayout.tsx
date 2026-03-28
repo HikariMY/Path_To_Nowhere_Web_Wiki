@@ -1,7 +1,7 @@
 import { NavLink, Outlet, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Sword, Calendar, MessageSquare,
-  FileText, Shield, ChevronRight, Megaphone, Zap,
+  FileText, Shield, ChevronRight, Megaphone, Zap, Unlink, BookOpen, Gem, Layers,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -10,6 +10,10 @@ const adminNav = [
   { to: '/admin/users',         label: 'จัดการสมาชิก',    icon: Users,           exact: false },
   { to: '/admin/characters',    label: 'จัดการตัวละคร',   icon: Sword,           exact: false },
   { to: '/admin/skills',        label: 'จัดการสกิล',      icon: Zap,             exact: false },
+  { to: '/admin/shackles',      label: 'จัดการ Shackles',  icon: Unlink,          exact: false },
+  { to: '/admin/crimebrands',        label: 'จัดการ Crimebrands',       icon: Gem,        exact: false },
+  { to: '/admin/crimebrand-builds',  label: 'Crimebrand Builds',         icon: Layers,     exact: false },
+  { to: '/admin/game-info',     label: 'ข้อมูลเกม',          icon: BookOpen,        exact: false },
   { to: '/admin/events',        label: 'จัดการอีเวนต์',   icon: Calendar,        exact: false },
   { to: '/admin/announcements', label: 'ข่าวสาร/ประกาศ',  icon: Megaphone,       exact: false },
   { to: '/admin/forum',         label: 'จัดการฟอรัม',     icon: MessageSquare,   exact: false },
@@ -22,9 +26,7 @@ export function AdminLayout() {
       {/* Sidebar */}
       <aside className="hidden md:flex flex-col w-56 border-r border-ptn-border bg-ptn-surface shrink-0">
         <div className="flex items-center gap-2 p-4 border-b border-ptn-border">
-          <div className="flex h-7 w-7 items-center justify-center rounded bg-ptn-red">
-            <Shield size={14} className="text-white" />
-          </div>
+          <img src="/web-logo.png" alt="Project Duck" className="h-6 w-auto object-contain" />
           <span className="font-heading font-bold text-ptn-text text-sm">Admin Panel</span>
         </div>
         <nav className="flex-1 p-3 flex flex-col gap-1">

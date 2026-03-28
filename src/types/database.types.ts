@@ -8,6 +8,7 @@ export interface Database {
         Row: {
           id: string
           username: string
+          display_name: string | null
           avatar_url: string | null
           role: 'user' | 'moderator' | 'admin'
           bio: string | null
@@ -18,6 +19,7 @@ export interface Database {
         Insert: {
           id: string
           username: string
+          display_name?: string | null
           avatar_url?: string | null
           role?: 'user' | 'moderator' | 'admin'
           bio?: string | null
@@ -28,6 +30,7 @@ export interface Database {
         Update: {
           id?: string
           username?: string
+          display_name?: string | null
           avatar_url?: string | null
           role?: 'user' | 'moderator' | 'admin'
           bio?: string | null
@@ -50,6 +53,13 @@ export interface Database {
           skills: Json
           shackles: Json
           tags: string[] | null
+          ability_tags: string[] | null
+          trivia: Json
+          crimebrand_sets: Json
+          exclusive_crimebrand: Json | null
+          char_details: Json | null
+          overview_cards: Json | null
+          materials: Json | null
           is_limited: boolean
           release_date: string | null
           created_at: string

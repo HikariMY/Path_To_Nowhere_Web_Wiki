@@ -1,14 +1,16 @@
 // @ts-nocheck
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ChevronLeft, Star, Shield, Heart, Sword, Zap, Wind } from 'lucide-react'
+import { ChevronLeft, Star, Zap, Heart, Sword, Shield, ShieldCheck, Layers } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import type { Character, CharacterStats, CharacterSkill, ShackleBreak } from '../../types'
+import type { Character, CharacterSkill, ShackleBreak } from '../../types'
 import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { PageLoader } from '../../components/ui/Spinner'
 import { RARITY_COLORS, JOB_CLASS_LABEL, ALIGNMENT_LABEL, ALIGNMENT_ICON, TENDENCY_ICON } from '../../lib/constants'
 import { formatDate } from '../../lib/utils'
+import { ABILITY_TAG_GROUPS, TAG_GROUP_MAP, TAG_DESCRIPTIONS } from '../../lib/abilityTags'
+import { Modal } from '../../components/ui/Modal'
 
 // ---- Tabs ----------------------------------------------------------------
 
@@ -19,26 +21,89 @@ const TABS = [
   { id: 'story',    label: 'เรื่องราว' },
 ]
 
-// ---- Stat rows -----------------------------------------------------------
-
-const STAT_ROWS = [
-  { key: 'hp',  label: 'HP',          icon: Heart,  color: '#10B981' },
-  { key: 'atk', label: 'Attack',      icon: Sword,  color: '#C8102E' },
-  { key: 'def', label: 'Defense',     icon: Shield, color: '#60A5FA' },
-  { key: 'res', label: 'Magic Res.',  icon: Shield, color: '#C084FC' },
-  { key: 'spd', label: 'Atk. Speed', icon: Wind,   color: '#F59E0B' },
-]
-
 // ---- Shackle icon --------------------------------------------------------
 
-function ShackleIcon({ stage, color }: { stage: number; color: string }) {
+const SHACKLE_COLORS = [
+  '#64748b', // S1 slate
+  '#22c55e', // S2 green
+  '#3b82f6', // S3 blue
+  '#a855f7', // S4 purple
+  '#f59e0b', // S5 amber
+  '#ef4444', // S6 red
+]
+
+function ShackleIcon({ stage, iconUrl }: { stage: number; iconUrl?: string }) {
+  const color = SHACKLE_COLORS[(stage - 1) % SHACKLE_COLORS.length]
+  if (iconUrl) {
+    return (
+      <img src={iconUrl} alt={`S${stage}`} className="shrink-0 w-10 h-10 rounded object-contain border border-ptn-border" />
+    )
+  }
   return (
     <div
-      className="shrink-0 w-9 h-9 rounded-full border-2 flex items-center justify-center font-heading font-bold text-sm"
+      className="shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center font-heading font-bold text-sm"
       style={{ borderColor: color, color }}
     >
       S{stage}
     </div>
+  )
+}
+
+// ---- Tags info modal -------------------------------------------------------
+
+function TagsInfoModal({ open, onClose, tags }: { open: boolean; onClose: () => void; tags: string[] }) {
+  const [dbRows, setDbRows] = React.useState<Array<{ key: string; data: { desc?: string } }>>([])
+
+  React.useEffect(() => {
+    if (!open) return
+    supabase
+      .from('game_info')
+      .select('key,data')
+      .eq('category', 'tag')
+      .then(({ data }) => setDbRows(data || []))
+  }, [open])
+
+  function getDesc(tag: string) {
+    const row = dbRows.find(r => r.key === tag)
+    return row?.data?.desc ?? TAG_DESCRIPTIONS[tag] ?? '—'
+  }
+
+  const grouped = ABILITY_TAG_GROUPS
+    .map(group => ({
+      group,
+      items: tags.filter(t => group.tags.includes(t)),
+    }))
+    .filter(g => g.items.length > 0)
+
+  return (
+    <Modal open={open} onClose={onClose} title="Ability Tags" size="md">
+      <div className="space-y-5">
+        {grouped.map(({ group, items }) => (
+          <div key={group.label}>
+            <p className="text-xs font-bold uppercase tracking-widest mb-2.5" style={{ color: group.text }}>
+              {group.label}
+            </p>
+            <div className="space-y-3">
+              {items.map(tag => (
+                <div key={tag}>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span
+                      className="text-xs px-2 py-0.5 rounded border font-mono font-semibold"
+                      style={{ background: group.bg, borderColor: group.border, color: group.text }}
+                    >
+                      {tag}
+                    </span>
+                  </div>
+                  <p className="text-sm text-ptn-muted leading-relaxed pl-0.5">
+                    {getDesc(tag)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Modal>
   )
 }
 
@@ -58,27 +123,96 @@ function tagStyle(tag: string) {
 // ---- RangeGrid -----------------------------------------------------------
 
 function RangeGrid({ range }: { range: { rows: number; cols: number; cells: number[] } }) {
+  // cell size: smaller for 5×5, normal for ≤4 cols
+  const cellSize = range.cols >= 5 ? '1.4rem' : '1.75rem'
   return (
     <div className="flex items-center gap-4 px-4 py-3 bg-black/40 border-b border-ptn-border">
       <span className="text-[10px] tracking-widest text-ptn-disabled font-mono shrink-0">RANGE</span>
       <div
-        className="inline-grid gap-0.5"
-        style={{ gridTemplateColumns: `repeat(${range.cols}, 1.75rem)` }}
+        className="inline-grid gap-[3px]"
+        style={{ gridTemplateColumns: `repeat(${range.cols}, ${cellSize})` }}
       >
         {range.cells.map((cell, i) => (
           <div
             key={i}
-            className={`w-7 h-7 border flex items-center justify-center ${
+            style={{ width: cellSize, height: cellSize }}
+            className={`border flex items-center justify-center rounded-sm ${
               cell === 2
-                ? 'bg-red-800/80 border-red-600'
+                ? 'bg-red-800/90 border-red-500'
                 : cell === 1
-                  ? 'bg-zinc-600/60 border-zinc-500'
-                  : 'bg-transparent border-zinc-700/40'
+                  ? 'bg-zinc-600/70 border-zinc-500'
+                  : 'bg-zinc-900/50 border-zinc-700/50'
             }`}
           >
-            {cell === 2 && <div className="w-2.5 h-2.5 rounded-full bg-red-400" />}
+            {cell === 2 && (
+              <div className="w-2 h-2 rounded-full bg-red-400" />
+            )}
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+// ---- ExclusiveCrimebrandCard --------------------------------------------
+
+function ExclusiveCrimebrandCard({ data }: { data: {
+  name: string; image_url: string; description: string; flavor_text: string; hasRange: boolean; range: { rows: number; cols: number; cells: number[] }
+} }) {
+  const cellSize = data.range?.cols >= 5 ? '1.4rem' : '1.75rem'
+  return (
+    <div className="border border-amber-500/30 rounded-lg overflow-hidden bg-ptn-surface">
+      {/* Heading */}
+      <div className="px-4 py-2.5 bg-amber-900/20 border-b border-amber-500/20">
+        <h3 className="text-[10px] font-semibold uppercase tracking-widest text-amber-400/70">EXCLUSIVE CRIMEBRAND</h3>
+      </div>
+      <div className="flex flex-col md:flex-row">
+        {/* Left — artwork */}
+        {data.image_url && (
+          <div className="shrink-0 md:w-52 border-b md:border-b-0 md:border-r border-ptn-border overflow-hidden">
+            <img src={data.image_url} alt={data.name} className="w-full h-full object-cover" />
+          </div>
+        )}
+        {/* Right — details */}
+        <div className="flex-1 p-4 space-y-3">
+          <div>
+            <p className="font-heading font-bold text-xl text-ptn-text leading-tight">{data.name}</p>
+            <p className="text-xs text-amber-400/60 uppercase tracking-wider mt-0.5">Exclusive Crimebrand</p>
+          </div>
+          {data.hasRange && data.range?.cells?.length > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] tracking-widest text-ptn-disabled font-mono shrink-0">RANGE</span>
+              <div
+                className="inline-grid gap-[3px]"
+                style={{ gridTemplateColumns: `repeat(${data.range.cols}, ${cellSize})` }}
+              >
+                {data.range.cells.map((cell, i) => (
+                  <div
+                    key={i}
+                    style={{ width: cellSize, height: cellSize }}
+                    className={`border flex items-center justify-center rounded-sm ${
+                      cell === 2
+                        ? 'bg-red-800/90 border-red-500'
+                        : cell === 1
+                          ? 'bg-zinc-600/70 border-zinc-500'
+                          : 'bg-zinc-900/50 border-zinc-700/50'
+                    }`}
+                  >
+                    {cell === 2 && <div className="w-2 h-2 rounded-full bg-red-400" />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {data.description && (
+            <p className="text-sm text-ptn-muted leading-relaxed">{data.description}</p>
+          )}
+          {data.flavor_text && (
+            <p className="text-xs text-ptn-disabled/80 italic leading-relaxed border-t border-ptn-border pt-3">
+              "{data.flavor_text}"
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -194,13 +328,91 @@ function SkillCard({ skill }: { skill: CharacterSkill }) {
   )
 }
 
+// ---- StatsCard -----------------------------------------------------------
+
+type StatPair = { min: string | number; max: string | number }
+type CharStatsData = { health?: StatPair; attack?: StatPair; defense?: StatPair; magic_resistance?: StatPair; attack_speed?: StatPair; block?: StatPair }
+
+const STAT_ROWS: { key: keyof CharStatsData; label: string; icon: React.ElementType }[] = [
+  { key: 'health',           label: 'Health',           icon: Heart },
+  { key: 'attack',           label: 'Attack',           icon: Sword },
+  { key: 'defense',          label: 'Defense',          icon: Shield },
+  { key: 'magic_resistance', label: 'Magic Resistance', icon: ShieldCheck },
+  { key: 'attack_speed',     label: 'Attack Speed',     icon: Zap },
+  { key: 'block',            label: 'Block',            icon: Layers },
+]
+
+function StatsCard({ stats }: { stats: CharStatsData }) {
+  const hasAny = STAT_ROWS.some(r => stats[r.key]?.min !== '' && stats[r.key]?.min !== undefined)
+  if (!hasAny) return null
+  return (
+    <Card className="p-5 shrink-0 min-w-[260px]">
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-ptn-disabled mb-4">
+        STATS <span className="text-ptn-border">(LV1 → 90)</span>
+      </h2>
+      <div className="space-y-0 divide-y divide-ptn-border/50">
+        {STAT_ROWS.map(({ key, label, icon: Icon }) => {
+          const pair = stats[key]
+          if (!pair || (pair.min === '' && pair.max === '')) return null
+          return (
+            <div key={key} className="flex items-center gap-3 py-2">
+              <Icon size={14} className="text-ptn-disabled shrink-0" />
+              <span className="text-sm text-ptn-muted flex-1">{label}</span>
+              <div className="flex items-center gap-1.5 font-mono text-sm shrink-0">
+                <span className="font-bold text-ptn-text">{pair.min}</span>
+                <span className="text-ptn-disabled text-xs">→</span>
+                <span className="font-bold text-ptn-text">{pair.max}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+  )
+}
+
+// ---- Materials types -----------------------------------------------------
+
+type MatEntry = { name: string; image_url: string; amount: string }
+type MatSection = { label: string; items: MatEntry[] }
+type MaterialsData = { rank_up: MatSection[]; skills: MatSection[] }
+
 // ---- Main Page -----------------------------------------------------------
+
+type CrimebrandBuild = {
+  id: string
+  build_name: string
+  description: string | null
+  slot1_cb_id: string | null
+  slot1_piece: number | null
+  slot2_cb_id: string | null
+  slot2_piece: number | null
+  slot3_cb_id: string | null
+  slot3_piece: number | null
+  sort_order: number
+}
+
+type CrimebrandSimple = {
+  id: string
+  name: string
+  slug: string
+  icon_url: string | null
+  artwork_url: string | null
+  rank: string
+  effects: Array<{ piece: number; name: string; min: string; max: string }>
+}
+
+const CB_RANK_COLORS: Record<string, string> = { S: '#FFD700', A: '#C084FC', B: '#60A5FA' }
+const CB_PIECE_LABEL = ['I', 'II', 'III']
 
 export function CharacterDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const [character, setCharacter] = useState<Character | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('info')
+  const [tagsModalOpen, setTagsModalOpen] = useState(false)
+  const [builds, setBuilds] = useState<CrimebrandBuild[]>([])
+  const [buildCbs, setBuildCbs] = useState<CrimebrandSimple[]>([])
 
   useEffect(() => {
     const fetch = async () => {
@@ -214,6 +426,28 @@ export function CharacterDetailPage() {
     }
     fetch()
   }, [slug])
+
+  useEffect(() => {
+    if (!character?.id) return
+    supabase.from('character_crimebrand_builds')
+      .select('*')
+      .eq('character_id', character.id)
+      .order('sort_order')
+      .then(async ({ data: buildsData }) => {
+        if (!buildsData?.length) return
+        setBuilds(buildsData)
+        const cbIds = [...new Set(
+          buildsData.flatMap(b => [b.slot1_cb_id, b.slot2_cb_id, b.slot3_cb_id]).filter(Boolean)
+        )]
+        if (cbIds.length) {
+          const { data: cbData } = await supabase
+            .from('crimebrands')
+            .select('id,name,slug,icon_url,artwork_url,rank,effects')
+            .in('id', cbIds)
+          setBuildCbs(cbData || [])
+        }
+      })
+  }, [character?.id])
 
   if (loading) return <PageLoader />
 
@@ -229,10 +463,19 @@ export function CharacterDetailPage() {
   }
 
   const rarityColor = RARITY_COLORS[character.rarity]
-  const stats = character.stats as CharacterStats | null
   const skills = (character.skills as CharacterSkill[] | null) || []
   const shackles = (character.shackles as ShackleBreak[] | null) || []
   const tags = (character.tags as string[] | null) || []
+  const abilityTags = (character.ability_tags as string[] | null) || []
+  const trivia = (character.trivia as string[] | null) || []
+  const crimebrandSets = (character.crimebrand_sets as Array<{ name: string; images: string[]; description: string }> | null) || []
+  const charDetails = character.char_details as { birthday?: string; height?: string; birthplace?: string; ability?: string; case_name?: string } | null
+  const overviewCards = (character.overview_cards as Array<{ title: string; content: string }> | null) || []
+  const materials = character.materials as MaterialsData | null
+  const charStatsData = (character.stats as CharStatsData | null) || {}
+  const exclusiveCrimebrand = character.exclusive_crimebrand as {
+    name: string; image_url: string; description: string; flavor_text: string; hasRange: boolean; range: { rows: number; cols: number; cells: number[] }
+  } | null
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -250,65 +493,121 @@ export function CharacterDetailPage() {
         style={{ borderColor: `${rarityColor}30` }}
       >
         <div
-          className="flex items-center gap-4 px-5 py-4"
-          style={{ background: `linear-gradient(90deg, ${rarityColor}18 0%, #12121A 55%)` }}
+          className="flex min-h-[160px]"
+          style={{ background: `linear-gradient(135deg, ${rarityColor}18 0%, #0e0e16 65%)` }}
         >
-          {/* Portrait thumbnail */}
+          {/* ── Portrait panel ── */}
           <div
-            className="shrink-0 w-14 h-14 rounded-lg border overflow-hidden bg-ptn-elevated"
-            style={{ borderColor: `${rarityColor}50` }}
+            className="shrink-0 w-36 sm:w-48 md:w-56 relative overflow-hidden border-r"
+            style={{ borderColor: `${rarityColor}20` }}
           >
-            {character.portrait_url ? (
-              <img src={character.portrait_url} alt={character.name} className="w-full h-full object-cover" />
+            {(character.splash_url || character.portrait_url) ? (
+              <img
+                src={character.splash_url || character.portrait_url}
+                alt={character.name}
+                className="absolute inset-0 w-full h-full object-cover object-top"
+              />
             ) : (
               <div
-                className="w-full h-full flex items-center justify-center font-heading font-bold text-xl"
+                className="w-full h-full flex items-center justify-center font-heading font-bold text-4xl"
                 style={{ color: rarityColor }}
               >
                 {character.name[0]}
               </div>
             )}
+            {/* rarity tint overlay */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/20 pointer-events-none" />
           </div>
 
-          {/* Name + meta */}
-          <div className="flex-1 min-w-0">
-            <h1 className="font-heading text-2xl font-bold leading-tight" style={{ color: rarityColor }}>
-              {character.name}
-            </h1>
-            <div className="flex flex-wrap items-center gap-1.5 mt-1">
-              {tags.map(tag => (
-                <span
-                  key={tag}
-                  className="text-xs px-2 py-0.5 rounded border border-ptn-border text-ptn-muted bg-ptn-elevated"
+          {/* ── Info panel ── */}
+          <div className="flex-1 min-w-0 p-4 sm:p-5 flex flex-col justify-between">
+
+            {/* Top: name row + icons */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                {/* Name + Limited badge */}
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <h1
+                    className="font-heading text-2xl sm:text-3xl font-bold leading-tight"
+                    style={{ color: rarityColor }}
+                  >
+                    {character.name}
+                  </h1>
+                  {character.is_limited && (
+                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded border border-ptn-gold/50 text-ptn-gold bg-ptn-gold/10 shrink-0">
+                      <Star size={10} className="fill-ptn-gold" /> Limited
+                    </span>
+                  )}
+                </div>
+                {/* Tags (character codes) */}
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map(tag => (
+                      <span key={tag} className="text-[11px] px-1.5 py-0.5 rounded font-mono text-ptn-disabled border border-ptn-border/50 bg-black/30">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Icons: faction + tendency + rank */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {ALIGNMENT_ICON[character.faction] && (
+                  <div className="w-9 h-9 rounded-lg overflow-hidden border border-ptn-border/40 bg-black/30 flex items-center justify-center">
+                    <img src={ALIGNMENT_ICON[character.faction]} alt={character.faction} className="w-7 h-7 object-contain" />
+                  </div>
+                )}
+                {TENDENCY_ICON[character.job_class] && (
+                  <div className="w-9 h-9 rounded-lg overflow-hidden border border-ptn-border/40 bg-black/30 flex items-center justify-center">
+                    <img src={TENDENCY_ICON[character.job_class]} alt={character.job_class} className="w-7 h-7 object-contain" />
+                  </div>
+                )}
+                <Badge variant="rarity" value={character.rarity} />
+              </div>
+            </div>
+
+            {/* Ability tags */}
+            {abilityTags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {ABILITY_TAG_GROUPS.flatMap(group =>
+                  abilityTags
+                    .filter(t => group.tags.includes(t))
+                    .map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => setTagsModalOpen(true)}
+                        className="text-xs px-2.5 py-1 rounded border font-medium transition-opacity hover:opacity-75 cursor-pointer"
+                        style={{ background: group.bg, borderColor: group.border, color: group.text }}
+                      >
+                        {tag}
+                      </button>
+                    ))
+                )}
+                <button
+                  onClick={() => setTagsModalOpen(true)}
+                  className="text-xs px-2.5 py-1 rounded border font-medium text-ptn-muted border-ptn-border hover:text-ptn-text hover:border-ptn-text transition-colors"
                 >
-                  {tag}
-                </span>
-              ))}
-              {character.is_limited && (
-                <span className="flex items-center gap-1 text-xs text-ptn-gold">
-                  <Star size={11} className="fill-ptn-gold" /> Limited
-                </span>
+                  ···
+                </button>
+              </div>
+            )}
+
+            {/* Bottom: alignment + tendency text */}
+            <div
+              className="flex items-center gap-2 mt-3 pt-3 border-t text-xs text-ptn-disabled"
+              style={{ borderColor: `${rarityColor}15` }}
+            >
+              <span>{ALIGNMENT_LABEL[character.faction] || character.faction.toUpperCase()}</span>
+              <span className="text-ptn-border">·</span>
+              <span>{JOB_CLASS_LABEL[character.job_class] || character.job_class}</span>
+              {character.release_date && (
+                <>
+                  <span className="text-ptn-border">·</span>
+                  <span>{formatDate(character.release_date, { year: 'numeric', month: 'short' })}</span>
+                </>
               )}
             </div>
-          </div>
-
-          {/* Right — rank + class + faction */}
-          <div className="shrink-0 flex items-center gap-2">
-            <span className="flex items-center gap-1.5 text-sm text-ptn-muted">
-              {ALIGNMENT_ICON[character.faction] && (
-                <img src={ALIGNMENT_ICON[character.faction]} alt={character.faction} className="w-5 h-5 object-contain opacity-80 rounded-sm" />
-              )}
-              {ALIGNMENT_LABEL[character.faction] || character.faction.toUpperCase()}
-            </span>
-            <span className="text-ptn-border">·</span>
-            <span className="flex items-center gap-1.5 text-sm text-ptn-muted">
-              {TENDENCY_ICON[character.job_class] && (
-                <img src={TENDENCY_ICON[character.job_class]} alt={character.job_class} className="w-5 h-5 object-contain opacity-80" />
-              )}
-              {JOB_CLASS_LABEL[character.job_class] || character.job_class}
-            </span>
-            <span className="text-ptn-border">·</span>
-            <Badge variant="rarity" value={character.rarity} />
           </div>
         </div>
 
@@ -335,44 +634,51 @@ export function CharacterDetailPage() {
 
         {/* INFO TAB */}
         {activeTab === 'info' && (
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Left — basic info */}
+          <div className="space-y-4">
+
+            {/* INFO + MATERIALS row */}
+            <div className="grid md:grid-cols-[1fr_auto] gap-4">
+
+            {/* Left — INFO table */}
             <Card className="p-5">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-ptn-disabled mb-4">ข้อมูลพื้นฐาน</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-ptn-disabled mb-4">INFO</h2>
               <table className="w-full text-sm">
                 <tbody className="divide-y divide-ptn-border">
                   {[
+                    ...(charDetails?.birthday   ? [{ label: 'Birthday',   value: charDetails.birthday }] : []),
+                    ...(charDetails?.height     ? [{ label: 'Height',     value: charDetails.height }] : []),
                     {
-                      label: 'Tendencies',
-                      value: (
-                        <span className="flex items-center gap-2">
-                          {TENDENCY_ICON[character.job_class] && (
-                            <img src={TENDENCY_ICON[character.job_class]} alt={character.job_class} className="w-9 h-9 object-contain" />
-                          )}
-                          {JOB_CLASS_LABEL[character.job_class] || character.job_class}
-                        </span>
-                      )
-                    },
-                    {
-                      label: 'Alignments',
+                      label: 'Alignment',
                       value: (
                         <span className="flex items-center gap-2">
                           {ALIGNMENT_ICON[character.faction] && (
-                            <img src={ALIGNMENT_ICON[character.faction]} alt={character.faction} className="w-7 h-7 object-contain rounded-sm" />
+                            <img src={ALIGNMENT_ICON[character.faction]} alt={character.faction} className="w-6 h-6 object-contain rounded-sm" />
                           )}
                           {ALIGNMENT_LABEL[character.faction] || character.faction.toUpperCase()}
                         </span>
                       )
                     },
-                    { label: 'Rank',    value: `${character.rarity}-Rank` },
-                    ...(character.release_date
-                      ? [{ label: 'วันที่ออก', value: formatDate(character.release_date, { year: 'numeric', month: 'long', day: 'numeric' }) }]
-                      : []),
+                    {
+                      label: 'Tendency',
+                      value: (
+                        <span className="flex items-center gap-2">
+                          {TENDENCY_ICON[character.job_class] && (
+                            <img src={TENDENCY_ICON[character.job_class]} alt={character.job_class} className="w-6 h-6 object-contain" />
+                          )}
+                          {JOB_CLASS_LABEL[character.job_class] || character.job_class}
+                        </span>
+                      )
+                    },
+                    ...(charDetails?.birthplace ? [{ label: 'Birthplace', value: charDetails.birthplace }] : []),
+                    ...(charDetails?.ability    ? [{ label: 'Ability',    value: charDetails.ability }] : []),
+                    ...(charDetails?.case_name  ? [{ label: 'Case',       value: charDetails.case_name }] : []),
+                    { label: 'Rank', value: `${character.rarity}-Rank` },
+                    ...(character.release_date ? [{ label: 'วันที่ออก', value: formatDate(character.release_date, { year: 'numeric', month: 'long', day: 'numeric' }) }] : []),
                     ...(character.is_limited ? [{ label: 'ประเภท', value: 'Limited' }] : []),
-                    ...(tags.length > 0 ? [{ label: 'แท็ก', value: tags.join(', ') }] : []),
+                    ...(tags.length > 0 ? [{ label: 'ID', value: tags.join(' · ') }] : []),
                   ].map(row => (
                     <tr key={row.label}>
-                      <td className="py-2.5 pr-4 text-ptn-disabled w-28">{row.label}</td>
+                      <td className="py-2.5 pr-4 text-ptn-disabled w-28 align-top">{row.label}</td>
                       <td className="py-2.5 text-ptn-text font-medium">{row.value}</td>
                     </tr>
                   ))}
@@ -380,45 +686,185 @@ export function CharacterDetailPage() {
               </table>
             </Card>
 
-            {/* Right — stats */}
-            <Card className="p-5">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-ptn-disabled mb-4">สถิติ</h2>
-              {stats ? (
-                <div className="divide-y divide-ptn-border">
-                  {STAT_ROWS.map(({ key, label, icon: Icon, color }) => {
-                    const val = stats[key as keyof CharacterStats]
-                    if (val == null) return null
+            {/* Right — STATS */}
+            <StatsCard stats={charStatsData} />
+
+            </div>{/* end INFO+MATERIALS grid */}
+
+            {/* Detailed Materials breakdown */}
+            {materials && (
+              materials.rank_up?.some(s => s.items?.some(m => m.image_url)) ||
+              materials.skills?.some(s => s.items?.some(m => m.image_url))
+            ) && (
+              <div className="grid md:grid-cols-2 gap-4">
+                {materials.rank_up?.some(s => s.items?.some(m => m.image_url)) && (
+                  <Card className="overflow-hidden">
+                    <div className="px-4 py-2.5 border-b border-ptn-border bg-ptn-elevated">
+                      <h3 className="text-[10px] font-semibold uppercase tracking-widest text-ptn-disabled">RANK-UP MATERIALS</h3>
+                    </div>
+                    <div className="divide-y divide-ptn-border">
+                      {materials.rank_up.filter(s => s.items?.some(m => m.image_url)).map((section, si) => (
+                        <div key={si} className="px-4 py-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-ptn-disabled mb-2">{section.label}</p>
+                          <div className="flex flex-wrap gap-3">
+                            {section.items.filter(m => m.image_url).map((mat, i) => (
+                              <div key={i} className="flex items-center gap-1.5">
+                                <div className="w-9 h-9 rounded border border-ptn-border overflow-hidden bg-ptn-elevated shrink-0">
+                                  <img src={mat.image_url} alt={mat.name} className="w-full h-full object-cover" />
+                                </div>
+                                <div>
+                                  {mat.amount && <p className="text-sm font-bold text-ptn-text leading-tight">{mat.amount}</p>}
+                                  {mat.name && <p className="text-[10px] text-ptn-disabled leading-tight">{mat.name}</p>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+                {materials.skills?.some(s => s.items?.some(m => m.image_url)) && (
+                  <Card className="overflow-hidden">
+                    <div className="px-4 py-2.5 border-b border-ptn-border bg-ptn-elevated">
+                      <h3 className="text-[10px] font-semibold uppercase tracking-widest text-ptn-disabled">SKILL MATERIALS (LV 1 → 10)</h3>
+                    </div>
+                    <div className="divide-y divide-ptn-border">
+                      {materials.skills.filter(s => s.items?.some(m => m.image_url)).map((section, si) => (
+                        <div key={si} className="px-4 py-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-ptn-disabled mb-2">{section.label}</p>
+                          <div className="flex flex-wrap gap-3">
+                            {section.items.filter(m => m.image_url).map((mat, i) => (
+                              <div key={i} className="flex items-center gap-1.5">
+                                <div className="w-9 h-9 rounded border border-ptn-border overflow-hidden bg-ptn-elevated shrink-0">
+                                  <img src={mat.image_url} alt={mat.name} className="w-full h-full object-cover" />
+                                </div>
+                                <div>
+                                  {mat.amount && <p className="text-sm font-bold text-ptn-text leading-tight">{mat.amount}</p>}
+                                  {mat.name && <p className="text-[10px] text-ptn-disabled leading-tight">{mat.name}</p>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* Overview Cards (Initial Attribute / Mania Intensify) */}
+            {overviewCards.length > 0 && (
+              <div className="grid md:grid-cols-2 gap-3">
+                {overviewCards.map((card, i) => (
+                  <div key={i} className="border border-ptn-border rounded-lg bg-ptn-elevated p-4">
+                    <p className="font-heading font-bold text-ptn-text mb-2 text-sm">{card.title}</p>
+                    <p className="text-sm text-ptn-muted leading-relaxed whitespace-pre-line">{card.content}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Crimebrand Builds */}
+            {builds.length > 0 && (
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-ptn-disabled mb-3">Crimebrand Builds</h2>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {builds.map(build => {
+                    const slots = [
+                      { cbId: build.slot1_cb_id, piece: build.slot1_piece },
+                      { cbId: build.slot2_cb_id, piece: build.slot2_piece },
+                      { cbId: build.slot3_cb_id, piece: build.slot3_piece },
+                    ]
                     return (
-                      <div key={key} className="flex items-center gap-3 py-2.5">
-                        <Icon size={14} style={{ color }} className="shrink-0" />
-                        <span className="flex-1 text-sm text-ptn-muted">{label}</span>
-                        <span className="font-heading font-bold text-ptn-text">{val}</span>
+                      <div key={build.id} className="border border-ptn-border rounded-lg overflow-hidden bg-ptn-elevated">
+                        {/* Title */}
+                        <div className="px-4 py-2.5 border-b border-ptn-border">
+                          <p className="font-heading font-bold text-ptn-text text-center text-sm leading-tight">{build.build_name}</p>
+                        </div>
+                        {/* Artwork row */}
+                        <div className="flex border-b border-ptn-border">
+                          {slots.map((s, i) => {
+                            const cb = buildCbs.find(c => c.id === s.cbId)
+                            const img = cb?.artwork_url || cb?.icon_url
+                            return (
+                              <div key={i} className="flex-1 border-r border-ptn-border last:border-r-0 overflow-hidden">
+                                {img && cb ? (
+                                  <Link to={`/crimebrands/${cb.slug}`} className="block aspect-square hover:opacity-90 transition-opacity">
+                                    <img src={img} alt={cb.name} className="w-full h-full object-cover" />
+                                  </Link>
+                                ) : (
+                                  <div className="aspect-square flex items-center justify-center bg-ptn-surface">
+                                    <span className="text-ptn-disabled text-xs font-heading">{CB_PIECE_LABEL[i]}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                        {/* Description + slot details */}
+                        <div className="p-3 space-y-2">
+                          {build.description && (
+                            <p className="text-xs text-ptn-muted leading-relaxed">{build.description}</p>
+                          )}
+                          <div className="flex gap-2">
+                            {slots.map((s, i) => {
+                              const cb = buildCbs.find(c => c.id === s.cbId)
+                              const effects = cb ? (Array.isArray(cb.effects) ? cb.effects : []) : []
+                              const eff = effects.find(e => e.piece === s.piece)
+                              const rankColor = CB_RANK_COLORS[cb?.rank ?? ''] || '#ffffff'
+                              if (!cb) return null
+                              return (
+                                <div key={i} className="flex-1 text-center">
+                                  <p className="text-xs text-ptn-muted font-mono font-bold">{CB_PIECE_LABEL[i]}</p>
+                                  {eff && (
+                                    <p className="text-sm font-mono font-bold" style={{ color: rankColor }}>{eff.max}</p>
+                                  )}
+                                  {eff?.name && (
+                                    <p className="text-xs text-ptn-text leading-tight">{eff.name}</p>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
                       </div>
                     )
                   })}
-                  {(stats.crit_rate != null || stats.crit_dmg != null) && (
-                    <>
-                      {stats.crit_rate != null && (
-                        <div className="flex items-center gap-3 py-2.5">
-                          <Zap size={14} style={{ color: '#FB923C' }} className="shrink-0" />
-                          <span className="flex-1 text-sm text-ptn-muted">Crit Rate</span>
-                          <span className="font-heading font-bold text-ptn-text">{stats.crit_rate}%</span>
-                        </div>
-                      )}
-                      {stats.crit_dmg != null && (
-                        <div className="flex items-center gap-3 py-2.5">
-                          <Zap size={14} style={{ color: '#F43F5E' }} className="shrink-0" />
-                          <span className="flex-1 text-sm text-ptn-muted">Crit DMG</span>
-                          <span className="font-heading font-bold text-ptn-text">{stats.crit_dmg}%</span>
-                        </div>
-                      )}
-                    </>
-                  )}
                 </div>
-              ) : (
-                <p className="text-ptn-disabled text-sm text-center py-6">ยังไม่มีข้อมูลสถิติ</p>
-              )}
-            </Card>
+              </div>
+            )}
+            {/* Legacy Crimebrand Sets */}
+            {crimebrandSets.length > 0 && builds.length === 0 && (
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-widest text-ptn-disabled mb-3">Crimebrand Sets</h2>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {crimebrandSets.map((set, i) => {
+                    const imgs = (set.images || []).filter(Boolean)
+                    return (
+                      <div key={i} className="border border-ptn-border rounded-lg overflow-hidden bg-ptn-elevated">
+                        <div className="px-4 py-2.5 border-b border-ptn-border">
+                          <p className="font-heading font-bold text-ptn-text text-center text-sm leading-tight">{set.name}</p>
+                        </div>
+                        {imgs.length > 0 && (
+                          <div className="flex border-b border-ptn-border">
+                            {imgs.map((img, j) => (
+                              <div key={j} className="flex-1 aspect-square border-r border-ptn-border last:border-r-0 overflow-hidden">
+                                <img src={img} alt={`${set.name} ${j + 1}`} className="w-full h-full object-cover" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <p className="text-xs text-ptn-muted leading-relaxed">{set.description}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -430,6 +876,9 @@ export function CharacterDetailPage() {
             ) : (
               <Card className="p-8 text-center text-ptn-disabled">ยังไม่มีข้อมูลสกิล</Card>
             )}
+            {exclusiveCrimebrand?.name && (
+              <ExclusiveCrimebrandCard data={exclusiveCrimebrand} />
+            )}
           </div>
         )}
 
@@ -440,10 +889,13 @@ export function CharacterDetailPage() {
               shackles.map((s) => (
                 <Card key={s.stage} className="p-4">
                   <div className="flex items-start gap-4">
-                    <ShackleIcon stage={s.stage} color={rarityColor} />
-                    <div className="flex-1 min-w-0 pt-1">
-                      <p className="font-medium text-ptn-text leading-snug">{s.bonus_th || s.bonus}</p>
-                      {s.bonus_th && s.bonus !== s.bonus_th && (
+                    <ShackleIcon stage={s.stage} iconUrl={s.icon_url} />
+                    <div className="flex-1 min-w-0 pt-0.5">
+                      <p className="font-heading font-bold text-sm leading-snug" style={{ color: SHACKLE_COLORS[(s.stage - 1) % SHACKLE_COLORS.length] }}>
+                        S{s.stage}{s.name && <span className="ml-1.5 text-ptn-text font-medium">{s.name}</span>}
+                      </p>
+                      <p className="text-sm text-ptn-text leading-snug mt-0.5">{s.bonus_th || s.bonus}</p>
+                      {s.bonus_th && s.bonus && s.bonus !== s.bonus_th && (
                         <p className="text-xs text-ptn-disabled mt-0.5">{s.bonus}</p>
                       )}
                     </div>
@@ -461,17 +913,53 @@ export function CharacterDetailPage() {
 
         {/* STORY TAB */}
         {activeTab === 'story' && (
-          <Card className="p-6">
-            {character.overview ? (
-              <p className="text-ptn-muted leading-relaxed whitespace-pre-line text-sm">
-                {character.overview}
-              </p>
-            ) : (
-              <p className="text-ptn-disabled text-center py-6">ยังไม่มีข้อมูลเรื่องราว</p>
-            )}
-          </Card>
+          trivia.length > 0 ? (
+            <div>
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-ptn-disabled mb-4">Trivia</h2>
+              <div className="grid md:grid-cols-2 gap-3">
+                {trivia.map((entry, i) => (
+                    <div
+                      key={i}
+                      className="relative flex border border-ptn-border bg-ptn-elevated rounded overflow-hidden min-h-[120px]"
+                    >
+                      {/* Side label */}
+                      <div className="shrink-0 w-6 border-r border-ptn-border flex items-center justify-center bg-ptn-surface">
+                        <span
+                          className="text-[7px] text-ptn-disabled font-mono tracking-widest uppercase select-none"
+                          style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                        >
+                          DATA EXTRACT
+                        </span>
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 p-3 pb-7">
+                        <p className="text-sm text-ptn-muted leading-relaxed">{entry}</p>
+                      </div>
+
+                      {/* Number badge */}
+                      <span
+                        className="absolute bottom-2 left-8 font-heading font-bold text-2xl leading-none select-none"
+                        style={{ color: `${rarityColor}25` }}
+                      >
+                        {i + 1}
+                      </span>
+                    </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <Card className="p-8 text-center text-ptn-disabled">ยังไม่มีข้อมูล Trivia / Lore</Card>
+          )
         )}
       </div>
+
+      {/* Tags info modal */}
+      <TagsInfoModal
+        open={tagsModalOpen}
+        onClose={() => setTagsModalOpen(false)}
+        tags={abilityTags}
+      />
     </div>
   )
 }
