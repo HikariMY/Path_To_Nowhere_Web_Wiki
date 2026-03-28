@@ -30,7 +30,7 @@ type CharStats = { health: StatPair; attack: StatPair; defense: StatPair; magic_
 
 type CharForm = {
   name: string; rarity: 'S' | 'A' | 'B' | 'C'; faction: string; job_class: string
-  portrait_url: string; portrait_pos_x: number; portrait_pos_y: number; is_limited: boolean; release_date: string
+  portrait_url: string; portrait_pos_x: number; portrait_pos_y: number; portrait_zoom: number; is_limited: boolean; release_date: string
   tags: string; ability_tags: string[]; trivia: string[]; crimebrand_sets: CrimebrandSet[]
   char_details: CharDetails
   char_stats: CharStats
@@ -76,7 +76,7 @@ const blankMaterials = (): MaterialsData => ({
 
 const defaultForm: CharForm = {
   name: '', rarity: 'A', faction: 'anger', job_class: 'breaker',
-  portrait_url: '', portrait_pos_x: 50, portrait_pos_y: 20, is_limited: false, release_date: '', tags: '',
+  portrait_url: '', portrait_pos_x: 50, portrait_pos_y: 20, portrait_zoom: 1, is_limited: false, release_date: '', tags: '',
   ability_tags: [], trivia: [], crimebrand_sets: [],
   char_details: blankDetails(),
   char_stats: blankStats(),
@@ -168,6 +168,7 @@ export function AdminCharactersPage() {
       portrait_url: char.portrait_url || '',
       portrait_pos_x: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[0]) : 50,
       portrait_pos_y: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[1]) : 20,
+      portrait_zoom: char.portrait_zoom ?? 1,
       is_limited: char.is_limited,
       release_date: char.release_date || '',
       tags: (char.tags as string[] || []).join(', '),
@@ -207,6 +208,7 @@ export function AdminCharactersPage() {
       job_class: form.job_class,
       portrait_url: form.portrait_url.trim() || null,
       portrait_pos: `${form.portrait_pos_x}% ${form.portrait_pos_y}%`,
+      portrait_zoom: form.portrait_zoom,
       is_limited: form.is_limited,
       release_date: form.release_date || null,
       tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
@@ -381,7 +383,11 @@ export function AdminCharactersPage() {
                     src={form.portrait_url}
                     alt="preview"
                     className="absolute inset-0 w-full h-full object-cover"
-                    style={{ objectPosition: `${form.portrait_pos_x}% ${form.portrait_pos_y}%` }}
+                    style={{
+                      objectPosition: `${form.portrait_pos_x}% ${form.portrait_pos_y}%`,
+                      transform: `scale(${form.portrait_zoom})`,
+                      transformOrigin: `${form.portrait_pos_x}% ${form.portrait_pos_y}%`,
+                    }}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-xs text-ptn-disabled text-center px-2">ยังไม่มีรูป</div>
@@ -401,6 +407,12 @@ export function AdminCharactersPage() {
                   <input type="range" min={0} max={100} value={form.portrait_pos_y}
                     onChange={e => setForm(p => ({ ...p, portrait_pos_y: Number(e.target.value) }))}
                     className="w-full accent-ptn-cyan" />
+                </div>
+                <div>
+                  <label className="text-xs text-ptn-muted block mb-1">ซูม ({form.portrait_zoom}x)</label>
+                  <input type="range" min={1} max={3} step={0.1} value={form.portrait_zoom}
+                    onChange={e => setForm(p => ({ ...p, portrait_zoom: Number(e.target.value) }))}
+                    className="w-full accent-ptn-gold" />
                 </div>
               </div>
             </div>

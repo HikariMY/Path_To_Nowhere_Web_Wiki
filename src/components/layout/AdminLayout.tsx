@@ -1,7 +1,7 @@
-import { NavLink, Outlet, Link } from 'react-router-dom'
+import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Sword, Calendar, MessageSquare,
-  FileText, Shield, ChevronRight, Megaphone, Zap, Unlink, BookOpen, Gem, Layers,
+  FileText, Shield, ChevronRight, Megaphone, Zap, Unlink, BookOpen, Gem, Layers, ArrowLeft,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -21,6 +21,7 @@ const adminNav = [
 ]
 
 export function AdminLayout() {
+  const navigate = useNavigate()
   return (
     <div className="flex min-h-screen bg-ptn-bg">
       {/* Sidebar */}
@@ -80,6 +81,19 @@ export function AdminLayout() {
           ))}
         </div>
 
+        {/* Top bar with back button */}
+        <div className="hidden md:flex items-center gap-2 px-6 py-3 border-b border-ptn-border bg-ptn-surface/50">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1.5 text-sm text-ptn-muted hover:text-ptn-text transition-colors"
+          >
+            <ArrowLeft size={15} /> ย้อนกลับ
+          </button>
+          <span className="text-ptn-border">|</span>
+          <Link to="/" className="text-sm text-ptn-muted hover:text-ptn-cyan transition-colors">
+            กลับหน้าเว็บ
+          </Link>
+        </div>
         <main className="flex-1 p-4 md:p-6 overflow-auto">
           <Outlet />
         </main>
