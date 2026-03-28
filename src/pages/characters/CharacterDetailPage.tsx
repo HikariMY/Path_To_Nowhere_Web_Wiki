@@ -503,9 +503,14 @@ export function CharacterDetailPage() {
           >
             {(character.splash_url || character.portrait_url) ? (
               <img
-                src={character.splash_url || character.portrait_url}
+                src={character.portrait_url || character.splash_url}
                 alt={character.name}
-                className="absolute inset-0 w-full h-full object-cover object-top"
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{
+                  objectPosition: character.portrait_pos || '50% 20%',
+                  transform: `scale(${character.portrait_zoom ?? 1})`,
+                  transformOrigin: character.portrait_pos || '50% 20%',
+                }}
               />
             ) : (
               <div
