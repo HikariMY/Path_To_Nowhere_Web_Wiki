@@ -62,6 +62,7 @@ export interface Database {
           overview_cards: Json | null
           materials: Json | null
           is_limited: boolean
+          is_unreleased: boolean
           release_date: string | null
           created_at: string
           updated_at: string

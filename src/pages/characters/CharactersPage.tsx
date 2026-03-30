@@ -431,7 +431,7 @@ function CharacterCard({ character }: { character: Character }) {
   const color = RARITY_COLOR[character.rarity] || '#888'
   const mbccId = (character.tags as string[])?.[0] || ''
   const isCN = COLLAB_SLUGS.has(character.slug)
-  const unreleased = !character.portrait_url
+  const unreleased = character.is_unreleased || !character.portrait_url
   const charIsNew = isNew(character)
   const tendencyIcon = TENDENCY_ICON_PATH[character.job_class]
   const hasCoreDMG = ((character.ability_tags as string[] | null) || []).includes('Core DMG')

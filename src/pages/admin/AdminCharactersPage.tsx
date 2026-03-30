@@ -30,7 +30,7 @@ type CharStats = { health: StatPair; attack: StatPair; defense: StatPair; magic_
 
 type CharForm = {
   name: string; rarity: 'S' | 'A' | 'B' | 'C'; faction: string; job_class: string
-  portrait_url: string; portrait_pos_x: number; portrait_pos_y: number; portrait_zoom: number; is_limited: boolean; release_date: string
+  portrait_url: string; portrait_pos_x: number; portrait_pos_y: number; portrait_zoom: number; is_limited: boolean; is_unreleased: boolean; release_date: string
   tags: string; ability_tags: string[]; trivia: string[]; crimebrand_sets: CrimebrandSet[]
   char_details: CharDetails
   char_stats: CharStats
@@ -76,7 +76,7 @@ const blankMaterials = (): MaterialsData => ({
 
 const defaultForm: CharForm = {
   name: '', rarity: 'A', faction: 'anger', job_class: 'breaker',
-  portrait_url: '', portrait_pos_x: 50, portrait_pos_y: 20, portrait_zoom: 1, is_limited: false, release_date: '', tags: '',
+  portrait_url: '', portrait_pos_x: 50, portrait_pos_y: 20, portrait_zoom: 1, is_limited: false, is_unreleased: false, release_date: '', tags: '',
   ability_tags: [], trivia: [], crimebrand_sets: [],
   char_details: blankDetails(),
   char_stats: blankStats(),
@@ -166,6 +166,7 @@ export function AdminCharactersPage() {
       faction: char.faction,
       job_class: char.job_class,
       portrait_url: char.portrait_url || '',
+      is_unreleased: char.is_unreleased ?? false,
       portrait_pos_x: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[0]) : 50,
       portrait_pos_y: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[1]) : 20,
       portrait_zoom: char.portrait_zoom ?? 1,
@@ -210,6 +211,7 @@ export function AdminCharactersPage() {
       portrait_pos: `${form.portrait_pos_x}% ${form.portrait_pos_y}%`,
       portrait_zoom: form.portrait_zoom,
       is_limited: form.is_limited,
+      is_unreleased: form.is_unreleased,
       release_date: form.release_date || null,
       tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
       ability_tags: form.ability_tags,
@@ -365,10 +367,14 @@ export function AdminCharactersPage() {
             />
             <Input label="วันที่ออก" type="date" value={form.release_date} onChange={set('release_date')} />
             <Input label="แท็ก (คั่นด้วยเครื่องหมาย ,)" value={form.tags} onChange={set('tags')} placeholder="ดาเมจ, แนวหน้า" />
-            <div className="flex items-end">
+            <div className="flex items-end gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.is_limited} onChange={e => setForm(prev => ({...prev, is_limited: e.target.checked}))} className="accent-ptn-gold" />
                 <span className="text-sm text-ptn-text">Limited</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.is_unreleased} onChange={e => setForm(prev => ({...prev, is_unreleased: e.target.checked}))} className="accent-ptn-muted" />
+                <span className="text-sm text-ptn-muted">ยังไม่ออก</span>
               </label>
             </div>
           </div>
