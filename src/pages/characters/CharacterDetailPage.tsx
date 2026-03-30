@@ -1,5 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useParams, Link } from 'react-router-dom'
 import { ChevronLeft, Star, Zap, Heart, Sword, Shield, ShieldCheck, Layers } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -938,8 +940,17 @@ export function CharacterDetailPage() {
                       </div>
 
                       {/* Content */}
-                      <div className="flex-1 p-3 pb-7">
-                        <p className="text-sm text-ptn-muted leading-relaxed">{entry}</p>
+                      <div className="flex-1 p-3 pb-7 prose-ptn text-sm">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            img: ({ src, alt }) => (
+                              <img src={src} alt={alt || ''} className="rounded-lg max-w-full mt-2 border border-ptn-border" />
+                            ),
+                          }}
+                        >
+                          {entry}
+                        </ReactMarkdown>
                       </div>
 
                       {/* Number badge */}

@@ -691,8 +691,8 @@ export function AdminCharactersPage() {
                       trivia[i] = e.target.value
                       return { ...prev, trivia }
                     })}
-                    rows={3}
-                    placeholder={`Trivia #${i + 1}...`}
+                    rows={4}
+                    placeholder={`Trivia #${i + 1}... (รองรับ Markdown เช่น **ตัวหนา**, - รายการ, # หัวข้อ)`}
                     className="flex-1 px-3 py-2 text-sm bg-ptn-elevated border border-ptn-border rounded text-ptn-text placeholder-ptn-disabled focus:outline-none focus:border-ptn-cyan resize-y"
                   />
                   <button
