@@ -40,7 +40,7 @@ export function CrimebrandsPage() {
     supabase
       .from('crimebrands')
       .select('id,name,slug,rank,icon_url,artwork_url,source,unreleased,release_order')
-      .order('release_order')
+      .order('release_order', { ascending: false })
       .then(({ data }) => {
         setItems(data || [])
         setLoading(false)
