@@ -19,7 +19,6 @@ import { slugify } from '../../lib/utils'
 import { JOB_CLASS_LABEL, ALIGNMENT_LABEL } from '../../lib/constants'
 import { ABILITY_TAG_GROUPS } from '../../lib/abilityTags'
 
-type CrimebrandSet = { name: string; images: string[]; description: string }
 type OverviewCard = { title: string; content: string }
 type MaterialEntry = { name: string; image_url: string; amount: string }
 type MaterialSection = { label: string; items: MaterialEntry[] }
@@ -31,7 +30,7 @@ type CharStats = { health: StatPair; attack: StatPair; defense: StatPair; magic_
 type CharForm = {
   name: string; rarity: 'S' | 'A' | 'B' | 'C'; faction: string; job_class: string
   portrait_url: string; portrait_pos_x: number; portrait_pos_y: number; portrait_zoom: number; is_limited: boolean; is_unreleased: boolean; release_date: string
-  tags: string; ability_tags: string[]; trivia: string[]; crimebrand_sets: CrimebrandSet[]
+  tags: string; ability_tags: string[]; trivia: string[]
   char_details: CharDetails
   char_stats: CharStats
   overview_cards: OverviewCard[]
@@ -77,7 +76,7 @@ const blankMaterials = (): MaterialsData => ({
 const defaultForm: CharForm = {
   name: '', rarity: 'A', faction: 'anger', job_class: 'breaker',
   portrait_url: '', portrait_pos_x: 50, portrait_pos_y: 20, portrait_zoom: 1, is_limited: false, is_unreleased: false, release_date: '', tags: '',
-  ability_tags: [], trivia: [], crimebrand_sets: [],
+  ability_tags: [], trivia: [],
   char_details: blankDetails(),
   char_stats: blankStats(),
   overview_cards: [],
@@ -175,7 +174,6 @@ export function AdminCharactersPage() {
       tags: (char.tags as string[] || []).join(', '),
       ability_tags: (char.ability_tags as string[] | null) || [],
       trivia: ((char.trivia as string[]) || []),
-      crimebrand_sets: ((char.crimebrand_sets as CrimebrandSet[]) || []),
       char_details: (char.char_details as CharDetails | null) || blankDetails(),
       char_stats: (() => {
         const s = char.stats as CharStats | null
@@ -216,7 +214,6 @@ export function AdminCharactersPage() {
       tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
       ability_tags: form.ability_tags,
       trivia: form.trivia.filter(t => t.trim()),
-      crimebrand_sets: form.crimebrand_sets.filter(s => s.name.trim() || s.description.trim() || s.images.some(Boolean)),
       char_details: form.char_details,
       stats: form.char_stats,
       overview_cards: form.overview_cards.filter(c => c.title.trim() || c.content.trim()),
@@ -764,70 +761,8 @@ export function AdminCharactersPage() {
             </button>
           </div>
 
-          {/* Crimebrand Sets */}
-          <div>
-            <p className="text-sm font-medium text-ptn-text mb-1">Crimebrand Sets</p>
-            <p className="text-xs text-ptn-muted mb-3">แนะนำชุด Crimebrand สำหรับตัวละครนี้ — แสดงในแท็บ ข้อมูล</p>
-            <div className="space-y-3">
-              {form.crimebrand_sets.map((set, i) => (
-                <div key={i} className="p-3 rounded-lg border border-ptn-border bg-ptn-elevated space-y-3">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={set.name}
-                      onChange={e => setForm(prev => {
-                        const s = [...prev.crimebrand_sets]
-                        s[i] = { ...s[i], name: e.target.value }
-                        return { ...prev, crimebrand_sets: s }
-                      })}
-                      placeholder="ชื่อ Set เช่น Bloom in Ashen Silence"
-                      className="flex-1 px-3 py-1.5 text-sm bg-ptn-surface border border-ptn-border rounded text-ptn-text placeholder-ptn-disabled focus:outline-none focus:border-ptn-cyan"
-                    />
-                    <button type="button" onClick={() => setForm(prev => ({ ...prev, crimebrand_sets: prev.crimebrand_sets.filter((_, j) => j !== i) }))}
-                      className="text-ptn-disabled hover:text-ptn-red transition-colors shrink-0">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-
-                  {/* 3 image slots */}
-                  <div className="flex gap-2">
-                    {[0, 1, 2].map(slot => (
-                      <SlotImage
-                        key={slot}
-                        bucket="characters"
-                        url={set.images[slot] || ''}
-                        onUpload={url => setForm(prev => {
-                          const s = [...prev.crimebrand_sets]
-                          const imgs = [...(s[i].images || ['', '', ''])]
-                          imgs[slot] = url
-                          s[i] = { ...s[i], images: imgs }
-                          return { ...prev, crimebrand_sets: s }
-                        })}
-                      />
-                    ))}
-                  </div>
-
-                  <textarea
-                    value={set.description}
-                    onChange={e => setForm(prev => {
-                      const s = [...prev.crimebrand_sets]
-                      s[i] = { ...s[i], description: e.target.value }
-                      return { ...prev, crimebrand_sets: s }
-                    })}
-                    rows={2}
-                    placeholder="คำอธิบาย Set นี้..."
-                    className="w-full px-3 py-2 text-sm bg-ptn-surface border border-ptn-border rounded text-ptn-text placeholder-ptn-disabled focus:outline-none focus:border-ptn-cyan resize-y"
-                  />
-                </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setForm(prev => ({ ...prev, crimebrand_sets: [...prev.crimebrand_sets, { name: '', images: ['', '', ''], description: '' }] }))}
-              className="mt-3 flex items-center gap-1.5 text-xs text-ptn-cyan hover:text-ptn-text transition-colors border border-ptn-cyan/30 px-3 py-1.5 rounded hover:bg-ptn-cyan/5"
-            >
-              <Plus size={12} /> เพิ่ม Set
-            </button>
+          <div className="p-3 rounded-lg border border-ptn-border bg-ptn-elevated/50 text-xs text-ptn-muted">
+            Crimebrand Builds จัดการได้ที่หน้า <span className="text-ptn-cyan font-medium">จัดการ Crimebrand Builds</span> ในเมนูด้านซ้าย
           </div>
 
           <div className="flex gap-3 pt-2">

@@ -1,7 +1,7 @@
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Sword, Calendar, MessageSquare,
-  FileText, Shield, ChevronRight, Megaphone, Zap, Unlink, BookOpen, Gem, Layers, ArrowLeft,
+  FileText, Shield, ChevronRight, Megaphone, Zap, Unlink, BookOpen, Gem, Layers, ArrowLeft, BarChart3, Pin,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -17,6 +17,8 @@ const adminNav = [
   { to: '/admin/events',        label: 'จัดการอีเวนต์',   icon: Calendar,        exact: false },
   { to: '/admin/announcements', label: 'ข่าวสาร/ประกาศ',  icon: Megaphone,       exact: false },
   { to: '/admin/forum',         label: 'จัดการฟอรัม',     icon: MessageSquare,   exact: false },
+  { to: '/admin/posts',         label: 'จัดการโพสต์',      icon: Pin,             exact: false },
+  { to: '/admin/tier-lists',    label: 'จัดการ Tier Lists', icon: BarChart3,       exact: false },
   { to: '/admin/logs',          label: 'บันทึกกิจกรรม',   icon: FileText,        exact: false },
 ]
 
