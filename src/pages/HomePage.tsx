@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { Link } from 'react-router-dom'
 import { Calendar, Users, BarChart3, MessageSquare, ChevronRight, Clock, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -304,12 +304,7 @@ function EventBannerCard({
   const [expanded, setExpanded] = useState(false)
   const [chars, setChars] = useState<CharOption[]>([])
 
-  const { days, hours, isExpired } = useCountdown(countdownTarget)
-  const countdownText = isExpired
-    ? 'สิ้นสุดแล้ว'
-    : days > 0
-    ? `${days}d ${String(hours).padStart(2, '0')}h`
-    : `${String(hours).padStart(2, '0')}h`
+  const { days, hours, minutes, seconds, isExpired } = useCountdown(countdownTarget)
 
   useEffect(() => {
     if (!expanded) return
@@ -365,9 +360,31 @@ function EventBannerCard({
             <span className="text-xs text-white/80 bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/10">
               {EVENT_TYPE_LABEL[event.event_type] || event.event_type}
             </span>
-            <span className="text-sm font-bold text-white bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
-              {countdownText}
-            </span>
+            {isExpired ? (
+              <span className="text-xs text-white/60">สิ้นสุดแล้ว</span>
+            ) : (
+              <div className="flex items-center gap-1">
+                {([
+                  { v: days,    th: 'วัน'  },
+                  { v: hours,   th: 'ชม.'  },
+                  { v: minutes, th: 'นาที' },
+                  { v: seconds, th: 'วิ.'  },
+                ] as const).map(({ v, th }, i, arr) => (
+                  <Fragment key={th}>
+                    <div
+                      className="flex flex-col items-center justify-center rounded-lg"
+                      style={{ background: 'rgba(80,40,140,0.85)', width: 40, height: 40, minWidth: 40 }}
+                    >
+                      <span className="text-sm font-bold text-white leading-none">{String(v).padStart(2, '0')}</span>
+                      <span className="text-[9px] text-white/70 mt-0.5">{th}</span>
+                    </div>
+                    {i < arr.length - 1 && (
+                      <span className="text-xs font-bold text-white/60 pb-3">:</span>
+                    )}
+                  </Fragment>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
