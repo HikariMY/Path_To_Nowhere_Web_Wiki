@@ -98,7 +98,13 @@ create table public.events (
   id             uuid primary key default uuid_generate_v4(),
   title          text not null,
   description    text,
-  event_type     text not null check (event_type in ('story', 'rerun', 'collab', 'maintenance', 'other')),
+  event_type     text not null check (event_type in (
+                   'gacha_new', 'gacha_new_limited', 'gacha_rerun', 'gacha_rerun_limited',
+                   'event_new', 'event_rerun', 'event_collab',
+                   'story_new', 'story_eternal',
+                   'maintenance', 'other',
+                   'story', 'rerun', 'collab'
+                 )),
   banner_url     text,
   start_date     timestamptz not null,
   end_date       timestamptz not null,

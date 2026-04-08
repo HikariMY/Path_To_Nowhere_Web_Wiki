@@ -12,31 +12,18 @@ export function EventCountdown({ targetDate, label = 'สิ้นสุดใ�
     <span className="text-sm text-ptn-muted">สิ้นสุดแล้ว</span>
   )
 
-  const units = [
-    { value: days,    label: 'วัน' },
-    { value: hours,   label: 'ชม.' },
-    { value: minutes, label: 'นาที' },
-    { value: seconds, label: 'วิ.' },
-  ]
+  const parts: string[] = []
+  if (days > 0)    parts.push(`${days}d`)
+  parts.push(`${String(hours).padStart(2, '0')}h`)
+  parts.push(`${String(minutes).padStart(2, '0')}m`)
+  parts.push(`${String(seconds).padStart(2, '0')}s`)
 
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs text-ptn-muted">{label}</span>
-      <div className="flex items-center gap-1">
-        {units.map(({ value, label: unitLabel }, i) => (
-          <div key={i} className="flex items-center gap-1">
-            <div className="min-w-[40px] rounded bg-ptn-elevated border border-ptn-border px-2 py-1 text-center">
-              <span className="font-heading text-lg font-bold text-ptn-text leading-none">
-                {String(value).padStart(2, '0')}
-              </span>
-              <div className="text-[10px] text-ptn-disabled">{unitLabel}</div>
-            </div>
-            {i < units.length - 1 && (
-              <span className="text-ptn-red font-bold mb-3">:</span>
-            )}
-          </div>
-        ))}
-      </div>
+      <span className="font-heading text-2xl font-bold text-ptn-text tracking-wide">
+        {parts.join(' ')}
+      </span>
     </div>
   )
 }
