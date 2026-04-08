@@ -17,13 +17,13 @@ import { useAuth } from '../../contexts/AuthContext'
 import { formatDate } from '../../lib/utils'
 
 type EventForm = {
-  title: string; description: string; event_type: GameEvent['event_type']
+  title: string; subtitle: string; description: string; event_type: GameEvent['event_type']
   banner_url: string; start_date: string; end_date: string; is_active: boolean
   image_position: string
 }
 
 const defaultForm: EventForm = {
-  title: '', description: '', event_type: 'story',
+  title: '', subtitle: '', description: '', event_type: 'story',
   banner_url: '', start_date: '', end_date: '', is_active: true,
   image_position: '50% 50%',
 }
@@ -113,7 +113,7 @@ export function AdminEventsPage() {
   const openEdit = (ev: GameEvent) => {
     setEditingEvent(ev)
     setForm({
-      title: ev.title, description: ev.description || '', event_type: ev.event_type,
+      title: ev.title, subtitle: ev.subtitle || '', description: ev.description || '', event_type: ev.event_type,
       banner_url: ev.banner_url || '', start_date: ev.start_date.slice(0, 16),
       end_date: ev.end_date.slice(0, 16), is_active: ev.is_active,
       image_position: ev.image_position || '50% 50%',
@@ -127,7 +127,8 @@ export function AdminEventsPage() {
     }
     setSaving(true)
     const payload = {
-      title: form.title.trim(), description: form.description.trim() || null,
+      title: form.title.trim(), subtitle: form.subtitle.trim() || null,
+      description: form.description.trim() || null,
       event_type: form.event_type, banner_url: form.banner_url.trim() || null,
       start_date: new Date(form.start_date).toISOString(),
       end_date: new Date(form.end_date).toISOString(), is_active: form.is_active,
@@ -229,7 +230,8 @@ export function AdminEventsPage() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingEvent ? 'แก้ไขอีเวนต์' : 'เพิ่มอีเวนต์ใหม่'} size="lg">
         <div className="space-y-4">
-          <Input label="ชื่ออีเวนต์" value={form.title} onChange={set('title')} placeholder="ชื่ออีเวนต์..." />
+          <Input label="ชื่ออีเวนต์" value={form.title} onChange={set('title')} placeholder="เช่น JASMINE &amp; HESTIA" />
+          <Input label="ชื่อตัวละคร / Subtitle (แสดงบนซ้ายการ์ด)" value={form.subtitle} onChange={set('subtitle')} placeholder="เช่น Jasmine, Hestia" />
           <Select label="ประเภท" value={form.event_type} onChange={set('event_type')}>
             {(['story','rerun','collab','maintenance','other'] as const).map(t => (
               <option key={t} value={t}>{t}</option>

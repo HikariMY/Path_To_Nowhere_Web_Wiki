@@ -74,6 +74,7 @@ export interface Database {
         Row: {
           id: string
           title: string
+          subtitle: string | null
           description: string | null
           event_type: 'story' | 'rerun' | 'collab' | 'maintenance' | 'other'
           banner_url: string | null

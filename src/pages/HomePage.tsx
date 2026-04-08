@@ -7,6 +7,7 @@ import { EventCountdown } from '../components/events/EventCountdown'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { formatDate } from '../lib/utils'
+import { useCountdown } from '../hooks/useCountdown'
 import { PageLoader } from '../components/ui/Spinner'
 import { EVENT_TYPE_LABEL } from '../lib/constants'
 
@@ -119,9 +120,9 @@ export function HomePage() {
   }, [])
 
   const now = new Date()
-  const activeEvents = events.filter(e => new Date(e.end_date) > now && new Date(e.start_date) <= now)
-  const upcomingEvents = events.filter(e => new Date(e.start_date) > now)
-  const currentEvent = events.find(e => e.is_featured) || activeEvents[0]
+  const currentEvent = events.find(e => e.is_featured) || events.find(e => new Date(e.end_date) > now && new Date(e.start_date) <= now)
+  const activeEvents = events.filter(e => new Date(e.end_date) > now && new Date(e.start_date) <= now && e.id !== currentEvent?.id)
+  const upcomingEvents = events.filter(e => new Date(e.start_date) > now && e.id !== currentEvent?.id)
 
   if (loading) return <PageLoader />
 
@@ -296,10 +297,15 @@ function EventBannerCard({
   countdownLabel: string
   upcoming?: boolean
 }) {
-  // Split "Event Name — Character Name" into parts if possible
-  const parts = event.title.split(' — ')
-  const eventName = parts[0]
-  const characterName = parts[1] || null
+  const characterName = event.subtitle || null
+  const eventName = event.title
+
+  const { days, hours, isExpired } = useCountdown(countdownTarget)
+  const countdownText = isExpired
+    ? 'สิ้นสุดแล้ว'
+    : days > 0
+    ? `${days}d ${String(hours).padStart(2, '0')}h`
+    : `${String(hours).padStart(2, '0')}h`
 
   return (
     <div className="relative rounded-xl overflow-hidden border border-ptn-border group cursor-pointer h-[160px]">
@@ -315,32 +321,32 @@ function EventBannerCard({
         <div className="absolute inset-0 bg-ptn-elevated" />
       )}
 
-      {/* Gradient: strong left fade for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg via-ptn-bg/80 to-ptn-bg/20" />
-      <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg/50 to-transparent" />
+      {/* Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg via-ptn-bg/75 to-ptn-bg/10" />
+      <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg/60 via-transparent to-transparent" />
 
-      {/* Content pinned to bottom-left */}
-      <div className="absolute inset-0 flex flex-col justify-end px-5 pb-4">
-        <div className="flex items-end justify-between gap-4">
-          {/* Left: text */}
-          <div className="min-w-0">
-            {characterName && (
-              <p className="text-xs text-ptn-cyan/90 font-medium tracking-widest uppercase mb-1">{characterName}</p>
-            )}
-            <h3 className="font-heading font-bold text-white text-2xl leading-tight drop-shadow-lg">
-              {eventName}
-            </h3>
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-xs text-white/50 bg-white/10 px-2 py-0.5 rounded-full">
-                {EVENT_TYPE_LABEL[event.event_type] || event.event_type}
-              </span>
-            </div>
-          </div>
+      {/* Character name — top left */}
+      {characterName && (
+        <div className="absolute top-4 left-5">
+          <p className="text-xs text-ptn-cyan/90 font-medium tracking-widest uppercase">{characterName}</p>
+        </div>
+      )}
 
-          {/* Right: countdown */}
-          <div className="shrink-0 pb-0.5">
-            <EventCountdown targetDate={countdownTarget} label={countdownLabel} />
-          </div>
+      {/* Bottom row */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-5 pb-4 gap-4">
+        {/* Left: event name */}
+        <h3 className="font-heading font-bold text-white text-2xl leading-tight drop-shadow-lg min-w-0">
+          {eventName}
+        </h3>
+
+        {/* Right: type badge + compact countdown */}
+        <div className="flex items-center gap-2 shrink-0 pb-0.5">
+          <span className="text-xs text-white/80 bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/10">
+            {EVENT_TYPE_LABEL[event.event_type] || event.event_type}
+          </span>
+          <span className="text-sm font-bold text-white bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
+            {countdownText}
+          </span>
         </div>
       </div>
     </div>
