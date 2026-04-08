@@ -29,7 +29,7 @@ type CharStats = { health: StatPair; attack: StatPair; defense: StatPair; magic_
 
 type CharForm = {
   name: string; rarity: 'S' | 'A' | 'B' | 'C'; faction: string; job_class: string
-  portrait_url: string; portrait_pos_x: number; portrait_pos_y: number; portrait_zoom: number; is_limited: boolean; is_unreleased: boolean; release_date: string
+  portrait_url: string; portrait_pos_x: number; portrait_pos_y: number; portrait_zoom: number; is_limited: boolean; is_unreleased: boolean; release_date: string; release_order: string
   tags: string; ability_tags: string[]; trivia: string[]
   char_details: CharDetails
   char_stats: CharStats
@@ -75,7 +75,7 @@ const blankMaterials = (): MaterialsData => ({
 
 const defaultForm: CharForm = {
   name: '', rarity: 'A', faction: 'anger', job_class: 'breaker',
-  portrait_url: '', portrait_pos_x: 50, portrait_pos_y: 20, portrait_zoom: 1, is_limited: false, is_unreleased: false, release_date: '', tags: '',
+  portrait_url: '', portrait_pos_x: 50, portrait_pos_y: 20, portrait_zoom: 1, is_limited: false, is_unreleased: false, release_date: '', release_order: '0', tags: '',
   ability_tags: [], trivia: [],
   char_details: blankDetails(),
   char_stats: blankStats(),
@@ -171,6 +171,7 @@ export function AdminCharactersPage() {
       portrait_zoom: char.portrait_zoom ?? 1,
       is_limited: char.is_limited,
       release_date: char.release_date || '',
+      release_order: char.release_order?.toString() || '0',
       tags: (char.tags as string[] || []).join(', '),
       ability_tags: (char.ability_tags as string[] | null) || [],
       trivia: ((char.trivia as string[]) || []),
@@ -211,6 +212,7 @@ export function AdminCharactersPage() {
       is_limited: form.is_limited,
       is_unreleased: form.is_unreleased,
       release_date: form.release_date || null,
+      release_order: parseInt(form.release_order) || 0,
       tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
       ability_tags: form.ability_tags,
       trivia: form.trivia.filter(t => t.trim()),
@@ -363,6 +365,7 @@ export function AdminCharactersPage() {
               onUpload={url => setForm(prev => ({ ...prev, portrait_url: url }))}
             />
             <Input label="วันที่ออก" type="date" value={form.release_date} onChange={set('release_date')} />
+            <Input label="Release Order (ตัวใหม่ = เลขมาก)" type="number" value={form.release_order} onChange={set('release_order')} />
             <Input label="แท็ก (คั่นด้วยเครื่องหมาย ,)" value={form.tags} onChange={set('tags')} placeholder="ดาเมจ, แนวหน้า" />
             <div className="flex items-end gap-4">
               <label className="flex items-center gap-2 cursor-pointer">

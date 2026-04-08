@@ -64,6 +64,7 @@ export interface Database {
           is_limited: boolean
           is_unreleased: boolean
           release_date: string | null
+          release_order: number | null
           created_at: string
           updated_at: string
         }

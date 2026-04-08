@@ -93,7 +93,7 @@ const mk = (
   portrait_url: img, splash_url: null,
   overview, stats: null, skills: null, shackles: null,
   tags: [mbcc], is_limited,
-  release_date: null, created_at: '', updated_at: '',
+  release_date: null, release_order: null, created_at: '', updated_at: '',
 })
 
 // ลำดับตาม s1n.gg/sinners (ใหม่ → เก่า)
@@ -245,7 +245,11 @@ const DEMO_CHARACTERS: C[] = [
   mk('ff',             'F.F.',             'ff',               'S','collab',   'reticle',   G('ff'),              'FE-39424', '', true),
   mk('narciso',        'Narciso Anastasia','narciso-anastasia', 'S','collab',   'arcane',    G('narciso_anastasia'),'MA-28050', '', true),
   mk('weather',        'Weather Forecast', 'weather-forecast', 'S','collab',   'arcane',    G('weatherforecast'), 'MA-152403','', true),
-].map(c => ({ ...c, faction: SLUG_ALIGNMENT[c.slug] ?? c.faction }))
+].map((c, i, arr) => ({
+  ...c,
+  faction: SLUG_ALIGNMENT[c.slug] ?? c.faction,
+  release_order: arr.length - i,   // Jichuan=145 (ใหม่สุด) … Weather Forecast=1 (เก่าสุด)
+}))
 
 const RARITY_COLOR: Record<string, string> = {
   S: '#FFD700', A: '#C084FC', B: '#60A5FA', C: '#6EE7B7',
@@ -267,6 +271,7 @@ export function CharactersPage() {
   const [filterFaction, setFilterFaction] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [showTagFilter, setShowTagFilter] = useState(false)
+  const [sort, setSort] = useState<'release' | 'alpha'>('release')
 
   const toggleTag = (tag: string) => {
     setSelectedTags(prev =>
@@ -278,12 +283,12 @@ export function CharactersPage() {
     supabase.from('characters').select('*')
       .then(({ data }) => {
         if (data && data.length > 0) {
-          // sort ตามลำดับ DEMO_CHARACTERS (slug เป็น key)
-          const orderMap = new Map(DEMO_CHARACTERS.map((c, i) => [c.slug, i]))
+          // sort ตาม release_order desc (ใหม่สุดขึ้นก่อน) ถ้าไม่มีให้ใช้ลำดับ DEMO_CHARACTERS
+          const orderMap = new Map(DEMO_CHARACTERS.map((c, i) => [c.slug, DEMO_CHARACTERS.length - i]))
           const sorted = [...data].sort((a, b) => {
-            const ai = orderMap.get(a.slug) ?? -1
-            const bi = orderMap.get(b.slug) ?? -1
-            return ai - bi
+            const ao = (a as Character & { release_order?: number | null }).release_order ?? orderMap.get(a.slug) ?? 0
+            const bo = (b as Character & { release_order?: number | null }).release_order ?? orderMap.get(b.slug) ?? 0
+            return bo - ao
           })
           setCharacters(sorted)
         } else {
@@ -293,17 +298,21 @@ export function CharactersPage() {
       })
   }, [])
 
-  const filtered = characters.filter(c => {
-    if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
-    if (filterRarity && c.rarity !== filterRarity) return false
-    if (filterClass && c.job_class !== filterClass) return false
-    if (filterFaction && c.faction !== filterFaction) return false
-    if (selectedTags.length > 0) {
-      const charTags = (c.ability_tags as string[] | null) || []
-      if (!selectedTags.some(t => charTags.includes(t))) return false
-    }
-    return true
-  })
+  const filtered = (() => {
+    let out = characters.filter(c => {
+      if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
+      if (filterRarity && c.rarity !== filterRarity) return false
+      if (filterClass && c.job_class !== filterClass) return false
+      if (filterFaction && c.faction !== filterFaction) return false
+      if (selectedTags.length > 0) {
+        const charTags = (c.ability_tags as string[] | null) || []
+        if (!selectedTags.some(t => charTags.includes(t))) return false
+      }
+      return true
+    })
+    if (sort === 'alpha') out = [...out].sort((a, b) => a.name.localeCompare(b.name, 'th'))
+    return out
+  })()
 
   const classes = [...new Set(characters.map(c => c.job_class))].sort()
   const factions = [...new Set(characters.map(c => c.faction))].sort()
@@ -332,6 +341,23 @@ export function CharactersPage() {
           <option value="">All Alignments</option>
           {factions.map(f => <option key={f} value={f}>{ALIGNMENT_LABEL[f] || f.toUpperCase()}</option>)}
         </Select>
+
+        <div className="flex items-center gap-1">
+          {(['release', 'alpha'] as const).map(s => (
+            <button
+              key={s}
+              onClick={() => setSort(s)}
+              className={cn(
+                'px-3 py-1.5 rounded text-xs font-medium border transition-all',
+                sort === s
+                  ? 'bg-ptn-red text-white border-ptn-red'
+                  : 'border-ptn-border text-ptn-muted hover:text-ptn-text',
+              )}
+            >
+              {s === 'release' ? 'วันที่ออก' : 'ตามชื่อ'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Rarity filter + count */}
