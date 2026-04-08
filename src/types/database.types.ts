@@ -78,6 +78,7 @@ export interface Database {
           description: string | null
           event_type: 'story' | 'rerun' | 'collab' | 'maintenance' | 'other'
           banner_url: string | null
+          featured_character_ids: string[] | null
           start_date: string
           end_date: string
           is_active: boolean

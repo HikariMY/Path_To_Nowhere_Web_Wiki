@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Calendar, Users, BarChart3, MessageSquare, ChevronRight, Clock } from 'lucide-react'
+import { Calendar, Users, BarChart3, MessageSquare, ChevronRight, Clock, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { GameEvent } from '../types'
 import { EventCountdown } from '../components/events/EventCountdown'
@@ -10,6 +10,8 @@ import { formatDate } from '../lib/utils'
 import { useCountdown } from '../hooks/useCountdown'
 import { PageLoader } from '../components/ui/Spinner'
 import { EVENT_TYPE_LABEL } from '../lib/constants'
+
+type CharOption = { id: string; name: string; portrait_url: string | null }
 
 interface Stats {
   characters: number
@@ -290,15 +292,17 @@ export function HomePage() {
 function EventBannerCard({
   event,
   countdownTarget,
-  countdownLabel,
+  upcoming,
 }: {
   event: GameEvent
   countdownTarget: string
-  countdownLabel: string
+  countdownLabel?: string
   upcoming?: boolean
 }) {
   const characterName = event.subtitle || null
   const eventName = event.title
+  const [expanded, setExpanded] = useState(false)
+  const [chars, setChars] = useState<CharOption[]>([])
 
   const { days, hours, isExpired } = useCountdown(countdownTarget)
   const countdownText = isExpired
@@ -307,48 +311,103 @@ function EventBannerCard({
     ? `${days}d ${String(hours).padStart(2, '0')}h`
     : `${String(hours).padStart(2, '0')}h`
 
+  useEffect(() => {
+    if (!expanded) return
+    const ids = event.featured_character_ids
+    if (!ids || ids.length === 0) return
+    supabase.from('characters').select('id,name,portrait_url').in('id', ids)
+      .then(({ data }) => setChars(data || []))
+  }, [expanded, event.id])
+
+  const hasDetails = (event.featured_character_ids?.length ?? 0) > 0
+
   return (
-    <div className="relative rounded-xl overflow-hidden border border-ptn-border group cursor-pointer h-[160px]">
-      {/* Background image */}
-      {event.banner_url ? (
-        <img
-          src={event.banner_url}
-          alt={event.title}
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          style={{ objectPosition: event.image_position || '50% 50%' }}
-        />
-      ) : (
-        <div className="absolute inset-0 bg-ptn-elevated" />
-      )}
+    <div className="rounded-xl overflow-hidden border border-ptn-border">
+      {/* Banner */}
+      <div
+        className="relative h-[160px] cursor-pointer group"
+        onClick={() => hasDetails && setExpanded(v => !v)}
+      >
+        {event.banner_url ? (
+          <img
+            src={event.banner_url}
+            alt={event.title}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            style={{ objectPosition: event.image_position || '50% 50%' }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-ptn-elevated" />
+        )}
 
-      {/* Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg/85 via-ptn-bg/50 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg/40 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg/85 via-ptn-bg/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg/40 via-transparent to-transparent" />
 
-      {/* Character name — top left */}
-      {characterName && (
-        <div className="absolute top-4 left-5">
-          <p className="text-xs text-ptn-cyan/90 font-medium tracking-widest uppercase">{characterName}</p>
-        </div>
-      )}
+        {/* Character name — top left */}
+        {characterName && (
+          <div className="absolute top-4 left-5">
+            <p className="text-xs text-ptn-cyan/90 font-medium tracking-widest uppercase">{characterName}</p>
+          </div>
+        )}
 
-      {/* Bottom row */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-5 pb-4 gap-4">
-        {/* Left: event name */}
-        <h3 className="font-heading font-bold text-white text-2xl leading-tight drop-shadow-lg min-w-0">
-          {eventName}
-        </h3>
+        {/* Expand icon */}
+        {hasDetails && (
+          <div className="absolute top-3 right-3">
+            <ChevronDown size={16} className={`text-white/60 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
+          </div>
+        )}
 
-        {/* Right: type badge + compact countdown */}
-        <div className="flex items-center gap-2 shrink-0 pb-0.5">
-          <span className="text-xs text-white/80 bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/10">
-            {EVENT_TYPE_LABEL[event.event_type] || event.event_type}
-          </span>
-          <span className="text-sm font-bold text-white bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
-            {countdownText}
-          </span>
+        {/* Bottom row */}
+        <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-5 pb-4 gap-4">
+          <h3 className="font-heading font-bold text-white text-2xl leading-tight drop-shadow-lg min-w-0">
+            {eventName}
+          </h3>
+          <div className="flex items-center gap-2 shrink-0 pb-0.5">
+            <span className="text-xs text-white/80 bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/10">
+              {EVENT_TYPE_LABEL[event.event_type] || event.event_type}
+            </span>
+            <span className="text-sm font-bold text-white bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
+              {countdownText}
+            </span>
+          </div>
         </div>
       </div>
+
+      {/* Expanded detail */}
+      {expanded && (
+        <div className="bg-ptn-surface border-t border-ptn-border/50">
+          {/* Characters */}
+          {chars.length > 0 && (
+            <div className="flex justify-center gap-4 px-5 pt-4 pb-3 flex-wrap">
+              {chars.map(c => (
+                <div key={c.id} className="flex flex-col items-center gap-1">
+                  {c.portrait_url
+                    ? <img src={c.portrait_url} alt={c.name} className="w-16 h-16 rounded-lg object-cover object-top border border-ptn-border" />
+                    : <div className="w-16 h-16 rounded-lg bg-ptn-elevated border border-ptn-border flex items-center justify-center text-ptn-disabled text-lg">{c.name[0]}</div>
+                  }
+                  <span className="text-xs text-ptn-muted">{c.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Date range */}
+          <div className="flex justify-between px-5 py-2 text-xs text-ptn-muted">
+            <span>{formatDate(event.start_date, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: false })}</span>
+            <span>{formatDate(event.end_date, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: false })}</span>
+          </div>
+
+          {/* Status bar */}
+          <div className="px-5 pb-4">
+            <div className="w-full bg-ptn-red text-white text-center text-sm font-semibold py-2.5 rounded-lg">
+              {isExpired
+                ? 'สิ้นสุดแล้ว'
+                : upcoming
+                ? `เริ่มในอีก ${days} วัน`
+                : `สิ้นสุดในอีก ${days} วัน`}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

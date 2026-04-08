@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Star } from 'lucide-react'
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Star, Search, X } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { GameEvent } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -16,16 +16,18 @@ import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../contexts/AuthContext'
 import { formatDate } from '../../lib/utils'
 
+type CharOption = { id: string; name: string; portrait_url: string | null }
+
 type EventForm = {
   title: string; subtitle: string; description: string; event_type: GameEvent['event_type']
   banner_url: string; start_date: string; end_date: string; is_active: boolean
-  image_position: string
+  image_position: string; featured_character_ids: string[]
 }
 
 const defaultForm: EventForm = {
   title: '', subtitle: '', description: '', event_type: 'story',
   banner_url: '', start_date: '', end_date: '', is_active: true,
-  image_position: '50% 50%',
+  image_position: '50% 50%', featured_character_ids: [],
 }
 
 // 3×3 position picker
@@ -95,8 +97,17 @@ export function AdminEventsPage() {
   const [editingEvent, setEditingEvent] = useState<GameEvent | null>(null)
   const [form, setForm] = useState<EventForm>(defaultForm)
   const [saving, setSaving] = useState(false)
+  const [allChars, setAllChars] = useState<CharOption[]>([])
+  const [charSearch, setCharSearch] = useState('')
 
   useEffect(() => { fetchEvents() }, [])
+
+  useEffect(() => {
+    if (modalOpen && allChars.length === 0) {
+      supabase.from('characters').select('id,name,portrait_url').order('name')
+        .then(({ data }) => setAllChars(data || []))
+    }
+  }, [modalOpen])
 
   const fetchEvents = async () => {
     const { data } = await supabase.from('events').select('*').order('start_date', { ascending: false })
@@ -117,6 +128,7 @@ export function AdminEventsPage() {
       banner_url: ev.banner_url || '', start_date: ev.start_date.slice(0, 16),
       end_date: ev.end_date.slice(0, 16), is_active: ev.is_active,
       image_position: ev.image_position || '50% 50%',
+      featured_character_ids: (ev.featured_character_ids as string[]) || [],
     })
     setModalOpen(true)
   }
@@ -133,6 +145,7 @@ export function AdminEventsPage() {
       start_date: new Date(form.start_date).toISOString(),
       end_date: new Date(form.end_date).toISOString(), is_active: form.is_active,
       image_position: form.image_position,
+      featured_character_ids: form.featured_character_ids,
     }
     let error
     if (editingEvent) {
@@ -254,6 +267,64 @@ export function AdminEventsPage() {
             previewUrl={form.banner_url || undefined}
           />
           <Textarea label="คำอธิบาย" value={form.description} onChange={set('description')} placeholder="รายละเอียดอีเวนต์..." rows={3} />
+          {/* Featured Characters */}
+          <div>
+            <p className="text-sm font-medium text-ptn-text mb-1">ตัวละครที่แนะนำในอีเวนต์</p>
+            <p className="text-xs text-ptn-muted mb-2">แสดงเป็นรูปตัวละครเมื่อกดขยายการ์ดอีเวนต์</p>
+            {form.featured_character_ids.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {form.featured_character_ids.map(id => {
+                  const c = allChars.find(ch => ch.id === id)
+                  if (!c) return null
+                  return (
+                    <div key={id} className="flex items-center gap-1.5 bg-ptn-elevated border border-ptn-border rounded px-2 py-1">
+                      {c.portrait_url && <img src={c.portrait_url} className="w-5 h-5 rounded object-cover object-top" />}
+                      <span className="text-xs text-ptn-text">{c.name}</span>
+                      <button type="button" onClick={() => setForm(prev => ({ ...prev, featured_character_ids: prev.featured_character_ids.filter(i => i !== id) }))}>
+                        <X size={11} className="text-ptn-disabled hover:text-ptn-red" />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-ptn-elevated border border-ptn-border mb-2">
+              <Search size={12} className="text-ptn-disabled shrink-0" />
+              <input
+                value={charSearch}
+                onChange={e => setCharSearch(e.target.value)}
+                placeholder="ค้นหาตัวละคร..."
+                className="flex-1 bg-transparent text-sm text-ptn-text placeholder-ptn-disabled outline-none"
+              />
+            </div>
+            <div className="grid grid-cols-5 gap-1.5 max-h-36 overflow-y-auto p-1 bg-ptn-elevated rounded border border-ptn-border">
+              {allChars
+                .filter(c => !charSearch || c.name.toLowerCase().includes(charSearch.toLowerCase()))
+                .map(c => {
+                  const selected = form.featured_character_ids.includes(c.id)
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setForm(prev => ({
+                        ...prev,
+                        featured_character_ids: selected
+                          ? prev.featured_character_ids.filter(id => id !== c.id)
+                          : [...prev.featured_character_ids, c.id],
+                      }))}
+                      className={`flex flex-col items-center gap-0.5 p-1 rounded transition-all border ${selected ? 'border-ptn-cyan bg-ptn-cyan/15' : 'border-transparent hover:border-ptn-border hover:bg-ptn-surface'}`}
+                    >
+                      {c.portrait_url
+                        ? <img src={c.portrait_url} className="w-10 h-10 rounded object-cover object-top" />
+                        : <div className="w-10 h-10 rounded bg-ptn-surface flex items-center justify-center text-xs text-ptn-disabled">{c.name[0]}</div>
+                      }
+                      <span className="text-[10px] text-ptn-muted truncate w-full text-center">{c.name}</span>
+                    </button>
+                  )
+                })}
+            </div>
+          </div>
+
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={form.is_active} onChange={e => setForm(prev => ({...prev, is_active: e.target.checked}))} className="accent-ptn-red" />
             <span className="text-sm text-ptn-text">ใช้งาน (แสดงบนหน้าแรก)</span>
