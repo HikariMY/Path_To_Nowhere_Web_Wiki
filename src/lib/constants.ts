@@ -93,19 +93,45 @@ export const ALIGNMENT_ICON: Record<string, string> = {
 }
 
 export const EVENT_TYPE_LABEL: Record<string, string> = {
-  story:       'อีเวนต์เนื้อเรื่อง',
-  rerun:       'อีเวนต์รีรัน',
-  collab:      'อีเวนต์ความร่วมมือ',
-  maintenance: 'บำรุงรักษา',
-  other:       'อีเวนต์อื่นๆ',
+  // Gacha / Banner
+  gacha_new:          'ตู้กาชาใหม่',
+  gacha_new_limited:  'ตู้กาชาใหม่ลิมิตเต็ต',
+  gacha_rerun:        'ตู้กาชารีรัน',
+  gacha_rerun_limited:'ตู้กาชารีรันลิมิตเต็ต',
+  // Event
+  event_new:          'อีเวนต์ใหม่',
+  event_rerun:        'อีเวนต์รีรัน',
+  event_collab:       'อีเวนต์คอลแลบ',
+  // Story
+  story_new:          'เนื้อเรื่องใหม่',
+  story_eternal:      'เนื้อเรื่อง Eternal Nightmare',
+  // Misc
+  maintenance:        'บำรุงรักษา',
+  other:              'อื่นๆ',
+  // Legacy
+  story:   'อีเวนต์เนื้อเรื่อง',
+  rerun:   'อีเวนต์รีรัน',
+  collab:  'อีเวนต์ความร่วมมือ',
 }
 
+export const GACHA_EVENT_TYPES = ['gacha_new', 'gacha_new_limited', 'gacha_rerun', 'gacha_rerun_limited']
+
 export const EVENT_TYPE_COLORS: Record<string, string> = {
-  story:       'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  rerun:       'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  collab:      'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  maintenance: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-  other:       'bg-green-500/20 text-green-400 border-green-500/30',
+  gacha_new:          'bg-ptn-gold/20 text-ptn-gold border-ptn-gold/30',
+  gacha_new_limited:  'bg-ptn-red/20 text-ptn-red border-ptn-red/30',
+  gacha_rerun:        'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  gacha_rerun_limited:'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  event_new:          'bg-green-500/20 text-green-400 border-green-500/30',
+  event_rerun:        'bg-teal-500/20 text-teal-400 border-teal-500/30',
+  event_collab:       'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  story_new:          'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  story_eternal:      'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+  maintenance:        'bg-gray-500/20 text-gray-400 border-gray-500/30',
+  other:              'bg-ptn-muted/20 text-ptn-muted border-ptn-muted/30',
+  // Legacy
+  story:   'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  rerun:   'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  collab:  'bg-purple-500/20 text-purple-400 border-purple-500/30',
 }
 
 export const FORUM_CATEGORY_ICONS: Record<string, string> = {

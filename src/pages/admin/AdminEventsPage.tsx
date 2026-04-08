@@ -15,6 +15,7 @@ import { ImageUpload } from '../../components/ui/ImageUpload'
 import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../contexts/AuthContext'
 import { formatDate } from '../../lib/utils'
+import { GACHA_EVENT_TYPES } from '../../lib/constants'
 
 type CharOption = { id: string; name: string; portrait_url: string | null }
 
@@ -245,10 +246,26 @@ export function AdminEventsPage() {
         <div className="space-y-4">
           <Input label="ชื่ออีเวนต์" value={form.title} onChange={set('title')} placeholder="เช่น JASMINE &amp; HESTIA" />
           <Input label="ชื่อตัวละคร / Subtitle (แสดงบนซ้ายการ์ด)" value={form.subtitle} onChange={set('subtitle')} placeholder="เช่น Jasmine, Hestia" />
-          <Select label="ประเภท" value={form.event_type} onChange={set('event_type')}>
-            {(['story','rerun','collab','maintenance','other'] as const).map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
+          <Select label="ประเภทอีเวนต์" value={form.event_type} onChange={set('event_type')}>
+            <optgroup label="── ตู้กาชา / Banner ──">
+              <option value="gacha_new">ตู้กาชาใหม่</option>
+              <option value="gacha_new_limited">ตู้กาชาใหม่ลิมิตเต็ต</option>
+              <option value="gacha_rerun">ตู้กาชารีรัน</option>
+              <option value="gacha_rerun_limited">ตู้กาชารีรันลิมิตเต็ต</option>
+            </optgroup>
+            <optgroup label="── อีเวนต์ ──">
+              <option value="event_new">อีเวนต์ใหม่</option>
+              <option value="event_rerun">อีเวนต์รีรัน</option>
+              <option value="event_collab">อีเวนต์คอลแลบ</option>
+            </optgroup>
+            <optgroup label="── เนื้อเรื่อง ──">
+              <option value="story_new">เนื้อเรื่องใหม่</option>
+              <option value="story_eternal">เนื้อเรื่อง Eternal Nightmare</option>
+            </optgroup>
+            <optgroup label="── อื่นๆ ──">
+              <option value="maintenance">บำรุงรักษา</option>
+              <option value="other">อื่นๆ</option>
+            </optgroup>
           </Select>
           <div className="grid sm:grid-cols-2 gap-4">
             <Input label="วันเริ่มต้น" type="datetime-local" value={form.start_date} onChange={set('start_date')} />
@@ -267,8 +284,8 @@ export function AdminEventsPage() {
             previewUrl={form.banner_url || undefined}
           />
           <Textarea label="คำอธิบาย" value={form.description} onChange={set('description')} placeholder="รายละเอียดอีเวนต์..." rows={3} />
-          {/* Featured Characters */}
-          <div>
+          {/* Featured Characters — เฉพาะตู้กาชา */}
+          {GACHA_EVENT_TYPES.includes(form.event_type) && <div>
             <p className="text-sm font-medium text-ptn-text mb-1">ตัวละครที่แนะนำในอีเวนต์</p>
             <p className="text-xs text-ptn-muted mb-2">แสดงเป็นรูปตัวละครเมื่อกดขยายการ์ดอีเวนต์</p>
             {form.featured_character_ids.length > 0 && (
@@ -323,7 +340,7 @@ export function AdminEventsPage() {
                   )
                 })}
             </div>
-          </div>
+          </div>}
 
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={form.is_active} onChange={e => setForm(prev => ({...prev, is_active: e.target.checked}))} className="accent-ptn-red" />
