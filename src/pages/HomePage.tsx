@@ -139,8 +139,8 @@ export function HomePage() {
                 backgroundPosition: currentEvent.image_position || '50% 50%',
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg via-ptn-bg/85 to-ptn-bg/40" />
-            <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg via-transparent to-ptn-bg/60" />
+            <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg/90 via-ptn-bg/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg/50 via-transparent to-transparent" />
           </>
         )}
         {!currentEvent?.banner_url && <div className="absolute inset-0 bg-red-glow" />}
@@ -322,8 +322,8 @@ function EventBannerCard({
       )}
 
       {/* Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg via-ptn-bg/75 to-ptn-bg/10" />
-      <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg/60 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg/85 via-ptn-bg/50 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg/40 via-transparent to-transparent" />
 
       {/* Character name — top left */}
       {characterName && (

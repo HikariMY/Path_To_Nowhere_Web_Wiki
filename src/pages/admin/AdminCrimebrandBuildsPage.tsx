@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Pencil, Trash2, ChevronDown, Search } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { Button } from '../../components/ui/Button'
 import { Modal } from '../../components/ui/Modal'
@@ -88,6 +88,8 @@ export function AdminCrimebrandBuildsPage() {
 
   // Dropdown open states
   const [charDropOpen, setCharDropOpen] = useState(false)
+  const [charSearch, setCharSearch] = useState('')
+  const charSearchRef = useRef<HTMLInputElement>(null)
   const [slotDropOpen, setSlotDropOpen] = useState([false, false, false])
 
   useEffect(() => {
@@ -224,24 +226,42 @@ export function AdminCrimebrandBuildsPage() {
           </button>
           {charDropOpen && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setCharDropOpen(false)} />
-              <div className="absolute top-full left-0 right-0 z-20 mt-1 max-h-64 overflow-y-auto rounded-lg border border-ptn-border bg-ptn-surface shadow-lg">
-                {characters.map(c => (
-                  <button
-                    key={c.id}
-                    onClick={() => { setSelectedCharId(c.id); setCharDropOpen(false) }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-ptn-elevated transition-colors ${selectedCharId === c.id ? 'bg-ptn-elevated' : ''}`}
-                  >
-                    {c.portrait_url ? (
-                      <img src={c.portrait_url} className="w-7 h-7 rounded object-cover object-top shrink-0" />
-                    ) : (
-                      <div className="w-7 h-7 rounded bg-ptn-elevated flex items-center justify-center shrink-0 text-xs text-ptn-disabled">
-                        {c.name[0]}
-                      </div>
-                    )}
-                    <span className="text-ptn-text">{c.name}</span>
-                  </button>
-                ))}
+              <div className="fixed inset-0 z-10" onClick={() => { setCharDropOpen(false); setCharSearch('') }} />
+              <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-lg border border-ptn-border bg-ptn-surface shadow-lg">
+                {/* Search input */}
+                <div className="p-2 border-b border-ptn-border">
+                  <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-ptn-elevated border border-ptn-border">
+                    <Search size={12} className="text-ptn-disabled shrink-0" />
+                    <input
+                      ref={charSearchRef}
+                      autoFocus
+                      value={charSearch}
+                      onChange={e => setCharSearch(e.target.value)}
+                      placeholder="ค้นหาตัวละคร..."
+                      className="flex-1 bg-transparent text-sm text-ptn-text placeholder-ptn-disabled outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="max-h-56 overflow-y-auto">
+                  {characters
+                    .filter(c => !charSearch || c.name.toLowerCase().includes(charSearch.toLowerCase()))
+                    .map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => { setSelectedCharId(c.id); setCharDropOpen(false); setCharSearch('') }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-ptn-elevated transition-colors ${selectedCharId === c.id ? 'bg-ptn-elevated' : ''}`}
+                      >
+                        {c.portrait_url ? (
+                          <img src={c.portrait_url} className="w-7 h-7 rounded object-cover object-top shrink-0" />
+                        ) : (
+                          <div className="w-7 h-7 rounded bg-ptn-elevated flex items-center justify-center shrink-0 text-xs text-ptn-disabled">
+                            {c.name[0]}
+                          </div>
+                        )}
+                        <span className="text-ptn-text">{c.name}</span>
+                      </button>
+                    ))}
+                </div>
               </div>
             </>
           )}
