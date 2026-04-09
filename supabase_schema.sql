@@ -110,9 +110,12 @@ create table public.events (
   end_date       timestamptz not null,
   is_active      boolean not null default true,
   is_featured    boolean not null default false,
-  image_position text not null default '50% 50%',
-  created_at     timestamptz not null default now()
+  image_position             text not null default '50% 50%',
+  featured_character_images  jsonb default null,
+  created_at                 timestamptz not null default now()
 );
+-- Migration (run if table already exists):
+-- ALTER TABLE public.events ADD COLUMN featured_character_images jsonb DEFAULT NULL;
 
 alter table public.events enable row level security;
 

@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Star, Search, X } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Star, Search, X, Camera } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { GameEvent } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -23,12 +23,14 @@ type EventForm = {
   title: string; subtitle: string; description: string; event_type: GameEvent['event_type']
   banner_url: string; start_date: string; end_date: string; is_active: boolean
   image_position: string; featured_character_ids: string[]
+  featured_character_images: Record<string, string>
 }
 
 const defaultForm: EventForm = {
   title: '', subtitle: '', description: '', event_type: 'story',
   banner_url: '', start_date: '', end_date: '', is_active: true,
   image_position: '50% 50%', featured_character_ids: [],
+  featured_character_images: {},
 }
 
 // 3×3 position picker
@@ -89,6 +91,62 @@ function ImagePositionPicker({ position, onChange, previewUrl }: {
   )
 }
 
+function CharEventImgBtn({ charId, charPortrait, customImg, onUpload, onClear }: {
+  charId: string
+  charPortrait: string | null
+  customImg: string | null
+  onUpload: (url: string) => void
+  onClear: () => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
+  const [uploading, setUploading] = useState(false)
+  const displayImg = customImg || charPortrait
+
+  const handleFile = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) { toast('ไฟล์ใหญ่เกินไป (สูงสุด 5MB)', 'error'); return }
+    setUploading(true)
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `char_event_${charId}_${Date.now()}.${ext}`
+    const { data, error } = await supabase.storage.from('events').upload(path, file, { upsert: true, contentType: file.type })
+    if (error) { toast('อัปโหลดล้มเหลว', 'error'); setUploading(false); return }
+    const { data: { publicUrl } } = supabase.storage.from('events').getPublicUrl(data.path)
+    onUpload(publicUrl)
+    setUploading(false)
+  }
+
+  return (
+    <div className="relative group/cimg shrink-0">
+      <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }} />
+      <button
+        type="button"
+        title={customImg ? 'คลิกเพื่อเปลี่ยนรูป' : 'ตั้งรูปสำหรับอีเวนต์นี้'}
+        disabled={uploading}
+        onClick={() => inputRef.current?.click()}
+        className={`relative w-6 h-6 rounded overflow-hidden border transition-colors ${customImg ? 'border-ptn-cyan' : 'border-ptn-border hover:border-ptn-muted'} disabled:opacity-50`}
+      >
+        {displayImg
+          ? <img src={displayImg} className="w-full h-full object-cover object-top" />
+          : <div className="w-full h-full bg-ptn-surface flex items-center justify-center"><Camera size={10} className="text-ptn-disabled" /></div>
+        }
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/cimg:opacity-100 transition-opacity">
+          <Camera size={10} className="text-white" />
+        </div>
+      </button>
+      {customImg && (
+        <button
+          type="button"
+          title="ล้างรูปอีเวนต์"
+          onClick={onClear}
+          className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-ptn-red rounded-full flex items-center justify-center opacity-0 group-hover/cimg:opacity-100 transition-opacity z-10"
+        >
+          <X size={8} className="text-white" />
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function AdminEventsPage() {
   const {} = useAuth()
   const { toast } = useToast()
@@ -130,6 +188,7 @@ export function AdminEventsPage() {
       end_date: ev.end_date.slice(0, 16), is_active: ev.is_active,
       image_position: ev.image_position || '50% 50%',
       featured_character_ids: (ev.featured_character_ids as string[]) || [],
+      featured_character_images: (ev.featured_character_images as Record<string, string>) || {},
     })
     setModalOpen(true)
   }
@@ -147,6 +206,7 @@ export function AdminEventsPage() {
       end_date: new Date(form.end_date).toISOString(), is_active: form.is_active,
       image_position: form.image_position,
       featured_character_ids: form.featured_character_ids,
+      featured_character_images: Object.keys(form.featured_character_images).length > 0 ? form.featured_character_images : null,
     }
     let error
     if (editingEvent) {
@@ -295,9 +355,23 @@ export function AdminEventsPage() {
                   if (!c) return null
                   return (
                     <div key={id} className="flex items-center gap-1.5 bg-ptn-elevated border border-ptn-border rounded px-2 py-1">
-                      {c.portrait_url && <img src={c.portrait_url} className="w-5 h-5 rounded object-cover object-top" />}
+                      <CharEventImgBtn
+                        charId={id}
+                        charPortrait={c.portrait_url}
+                        customImg={form.featured_character_images[id] || null}
+                        onUpload={url => setForm(prev => ({ ...prev, featured_character_images: { ...prev.featured_character_images, [id]: url } }))}
+                        onClear={() => setForm(prev => {
+                          const imgs = { ...prev.featured_character_images }
+                          delete imgs[id]
+                          return { ...prev, featured_character_images: imgs }
+                        })}
+                      />
                       <span className="text-xs text-ptn-text">{c.name}</span>
-                      <button type="button" onClick={() => setForm(prev => ({ ...prev, featured_character_ids: prev.featured_character_ids.filter(i => i !== id) }))}>
+                      <button type="button" onClick={() => setForm(prev => {
+                        const imgs = { ...prev.featured_character_images }
+                        delete imgs[id]
+                        return { ...prev, featured_character_ids: prev.featured_character_ids.filter(i => i !== id), featured_character_images: imgs }
+                      })}>
                         <X size={11} className="text-ptn-disabled hover:text-ptn-red" />
                       </button>
                     </div>

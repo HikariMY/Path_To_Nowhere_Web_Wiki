@@ -80,6 +80,7 @@ export interface Database {
           event_type: 'gacha_new' | 'gacha_new_limited' | 'gacha_rerun' | 'gacha_rerun_limited' | 'event_new' | 'event_rerun' | 'event_collab' | 'story_new' | 'story_eternal' | 'maintenance' | 'other' | 'story' | 'rerun' | 'collab'
           banner_url: string | null
           featured_character_ids: string[] | null
+          featured_character_images: Record<string, string> | null
           start_date: string
           end_date: string
           is_active: boolean

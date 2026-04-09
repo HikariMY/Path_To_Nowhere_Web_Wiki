@@ -311,7 +311,11 @@ function EventBannerCard({
     const ids = event.featured_character_ids
     if (!ids || ids.length === 0) return
     supabase.from('characters').select('id,name,portrait_url').in('id', ids)
-      .then(({ data }) => setChars(data || []))
+      .then(({ data }) => {
+        if (!data) { setChars([]); return }
+        const ordered = ids.map(id => data.find(c => c.id === id)).filter(Boolean) as CharOption[]
+        setChars(ordered)
+      })
   }, [expanded, event.id])
 
   const hasDetails = (event.featured_character_ids?.length ?? 0) > 0
@@ -395,15 +399,19 @@ function EventBannerCard({
           {/* Characters */}
           {chars.length > 0 && (
             <div className="flex justify-center gap-4 px-5 pt-4 pb-3 flex-wrap">
-              {chars.map(c => (
-                <div key={c.id} className="flex flex-col items-center gap-1">
-                  {c.portrait_url
-                    ? <img src={c.portrait_url} alt={c.name} className="w-16 h-16 rounded-lg object-cover object-top border border-ptn-border" />
-                    : <div className="w-16 h-16 rounded-lg bg-ptn-elevated border border-ptn-border flex items-center justify-center text-ptn-disabled text-lg">{c.name[0]}</div>
-                  }
-                  <span className="text-xs text-ptn-muted">{c.name}</span>
-                </div>
-              ))}
+              {chars.map(c => {
+                const eventImgs = (event.featured_character_images as Record<string, string> | null) || {}
+                const imgSrc = eventImgs[c.id] || c.portrait_url
+                return (
+                  <div key={c.id} className="flex flex-col items-center gap-1">
+                    {imgSrc
+                      ? <img src={imgSrc} alt={c.name} className="w-16 h-16 rounded-lg object-cover object-top border border-ptn-border" />
+                      : <div className="w-16 h-16 rounded-lg bg-ptn-elevated border border-ptn-border flex items-center justify-center text-ptn-disabled text-lg">{c.name[0]}</div>
+                    }
+                    <span className="text-xs text-ptn-muted">{c.name}</span>
+                  </div>
+                )
+              })}
             </div>
           )}
 
