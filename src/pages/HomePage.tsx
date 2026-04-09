@@ -11,7 +11,7 @@ import { useCountdown } from '../hooks/useCountdown'
 import { PageLoader } from '../components/ui/Spinner'
 import { EVENT_TYPE_LABEL } from '../lib/constants'
 
-type CharOption = { id: string; name: string; portrait_url: string | null }
+type CharOption = { id: string; name: string; portrait_url: string | null; slug: string }
 
 interface Stats {
   characters: number
@@ -310,7 +310,7 @@ function EventBannerCard({
     if (!expanded) return
     const ids = event.featured_character_ids
     if (!ids || ids.length === 0) return
-    supabase.from('characters').select('id,name,portrait_url').in('id', ids)
+    supabase.from('characters').select('id,name,portrait_url,slug').in('id', ids)
       .then(({ data }) => {
         if (!data) { setChars([]); return }
         const ordered = ids.map(id => data.find(c => c.id === id)).filter(Boolean) as CharOption[]
@@ -403,13 +403,13 @@ function EventBannerCard({
                 const eventImgs = (event.featured_character_images as Record<string, string> | null) || {}
                 const imgSrc = eventImgs[c.id] || c.portrait_url
                 return (
-                  <div key={c.id} className="flex flex-col items-center gap-1">
+                  <Link key={c.id} to={`/characters/${c.slug}`} className="flex flex-col items-center gap-1 group">
                     {imgSrc
-                      ? <img src={imgSrc} alt={c.name} className="w-16 h-16 rounded-lg object-cover object-top border border-ptn-border" />
-                      : <div className="w-16 h-16 rounded-lg bg-ptn-elevated border border-ptn-border flex items-center justify-center text-ptn-disabled text-lg">{c.name[0]}</div>
+                      ? <img src={imgSrc} alt={c.name} className="w-16 h-16 rounded-lg object-cover object-top border border-ptn-border group-hover:border-ptn-cyan transition-colors" />
+                      : <div className="w-16 h-16 rounded-lg bg-ptn-elevated border border-ptn-border group-hover:border-ptn-cyan transition-colors flex items-center justify-center text-ptn-disabled text-lg">{c.name[0]}</div>
                     }
-                    <span className="text-xs text-ptn-muted">{c.name}</span>
-                  </div>
+                    <span className="text-xs text-ptn-muted group-hover:text-ptn-cyan transition-colors">{c.name}</span>
+                  </Link>
                 )
               })}
             </div>
