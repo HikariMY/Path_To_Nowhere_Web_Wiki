@@ -53,6 +53,7 @@ export function Modal({ open, onClose, title, children, size = 'md', className }
             className,
           )}
           onClick={e => e.stopPropagation()}
+          onMouseDown={e => e.stopPropagation()}
         >
           {title && (
             <div className="flex items-center justify-between border-b border-ptn-border p-4 sticky top-0 bg-ptn-surface rounded-t-lg z-10">
