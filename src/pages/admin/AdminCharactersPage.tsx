@@ -17,7 +17,7 @@ import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../contexts/AuthContext'
 import { slugify } from '../../lib/utils'
 import { JOB_CLASS_LABEL, ALIGNMENT_LABEL } from '../../lib/constants'
-import { ABILITY_TAG_GROUPS } from '../../lib/abilityTags'
+import { useAbilityTags } from '../../hooks/useAbilityTags'
 
 type OverviewCard = { title: string; content: string }
 type MaterialEntry = { name: string; image_url: string; amount: string }
@@ -132,6 +132,7 @@ function SlotImage({ url, bucket, onUpload }: { url: string; bucket: string; onU
 export function AdminCharactersPage() {
   const { profile } = useAuth()
   const { toast } = useToast()
+  const { groups: abilityTagGroups } = useAbilityTags()
   const [characters, setCharacters] = useState<Character[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -639,7 +640,7 @@ export function AdminCharactersPage() {
             <p className="text-sm font-medium text-ptn-text mb-1">ความสามารถ (Ability Tags)</p>
             <p className="text-xs text-ptn-muted mb-3">คลิกเพื่อเลือก/ยกเลิก — แสดงในหน้าตัวละครและใช้กรองในหน้ารายชื่อ</p>
             <div className="space-y-3 p-3 bg-ptn-elevated rounded-lg border border-ptn-border">
-              {ABILITY_TAG_GROUPS.map(group => (
+              {abilityTagGroups.map(group => (
                 <div key={group.label}>
                   <p className="text-xs font-semibold mb-1.5" style={{ color: group.text }}>{group.label}</p>
                   <div className="flex flex-wrap gap-1.5">

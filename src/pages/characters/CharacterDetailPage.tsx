@@ -11,7 +11,8 @@ import { Card } from '../../components/ui/Card'
 import { PageLoader } from '../../components/ui/Spinner'
 import { RARITY_COLORS, JOB_CLASS_LABEL, ALIGNMENT_LABEL, ALIGNMENT_ICON, TENDENCY_ICON } from '../../lib/constants'
 import { formatDate } from '../../lib/utils'
-import { ABILITY_TAG_GROUPS, TAG_GROUP_MAP, TAG_DESCRIPTIONS } from '../../lib/abilityTags'
+import { useAbilityTags } from '../../hooks/useAbilityTags'
+import type { TagGroup } from '../../lib/abilityTags'
 import { Modal } from '../../components/ui/Modal'
 
 // ---- Tabs ----------------------------------------------------------------
@@ -53,24 +54,12 @@ function ShackleIcon({ stage, iconUrl }: { stage: number; iconUrl?: string }) {
 
 // ---- Tags info modal -------------------------------------------------------
 
-function TagsInfoModal({ open, onClose, tags }: { open: boolean; onClose: () => void; tags: string[] }) {
-  const [dbRows, setDbRows] = React.useState<Array<{ key: string; data: { desc?: string } }>>([])
-
-  React.useEffect(() => {
-    if (!open) return
-    supabase
-      .from('game_info')
-      .select('key,data')
-      .eq('category', 'tag')
-      .then(({ data }) => setDbRows(data || []))
-  }, [open])
-
+function TagsInfoModal({ open, onClose, tags, groups, descriptions }: { open: boolean; onClose: () => void; tags: string[]; groups: TagGroup[]; descriptions: Record<string, string> }) {
   function getDesc(tag: string) {
-    const row = dbRows.find(r => r.key === tag)
-    return row?.data?.desc ?? TAG_DESCRIPTIONS[tag] ?? '—'
+    return descriptions[tag] ?? '—'
   }
 
-  const grouped = ABILITY_TAG_GROUPS
+  const grouped = groups
     .map(group => ({
       group,
       items: tags.filter(t => group.tags.includes(t)),
@@ -409,6 +398,7 @@ const CB_PIECE_LABEL = ['I', 'II', 'III']
 
 export function CharacterDetailPage() {
   const { slug } = useParams<{ slug: string }>()
+  const { groups: abilityTagGroups, descriptions: tagDescriptions } = useAbilityTags()
   const [character, setCharacter] = useState<Character | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('info')
@@ -577,7 +567,7 @@ export function CharacterDetailPage() {
             {/* Ability tags */}
             {abilityTags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-3">
-                {ABILITY_TAG_GROUPS.flatMap(group =>
+                {abilityTagGroups.flatMap(group =>
                   abilityTags
                     .filter(t => group.tags.includes(t))
                     .map(tag => (
@@ -975,6 +965,8 @@ export function CharacterDetailPage() {
         open={tagsModalOpen}
         onClose={() => setTagsModalOpen(false)}
         tags={abilityTags}
+        groups={abilityTagGroups}
+        descriptions={tagDescriptions}
       />
     </div>
   )

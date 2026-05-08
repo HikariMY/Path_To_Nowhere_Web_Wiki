@@ -8,7 +8,7 @@ import { Select } from '../../components/ui/Select'
 import { PageLoader } from '../../components/ui/Spinner'
 import { JOB_CLASS_LABEL, ALIGNMENT_LABEL, ALIGNMENT_ICON } from '../../lib/constants'
 import { cn } from '../../lib/utils'
-import { ABILITY_TAG_GROUPS } from '../../lib/abilityTags'
+import { useAbilityTags } from '../../hooks/useAbilityTags'
 
 // ── Tendency icons from /TenIcon/ ────────────────────────────────────────
 const TENDENCY_ICON_PATH: Record<string, string> = {
@@ -263,6 +263,7 @@ const isNew = (char: Character) => {
 }
 
 export function CharactersPage() {
+  const { groups: abilityTagGroups } = useAbilityTags()
   const [characters, setCharacters] = useState<Character[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -403,7 +404,7 @@ export function CharactersPage() {
 
         {showTagFilter && (
           <div className="mt-3 p-4 bg-ptn-elevated rounded-lg border border-ptn-border space-y-4">
-            {ABILITY_TAG_GROUPS.map(group => (
+            {abilityTagGroups.map(group => (
               <div key={group.label}>
                 <p className="text-xs font-semibold mb-2" style={{ color: group.text }}>{group.label}</p>
                 <div className="flex flex-wrap gap-1.5">
