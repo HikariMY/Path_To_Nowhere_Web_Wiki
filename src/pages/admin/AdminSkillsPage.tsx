@@ -528,13 +528,37 @@ export function AdminSkillsPage() {
           />
 
           {/* Description */}
-          <Textarea
-            label="คำอธิบายสกิล (Base Description)"
-            value={form.description}
-            onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-            placeholder="อธิบายการทำงานของสกิล..."
-            rows={4}
-          />
+          <div>
+            <Textarea
+              label="คำอธิบายสกิล (Base Description)"
+              value={form.description}
+              onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+              placeholder="อธิบายการทำงานของสกิล... เช่น สร้างความเสียหายเท่ากับ *(พลังโจมตี 160% เพิ่มขึ้นตามเลเวล)"
+              rows={4}
+            />
+            <div className="text-xs text-ptn-disabled mt-1 leading-relaxed space-y-1">
+              <p>
+                <span className="text-ptn-muted">ค่าที่เปลี่ยนตามเลเวล (เลขสีฟ้า)</span> — ระบบจะจับให้อัตโนมัติ ขอแค่:
+              </p>
+              <p>
+                ① ในคำอธิบาย เขียน<b className="text-ptn-muted">เลขของ LV สูงสุด (LV10)</b> ไว้ที่ตำแหน่งค่า โดยครอบด้วย
+                <span className="font-mono text-ptn-muted"> *( )</span> เช่น <span className="font-mono text-ptn-muted">*(พลังโจมตี 160% เพิ่มขึ้นตามเลเวล)</span> → ไฮไลต์ทั้งวงเล็บ
+                (หรือเขียนเลขลอยๆ ในประโยคก็ได้ → ไฮไลต์เฉพาะตัวเลข)
+              </p>
+              <p>
+                ② ช่อง “ข้อมูลแต่ละเลเวล” ด้านล่าง กรอกค่าของ LV1–LV10 ให้ครบ — ระบบจะดึงตัวเลขมาสลับให้ตามเลเวลที่กด
+              </p>
+              <p>
+                ③ ถ้ามีหลายค่าในสกิลเดียว ให้เรียงลำดับให้ตรงกัน และคั่นค่าในแต่ละเลเวลด้วย
+                <span className="font-mono text-ptn-muted"> ,</span> เช่น <span className="font-mono text-ptn-muted">128%, 256%, 512%</span>
+                (เลขในคำอธิบายตัวที่ 1, 2, 3 จะผูกกับค่าตัวที่ 1, 2, 3)
+              </p>
+              <p className="text-ptn-disabled/80">
+                ※ ขั้นสูง: ถ้าระบบจับอัตโนมัติไม่ตรง ใช้ <span className="font-mono">[[ ]]</span> ครอบเพื่อบังคับไฮไลต์ และ
+                <span className="font-mono"> {'{1}'} {'{2}'}</span> ระบุตำแหน่งค่าเองได้
+              </p>
+            </div>
+          </div>
 
           {/* Level descriptions */}
           <div>

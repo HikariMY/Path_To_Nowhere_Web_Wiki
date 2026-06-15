@@ -211,6 +211,127 @@ function ExclusiveCrimebrandCard({ data }: { data: {
 
 // ---- SkillCard -----------------------------------------------------------
 
+const HL_CLASS = 'text-ptn-cyan font-medium'
+const NUM_RE = /\d+(?:\.\d+)?%?/g
+
+/**
+ * ดึง "ตัวเลขสเกล" ออกจากค่าของหนึ่งเลเวล โดยคืนเป็นลำดับ (slot)
+ * รองรับหลายรูปแบบ:
+ *   "128%, 256%, 512%, 128%"               → ["128%","256%","512%","128%"]
+ *   "ตัวคูณความเสียหายเพิ่มขึ้นเป็น 80%"      → ["80%"]
+ *   "ตัวคูณ...เป็น 400%. | 25%"             → ["400%","25%"]
+ * แต่ละ segment (คั่นด้วย , หรือ |) จะเอาเลข % ตัวสุดท้าย ถ้าไม่มี % ก็เอาเลขตัวสุดท้าย
+ */
+function levelSlotValues(levelStr: string): string[] {
+  if (!levelStr) return []
+  return levelStr.split(/[,|]/).map(seg => {
+    const pct = seg.match(/\d+(?:\.\d+)?%/g)
+    if (pct) return pct[pct.length - 1]
+    const num = seg.match(/\d+(?:\.\d+)?/g)
+    return num ? num[num.length - 1] : ''
+  })
+}
+
+/**
+ * โหมด manual: ผู้เขียนใส่ [[ ... ]] (ไฮไลต์) และ {1}/{2}/{} (ค่าตามเลเวล) เอง
+ */
+function renderManual(description: string, values: string[]): React.ReactNode {
+  let seq = 0
+  const fill = (text: string) =>
+    text.replace(/\{(\d*)\}/g, (_m, num: string) => {
+      const idx = num === '' ? seq++ : parseInt(num, 10) - 1
+      const v = values[idx]
+      return v !== undefined && v !== '' ? v : (num === '' ? '' : `{${num}}`)
+    })
+  const parts = description.split(/(\[\[[\s\S]*?\]\])/g)
+  return parts.map((part, i) =>
+    part.startsWith('[[') && part.endsWith(']]')
+      ? <span key={i} className={HL_CLASS}>{fill(part.slice(2, -2))}</span>
+      : <span key={i}>{fill(part)}</span>
+  )
+}
+
+/**
+ * โหมด auto: ตรวจหาเลขที่ตรงกับค่า LV10 ในคำอธิบาย แล้วสลับเป็นค่าของเลเวลที่กด
+ *  - เลขที่อยู่ใน *( ... )  → ไฮไลต์ทั้งวงเล็บสีฟ้า
+ *  - เลข inline           → ไฮไลต์เฉพาะตัวเลข
+ *  - ถ้าหาเลขไม่เจอ/ไม่มีค่าเลเวล → คงข้อความเดิม (ปลอดภัย ไม่ทำให้เพี้ยน)
+ */
+function renderAuto(description: string, levels: string[], activeLevel: number): React.ReactNode {
+  let lastIdx = -1
+  for (let i = levels.length - 1; i >= 0; i--) { if (levels[i]?.trim()) { lastIdx = i; break } }
+  if (lastIdx < 0) return description
+  const targetNums = levelSlotValues(levels[lastIdx])         // เลขที่ปรากฏในคำอธิบาย (= ค่า LV สูงสุด)
+  const activeNums = levelSlotValues(levels[activeLevel - 1] ?? '')
+  if (targetNums.length === 0) return description
+
+  // ระบุช่วงของกลุ่ม *( ... )
+  const groups: { start: number; end: number }[] = []
+  const gre = /\*\([^)]*\)/g
+  let gm: RegExpExecArray | null
+  while ((gm = gre.exec(description))) groups.push({ start: gm.index, end: gm.index + gm[0].length })
+
+  // หาเลขแบบไม่ชนเลขซ้อน (ตัวหน้าต้องไม่ใช่หลัก/จุด)
+  const findNum = (num: string, from: number) => {
+    let i = description.indexOf(num, from)
+    while (i !== -1) {
+      const prev = i > 0 ? description[i - 1] : ''
+      if (!/[\d.]/.test(prev)) return i
+      i = description.indexOf(num, i + 1)
+    }
+    return -1
+  }
+
+  type Match = { start: number; end: number; active: string; grp?: { start: number; end: number } }
+  const matches: Match[] = []
+  let from = 0
+  targetNums.forEach((num, k) => {
+    if (!num) return
+    const idx = findNum(num, from)
+    if (idx === -1) return
+    const end = idx + num.length
+    matches.push({ start: idx, end, active: activeNums[k] || num, grp: groups.find(g => idx >= g.start && end <= g.end) })
+    from = end
+  })
+  if (matches.length === 0) return description
+
+  // สร้างช่วงที่ต้อง render พิเศษ (ไฮไลต์) — รวมเลขที่อยู่ในกลุ่มเดียวกัน
+  type Special = { start: number; end: number; node: React.ReactNode }
+  const specials: Special[] = []
+  const groupMatches = new Map<{ start: number; end: number }, Match[]>()
+  for (const m of matches) {
+    if (m.grp) { (groupMatches.get(m.grp) ?? groupMatches.set(m.grp, []).get(m.grp)!).push(m) }
+    else specials.push({ start: m.start, end: m.end, node: <span className={HL_CLASS}>{m.active}</span> })
+  }
+  for (const [grp, ms] of groupMatches) {
+    // แทนตัวเลขในกลุ่มด้วยค่าเลเวล (เรียงจากท้ายมาหน้า เพื่อไม่ให้ offset เพี้ยน)
+    let text = description.slice(grp.start, grp.end)
+    for (const m of [...ms].sort((a, b) => b.start - a.start)) {
+      const rs = m.start - grp.start, re = m.end - grp.start
+      text = text.slice(0, rs) + m.active + text.slice(re)
+    }
+    specials.push({ start: grp.start, end: grp.end, node: <span className={HL_CLASS}>{text}</span> })
+  }
+
+  specials.sort((a, b) => a.start - b.start)
+  const nodes: React.ReactNode[] = []
+  let cursor = 0
+  specials.forEach((s, i) => {
+    if (s.start > cursor) nodes.push(description.slice(cursor, s.start))
+    nodes.push(<span key={i}>{s.node}</span>)
+    cursor = s.end
+  })
+  if (cursor < description.length) nodes.push(description.slice(cursor))
+  return nodes
+}
+
+function renderSkillDescription(description: string, skill: CharacterSkill, activeLevel: number): React.ReactNode {
+  if (!description) return null
+  const levels = skill.levels ?? []
+  if (description.includes('[[')) return renderManual(description, levelSlotValues(levels[activeLevel - 1] ?? ''))
+  return renderAuto(description, levels, activeLevel)
+}
+
 function SkillCard({ skill }: { skill: CharacterSkill }) {
   const [activeLevel, setActiveLevel] = useState(1)
   const [showLevels, setShowLevels] = useState(false)
@@ -285,7 +406,9 @@ function SkillCard({ skill }: { skill: CharacterSkill }) {
 
       {/* ── Description ── */}
       <div className="px-4 py-3">
-        <p className="text-sm text-ptn-muted leading-relaxed whitespace-pre-line">{skill.description}</p>
+        <p className="text-sm text-ptn-muted leading-relaxed whitespace-pre-line">
+          {renderSkillDescription(skill.description, skill, activeLevel)}
+        </p>
 
         {levelDesc && (
           <p className="text-xs text-ptn-cyan mt-2 pt-2 border-t border-ptn-border">
