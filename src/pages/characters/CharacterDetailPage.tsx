@@ -196,7 +196,7 @@ function ExclusiveCrimebrandCard({ data }: { data: {
             </div>
           )}
           {data.description && (
-            <p className="text-sm text-ptn-muted leading-relaxed">{data.description}</p>
+            <p className="text-sm text-ptn-muted leading-relaxed whitespace-pre-line">{data.description}</p>
           )}
           {data.flavor_text && (
             <p className="text-xs text-ptn-disabled/80 italic leading-relaxed border-t border-ptn-border pt-3">
@@ -285,7 +285,7 @@ function SkillCard({ skill }: { skill: CharacterSkill }) {
 
       {/* ── Description ── */}
       <div className="px-4 py-3">
-        <p className="text-sm text-ptn-muted leading-relaxed">{skill.description}</p>
+        <p className="text-sm text-ptn-muted leading-relaxed whitespace-pre-line">{skill.description}</p>
 
         {levelDesc && (
           <p className="text-xs text-ptn-cyan mt-2 pt-2 border-t border-ptn-border">
@@ -803,7 +803,7 @@ export function CharacterDetailPage() {
                         {/* Description + slot details */}
                         <div className="p-3 space-y-2">
                           {build.description && (
-                            <p className="text-xs text-ptn-muted leading-relaxed">{build.description}</p>
+                            <p className="text-xs text-ptn-muted leading-relaxed whitespace-pre-line">{build.description}</p>
                           )}
                           <div className="flex gap-2">
                             {slots.map((s, i) => {
@@ -854,7 +854,7 @@ export function CharacterDetailPage() {
                           </div>
                         )}
                         <div className="p-3">
-                          <p className="text-xs text-ptn-muted leading-relaxed">{set.description}</p>
+                          <p className="text-xs text-ptn-muted leading-relaxed whitespace-pre-line">{set.description}</p>
                         </div>
                       </div>
                     )
