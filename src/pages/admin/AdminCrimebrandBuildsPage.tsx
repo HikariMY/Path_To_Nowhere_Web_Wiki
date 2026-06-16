@@ -91,6 +91,7 @@ export function AdminCrimebrandBuildsPage() {
   const [charSearch, setCharSearch] = useState('')
   const charSearchRef = useRef<HTMLInputElement>(null)
   const [slotDropOpen, setSlotDropOpen] = useState([false, false, false])
+  const [slotSearch, setSlotSearch] = useState(['', '', ''])
 
   useEffect(() => {
     supabase.from('characters').select('id,name,portrait_url').order('name')
@@ -185,10 +186,12 @@ export function AdminCrimebrandBuildsPage() {
 
   function closeAllSlotDrops() {
     setSlotDropOpen([false, false, false])
+    setSlotSearch(['', '', ''])
   }
 
   function toggleSlotDrop(i: number) {
     setSlotDropOpen(prev => prev.map((v, j) => j === i ? !v : false))
+    setSlotSearch(['', '', ''])
   }
 
   const selectedChar = characters.find(c => c.id === selectedCharId)
@@ -399,35 +402,55 @@ export function AdminCrimebrandBuildsPage() {
                     {slotDropOpen[i] && (
                       <>
                         <div className="fixed inset-0 z-10" onClick={closeAllSlotDrops} />
-                        <div className="absolute top-full left-0 right-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-ptn-border bg-ptn-surface shadow-lg">
-                          <button
-                            type="button"
-                            onClick={() => { setForm(f => ({ ...f, [keys.cbKey]: '' })); closeAllSlotDrops() }}
-                            className="w-full px-3 py-2 text-sm text-ptn-muted text-left hover:bg-ptn-elevated transition-colors"
-                          >
-                            -- ไม่เลือก --
-                          </button>
-                          {crimebrands.map(cb => (
+                        <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-lg border border-ptn-border bg-ptn-surface shadow-lg">
+                          {/* Search */}
+                          <div className="p-2 border-b border-ptn-border">
+                            <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-ptn-elevated border border-ptn-border">
+                              <Search size={12} className="text-ptn-disabled shrink-0" />
+                              <input
+                                autoFocus
+                                value={slotSearch[i]}
+                                onChange={e => setSlotSearch(prev => prev.map((v, j) => j === i ? e.target.value : v))}
+                                placeholder="ค้นหา Crimebrand..."
+                                className="flex-1 bg-transparent text-sm text-ptn-text placeholder-ptn-disabled outline-none"
+                              />
+                            </div>
+                          </div>
+                          <div className="max-h-56 overflow-y-auto">
                             <button
-                              key={cb.id}
                               type="button"
-                              onClick={() => { setForm(f => ({ ...f, [keys.cbKey]: cb.id })); closeAllSlotDrops() }}
-                              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-ptn-elevated transition-colors ${form[keys.cbKey] === cb.id ? 'bg-ptn-elevated' : ''}`}
+                              onClick={() => { setForm(f => ({ ...f, [keys.cbKey]: '' })); closeAllSlotDrops() }}
+                              className="w-full px-3 py-2 text-sm text-ptn-muted text-left hover:bg-ptn-elevated transition-colors"
                             >
-                              {cb.icon_url ? (
-                                <img src={cb.icon_url} className="w-7 h-7 rounded object-cover shrink-0" />
-                              ) : (
-                                <div className="w-7 h-7 rounded bg-ptn-elevated shrink-0" />
-                              )}
-                              <span
-                                className="text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0"
-                                style={{ color: RANK_COLORS[cb.rank] || '#fff', background: `${RANK_COLORS[cb.rank]}20` }}
-                              >
-                                {cb.rank}
-                              </span>
-                              <span className="flex-1 text-ptn-text truncate">{cb.name}</span>
+                              -- ไม่เลือก --
                             </button>
-                          ))}
+                            {crimebrands
+                              .filter(cb => !slotSearch[i] || cb.name.toLowerCase().includes(slotSearch[i].toLowerCase()))
+                              .map(cb => (
+                              <button
+                                key={cb.id}
+                                type="button"
+                                onClick={() => { setForm(f => ({ ...f, [keys.cbKey]: cb.id })); closeAllSlotDrops() }}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left hover:bg-ptn-elevated transition-colors ${form[keys.cbKey] === cb.id ? 'bg-ptn-elevated' : ''}`}
+                              >
+                                {cb.icon_url ? (
+                                  <img src={cb.icon_url} className="w-7 h-7 rounded object-cover shrink-0" />
+                                ) : (
+                                  <div className="w-7 h-7 rounded bg-ptn-elevated shrink-0" />
+                                )}
+                                <span
+                                  className="text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0"
+                                  style={{ color: RANK_COLORS[cb.rank] || '#fff', background: `${RANK_COLORS[cb.rank]}20` }}
+                                >
+                                  {cb.rank}
+                                </span>
+                                <span className="flex-1 text-ptn-text truncate">{cb.name}</span>
+                              </button>
+                            ))}
+                            {crimebrands.filter(cb => !slotSearch[i] || cb.name.toLowerCase().includes(slotSearch[i].toLowerCase())).length === 0 && (
+                              <p className="px-3 py-3 text-sm text-ptn-disabled text-center">ไม่พบ Crimebrand</p>
+                            )}
+                          </div>
                         </div>
                       </>
                     )}
