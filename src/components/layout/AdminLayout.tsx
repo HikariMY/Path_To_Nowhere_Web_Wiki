@@ -1,7 +1,7 @@
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Sword, Calendar, MessageSquare,
-  FileText, Shield, ChevronRight, Megaphone, BookOpen, Gem, Layers, ArrowLeft, BarChart3, Pin,
+  FileText, Shield, ChevronRight, Megaphone, BookOpen, Gem, ArrowLeft, BarChart3, Pin,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -10,7 +10,6 @@ const adminNav = [
   { to: '/admin/users',         label: 'จัดการสมาชิก',    icon: Users,           exact: false },
   { to: '/admin/characters',    label: 'จัดการตัวละคร & สกิล', icon: Sword,       exact: false },
   { to: '/admin/crimebrands',        label: 'จัดการ Crimebrands',       icon: Gem,        exact: false },
-  { to: '/admin/crimebrand-builds',  label: 'Crimebrand Builds',         icon: Layers,     exact: false },
   { to: '/admin/game-info',     label: 'ข้อมูลเกม',          icon: BookOpen,        exact: false },
   { to: '/admin/events',        label: 'จัดการอีเวนต์',   icon: Calendar,        exact: false },
   { to: '/admin/announcements', label: 'ข่าวสาร/ประกาศ',  icon: Megaphone,       exact: false },
