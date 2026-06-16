@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, Search, Zap, Unlink } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, Zap, Unlink, Sword } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Character } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -16,6 +16,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { JOB_CLASS_LABEL, ALIGNMENT_LABEL } from '../../lib/constants'
 import type { CharacterSkill, SkillRange, ShackleBreak } from '../../types/models'
 import { ShacklesPanel } from './ShacklesPanel'
+import { CharacterInfoPanel } from './CharacterInfoPanel'
 
 // ── types ───────────────────────────────────────────────────────────────────
 
@@ -154,7 +155,8 @@ export function AdminSkillsPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [exclusiveForm, setExclusiveForm] = useState<ExclusiveForm>(blankExclusive())
   const [savingExclusive, setSavingExclusive] = useState(false)
-  const [rightTab, setRightTab] = useState<'skills' | 'shackles'>('skills')
+  const [rightTab, setRightTab] = useState<'info' | 'skills' | 'shackles'>('info')
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => { fetchChars() }, [])
 
@@ -173,7 +175,31 @@ export function AdminSkillsPage() {
     setSelectedChar(prev => prev ? { ...prev, shackles: updated } : prev)
   }
 
+  // เพิ่ม/แก้ไขข้อมูลตัวละครเสร็จ → sync รายการด้านซ้าย
+  const handleCharSaved = (c: Character) => {
+    setCharacters(prev => {
+      const exists = prev.some(x => x.id === c.id)
+      return exists ? prev.map(x => x.id === c.id ? { ...x, ...c } : x) : [...prev, c]
+    })
+    if (creating) { selectCharacter(c); setCreating(false) }
+    else setSelectedChar(prev => prev ? { ...prev, ...c } : c)
+  }
+
+  const handleCharDeleted = (id: string) => {
+    setCharacters(prev => prev.filter(c => c.id !== id))
+    setSelectedChar(null)
+    setSkills([])
+    setCreating(false)
+  }
+
+  const startCreate = () => {
+    setSelectedChar(null)
+    setCreating(true)
+    setRightTab('info')
+  }
+
   const selectCharacter = (char: Character) => {
+    setCreating(false)
     setSelectedChar(char)
     setSkills(Array.isArray(char.skills) ? (char.skills as CharacterSkill[]) : [])
     const ec = char.exclusive_crimebrand as ExclusiveForm | null
@@ -309,7 +335,10 @@ export function AdminSkillsPage() {
     <div className="flex gap-4 min-h-0">
       {/* ── Character selector ─────────────────────────────────────────── */}
       <div className="w-60 shrink-0 flex flex-col gap-3">
-        <h2 className="font-heading text-lg font-bold text-ptn-text">เลือกตัวละคร</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-heading text-lg font-bold text-ptn-text">เลือกตัวละคร</h2>
+          <Button size="sm" variant="ghost" onClick={startCreate}><Plus size={14} /> เพิ่ม</Button>
+        </div>
         <Input
           placeholder="ค้นหา..."
           value={search}
@@ -344,10 +373,18 @@ export function AdminSkillsPage() {
 
       {/* ── Skills editor ─────────────────────────────────────────────── */}
       <div className="flex-1 min-w-0">
-        {!selectedChar ? (
+        {creating ? (
+          <>
+            <div className="mb-4">
+              <h1 className="font-heading text-xl font-bold text-ptn-text">เพิ่มตัวละครใหม่</h1>
+              <p className="text-sm text-ptn-muted">กรอกข้อมูลแล้วกด “เพิ่มตัวละคร” — จากนั้นจึงจัดการสกิล/Shackle ได้</p>
+            </div>
+            <CharacterInfoPanel characterId={null} onSaved={handleCharSaved} />
+          </>
+        ) : !selectedChar ? (
           <div className="flex flex-col items-center justify-center h-64 text-ptn-muted">
-            <Zap size={32} className="mb-3 opacity-30" />
-            <p>เลือกตัวละครเพื่อจัดการสกิล</p>
+            <Sword size={32} className="mb-3 opacity-30" />
+            <p>เลือกตัวละครจากด้านซ้าย หรือกด “เพิ่ม” เพื่อสร้างตัวละครใหม่</p>
           </div>
         ) : (
           <>
@@ -364,9 +401,9 @@ export function AdminSkillsPage() {
               </div>
             </div>
 
-            {/* Tabs: สลับระหว่างสกิล กับ Shackle Break โดยไม่ต้องเปลี่ยนหน้า */}
+            {/* Tabs: ข้อมูลตัวละคร / สกิล / Shackle — ใช้ตัวละครที่เลือกร่วมกัน */}
             <div className="flex gap-1 mb-4 border-b border-ptn-border">
-              {([['skills', 'สกิล & Crimebrand', Zap], ['shackles', 'Shackle Break', Unlink]] as const).map(([key, label, Icon]) => (
+              {([['info', 'ข้อมูลตัวละคร', Sword], ['skills', 'สกิล & Crimebrand', Zap], ['shackles', 'Shackle Break', Unlink]] as const).map(([key, label, Icon]) => (
                 <button
                   key={key}
                   onClick={() => setRightTab(key)}
@@ -381,7 +418,9 @@ export function AdminSkillsPage() {
               ))}
             </div>
 
-            {rightTab === 'shackles' ? (
+            {rightTab === 'info' ? (
+              <CharacterInfoPanel key={selectedChar.id} characterId={selectedChar.id} onSaved={handleCharSaved} onDeleted={handleCharDeleted} />
+            ) : rightTab === 'shackles' ? (
               <ShacklesPanel character={selectedChar} onUpdated={handleShacklesUpdated} />
             ) : (
             <>

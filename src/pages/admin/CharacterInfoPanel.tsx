@@ -1,17 +1,11 @@
 // @ts-nocheck
 import { useEffect, useState, useRef } from 'react'
-import { Plus, Edit2, Search, Download, Trash2, ImageIcon, X } from 'lucide-react'
-import { SEED_CHARACTERS } from '../../lib/seedData'
+import { Plus, Trash2, X } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Character } from '../../types'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
-import { Textarea } from '../../components/ui/Textarea'
-import { Badge } from '../../components/ui/Badge'
-import { Modal } from '../../components/ui/Modal'
-import { Card } from '../../components/ui/Card'
-import { PageLoader } from '../../components/ui/Spinner'
 import { ImageUpload } from '../../components/ui/ImageUpload'
 import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../contexts/AuthContext'
@@ -129,65 +123,61 @@ function SlotImage({ url, bucket, onUpload }: { url: string; bucket: string; onU
   )
 }
 
-export function AdminCharactersPage() {
+function mapCharToForm(char: Character): CharForm {
+  return {
+    name: char.name,
+    rarity: char.rarity,
+    faction: char.faction,
+    job_class: char.job_class,
+    portrait_url: char.portrait_url || '',
+    is_unreleased: char.is_unreleased ?? false,
+    portrait_pos_x: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[0]) : 50,
+    portrait_pos_y: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[1]) : 20,
+    portrait_zoom: char.portrait_zoom ?? 1,
+    is_limited: char.is_limited,
+    release_date: char.release_date || '',
+    release_order: char.release_order?.toString() || '0',
+    tags: (char.tags as string[] || []).join(', '),
+    ability_tags: (char.ability_tags as string[] | null) || [],
+    trivia: ((char.trivia as string[]) || []),
+    char_details: (char.char_details as CharDetails | null) || blankDetails(),
+    char_stats: (() => {
+      const s = char.stats as CharStats | null
+      if (!s || typeof s !== 'object') return blankStats()
+      const p = (k: keyof CharStats): StatPair => ({ min: String(s[k]?.min ?? ''), max: String(s[k]?.max ?? '') })
+      return { health: p('health'), attack: p('attack'), defense: p('defense'), magic_resistance: p('magic_resistance'), attack_speed: p('attack_speed'), block: p('block') }
+    })(),
+    overview_cards: ((char.overview_cards as OverviewCard[]) || []),
+    materials: normalizeMaterials(char.materials),
+  }
+}
+
+/**
+ * ฟอร์มแก้ไข/เพิ่มข้อมูลตัวละคร 1 ตัว — ใช้แบบฝังในแท็บ (ไม่ใช่ modal)
+ * characterId = null → โหมดเพิ่มตัวละครใหม่
+ */
+export function CharacterInfoPanel({ characterId, onSaved, onDeleted }: {
+  characterId: string | null
+  onSaved: (char: Character) => void
+  onDeleted?: (id: string) => void
+}) {
   const { profile } = useAuth()
   const { toast } = useToast()
   const { groups: abilityTagGroups } = useAbilityTags()
-  const [characters, setCharacters] = useState<Character[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingChar, setEditingChar] = useState<Character | null>(null)
   const [form, setForm] = useState<CharForm>(defaultForm)
+  const [editingChar, setEditingChar] = useState<Character | null>(null)
   const [saving, setSaving] = useState(false)
-  const [deleting, setDeleting] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    fetchChars()
-  }, [])
-
-  const fetchChars = async () => {
-    const { data } = await supabase.from('characters').select('*').order('rarity').order('name')
-    setCharacters(data || [])
-    setLoading(false)
-  }
-
-  const openCreate = () => {
-    setEditingChar(null)
-    setForm(defaultForm)
-    setModalOpen(true)
-  }
-
-  const openEdit = (char: Character) => {
-    setEditingChar(char)
-    setForm({
-      name: char.name,
-      rarity: char.rarity,
-      faction: char.faction,
-      job_class: char.job_class,
-      portrait_url: char.portrait_url || '',
-      is_unreleased: char.is_unreleased ?? false,
-      portrait_pos_x: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[0]) : 50,
-      portrait_pos_y: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[1]) : 20,
-      portrait_zoom: char.portrait_zoom ?? 1,
-      is_limited: char.is_limited,
-      release_date: char.release_date || '',
-      release_order: char.release_order?.toString() || '0',
-      tags: (char.tags as string[] || []).join(', '),
-      ability_tags: (char.ability_tags as string[] | null) || [],
-      trivia: ((char.trivia as string[]) || []),
-      char_details: (char.char_details as CharDetails | null) || blankDetails(),
-      char_stats: (() => {
-        const s = char.stats as CharStats | null
-        if (!s || typeof s !== 'object') return blankStats()
-        const p = (k: keyof CharStats): StatPair => ({ min: String(s[k]?.min ?? ''), max: String(s[k]?.max ?? '') })
-        return { health: p('health'), attack: p('attack'), defense: p('defense'), magic_resistance: p('magic_resistance'), attack_speed: p('attack_speed'), block: p('block') }
-      })(),
-      overview_cards: ((char.overview_cards as OverviewCard[]) || []),
-      materials: normalizeMaterials(char.materials),
+    if (!characterId) { setEditingChar(null); setForm(defaultForm); return }
+    setLoading(true)
+    supabase.from('characters').select('*').eq('id', characterId).single().then(({ data }) => {
+      if (data) { setEditingChar(data as Character); setForm(mapCharToForm(data as Character)) }
+      setLoading(false)
     })
-    setModalOpen(true)
-  }
+  }, [characterId])
 
   const toggleAbilityTag = (tag: string) => {
     setForm(prev => ({
@@ -225,128 +215,49 @@ export function AdminCharactersPage() {
     }
 
     let error
-    if (editingChar) {
-      const res = await supabase.from('characters').update(payload as never).eq('id', editingChar.id)
+    let saved: Character | null = null
+    if (characterId) {
+      const res = await supabase.from('characters').update(payload as never).eq('id', characterId).select().single()
       error = res.error
-      if (!error) {
-        setCharacters(prev => prev.map(c => c.id === editingChar.id ? { ...c, ...payload } : c))
-        await supabase.from('admin_logs').insert({ admin_id: profile!.id, action: `แก้ไขตัวละคร: ${form.name}`, target_table: 'characters', target_id: editingChar.id } as never)
+      if (!error && res.data) {
+        saved = res.data as unknown as Character
+        setEditingChar(saved)
+        await supabase.from('admin_logs').insert({ admin_id: profile!.id, action: `แก้ไขตัวละคร: ${form.name}`, target_table: 'characters', target_id: characterId } as never)
       }
     } else {
       const res = await supabase.from('characters').insert(payload as never).select().single()
       error = res.error
       if (!error && res.data) {
-        setCharacters(prev => [...prev, res.data as unknown as Character])
-        await supabase.from('admin_logs').insert({ admin_id: profile!.id, action: `เพิ่มตัวละคร: ${form.name}`, target_table: 'characters', target_id: (res.data as unknown as Character).id } as never)
+        saved = res.data as unknown as Character
+        await supabase.from('admin_logs').insert({ admin_id: profile!.id, action: `เพิ่มตัวละคร: ${form.name}`, target_table: 'characters', target_id: saved.id } as never)
       }
     }
 
     setSaving(false)
     if (error) { toast('เกิดข้อผิดพลาด: ' + error.message, 'error') }
-    else { toast('บันทึกสำเร็จ', 'success'); setModalOpen(false) }
+    else { toast('บันทึกสำเร็จ', 'success'); if (saved) onSaved(saved) }
   }
 
-  const handleDelete = async (char: Character) => {
-    if (!confirm(`ยืนยันการลบ ${char.name}?`)) return
-    setDeleting(char.id)
-    const { error } = await supabase.from('characters').delete().eq('id', char.id)
-    if (!error) {
-      setCharacters(prev => prev.filter(c => c.id !== char.id))
-      toast('ลบสำเร็จ', 'success')
-      await supabase.from('admin_logs').insert({ admin_id: profile!.id, action: `ลบตัวละคร: ${char.name}`, target_table: 'characters', target_id: char.id } as never)
-    } else {
-      toast('เกิดข้อผิดพลาด', 'error')
-    }
-    setDeleting(null)
-  }
-
-  const handleSeedData = async () => {
-    if (!confirm(`นำเข้าตัวละครทั้งหมด ${SEED_CHARACTERS.length} ตัวลงฐานข้อมูล?\n(จะไม่ทับข้อมูลที่มีอยู่แล้ว)`)) return
-    setSaving(true)
-    const { data: existing } = await supabase.from('characters').select('slug')
-    const existingSlugs = new Set((existing || []).map((c: any) => c.slug))
-    const toInsert = SEED_CHARACTERS.filter(c => !existingSlugs.has(c.slug))
-    if (toInsert.length === 0) { toast('ไม่มีข้อมูลใหม่ที่ต้องนำเข้า', 'info'); setSaving(false); return }
-    const { error } = await supabase.from('characters').insert(toInsert as never)
-    setSaving(false)
-    if (error) toast('เกิดข้อผิดพลาด: ' + error.message, 'error')
-    else { toast(`นำเข้าสำเร็จ ${toInsert.length} ตัว`, 'success'); fetchChars() }
+  const handleDelete = async () => {
+    if (!editingChar) return
+    if (!confirm(`ยืนยันการลบ ${editingChar.name}?`)) return
+    setDeleting(true)
+    const { error } = await supabase.from('characters').delete().eq('id', editingChar.id)
+    setDeleting(false)
+    if (error) { toast('เกิดข้อผิดพลาด', 'error'); return }
+    toast('ลบสำเร็จ', 'success')
+    await supabase.from('admin_logs').insert({ admin_id: profile!.id, action: `ลบตัวละคร: ${editingChar.name}`, target_table: 'characters', target_id: editingChar.id } as never)
+    onDeleted?.(editingChar.id)
   }
 
   const set = (field: keyof CharForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [field]: e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value }))
   }
 
-  const filtered = characters.filter(c =>
-    !search || c.name.toLowerCase().includes(search.toLowerCase())
-  )
-
-  if (loading) return <PageLoader />
+  if (loading) return <div className="py-16 text-center text-ptn-muted text-sm">กำลังโหลดข้อมูลตัวละคร...</div>
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h1 className="font-heading text-2xl font-bold text-ptn-text">จัดการตัวละคร</h1>
-        <div className="flex gap-2">
-          {characters.length === 0 && (
-            <Button onClick={handleSeedData} loading={saving} variant="ghost" size="sm">
-              <Download size={14} /> นำเข้าข้อมูลเริ่มต้น ({SEED_CHARACTERS.length} ตัว)
-            </Button>
-          )}
-          <Button onClick={openCreate} size="sm">
-            <Plus size={14} /> เพิ่มตัวละคร
-          </Button>
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <Input placeholder="ค้นหาตัวละคร..." value={search} onChange={e => setSearch(e.target.value)} icon={<Search size={14} />} className="max-w-sm" />
-      </div>
-
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-ptn-border bg-ptn-elevated">
-                <th className="text-left p-3 text-ptn-muted font-medium">ชื่อ</th>
-                <th className="text-left p-3 text-ptn-muted font-medium">Rank</th>
-                <th className="text-left p-3 text-ptn-muted font-medium hidden sm:table-cell">Tendencies</th>
-                <th className="text-left p-3 text-ptn-muted font-medium hidden md:table-cell">Alignments</th>
-                <th className="text-right p-3 text-ptn-muted font-medium">จัดการ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(c => (
-                <tr key={c.id} className="border-b border-ptn-border last:border-0 hover:bg-ptn-elevated/50">
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      {c.portrait_url && <img src={c.portrait_url} alt={c.name} className="w-8 h-8 rounded object-cover border border-ptn-border" />}
-                      <span className="font-medium text-ptn-text">{c.name}</span>
-                      {c.is_limited && <span className="text-ptn-gold text-xs">★Limited</span>}
-                    </div>
-                  </td>
-                  <td className="p-3"><Badge variant="rarity" value={c.rarity} /></td>
-                  <td className="p-3 text-ptn-muted hidden sm:table-cell">{JOB_CLASS_LABEL[c.job_class] || c.job_class}</td>
-                  <td className="p-3 text-ptn-muted hidden md:table-cell">{ALIGNMENT_LABEL[c.faction] || c.faction.toUpperCase()}</td>
-                  <td className="p-3">
-                    <div className="flex justify-end gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(c)}><Edit2 size={13} /></Button>
-                      <Button size="sm" variant="danger" loading={deleting === c.id} onClick={() => handleDelete(c)}><Trash2 size={13} /></Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={5} className="p-8 text-center text-ptn-muted">ไม่พบตัวละคร</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* Create/Edit Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingChar ? `แก้ไข: ${editingChar.name}` : 'เพิ่มตัวละครใหม่'} size="xl">
-        <div className="space-y-4">
+    <div className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <Input label="ชื่อตัวละคร" value={form.name} onChange={set('name')} placeholder="ชื่อภาษาอังกฤษ" />
             <Select label="Rank" value={form.rarity} onChange={set('rarity')}>
@@ -769,12 +680,12 @@ export function AdminCharactersPage() {
             Crimebrand Builds จัดการได้ที่หน้า <span className="text-ptn-cyan font-medium">จัดการ Crimebrand Builds</span> ในเมนูด้านซ้าย
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <Button onClick={handleSave} loading={saving}><Plus size={14} /> {editingChar ? 'บันทึกการแก้ไข' : 'เพิ่มตัวละคร'}</Button>
-            <Button variant="ghost" onClick={() => setModalOpen(false)}>ยกเลิก</Button>
+          <div className="flex gap-3 pt-2 border-t border-ptn-border">
+            <Button onClick={handleSave} loading={saving}><Plus size={14} /> {characterId ? 'บันทึกการแก้ไข' : 'เพิ่มตัวละคร'}</Button>
+            {characterId && onDeleted && (
+              <Button variant="danger" loading={deleting} onClick={handleDelete}><Trash2 size={14} /> ลบตัวละคร</Button>
+            )}
           </div>
-        </div>
-      </Modal>
     </div>
   )
 }

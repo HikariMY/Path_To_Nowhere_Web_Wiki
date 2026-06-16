@@ -32,7 +32,6 @@ import { AdminTierListsPage } from './pages/admin/AdminTierListsPage'
 // Admin Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
 import { AdminUsersPage } from './pages/admin/AdminUsersPage'
-import { AdminCharactersPage } from './pages/admin/AdminCharactersPage'
 import { AdminEventsPage } from './pages/admin/AdminEventsPage'
 import { AdminForumPage } from './pages/admin/AdminForumPage'
 import { AdminLogsPage } from './pages/admin/AdminLogsPage'
@@ -111,7 +110,7 @@ export default function App() {
             }>
               <Route index element={<AdminDashboardPage />} />
               <Route path="users" element={<AdminUsersPage />} />
-              <Route path="characters" element={<AdminCharactersPage />} />
+              <Route path="characters" element={<AdminSkillsPage />} />
               <Route path="events" element={<AdminEventsPage />} />
               <Route path="announcements" element={<AdminAnnouncementsPage />} />
               <Route path="forum" element={<AdminForumPage />} />
