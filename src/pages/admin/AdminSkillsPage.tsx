@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, Search, Zap } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, Zap, Unlink } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Character } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -14,7 +14,8 @@ import { ImageUpload } from '../../components/ui/ImageUpload'
 import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../contexts/AuthContext'
 import { JOB_CLASS_LABEL, ALIGNMENT_LABEL } from '../../lib/constants'
-import type { CharacterSkill, SkillRange } from '../../types/models'
+import type { CharacterSkill, SkillRange, ShackleBreak } from '../../types/models'
+import { ShacklesPanel } from './ShacklesPanel'
 
 // ── types ───────────────────────────────────────────────────────────────────
 
@@ -153,16 +154,23 @@ export function AdminSkillsPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [exclusiveForm, setExclusiveForm] = useState<ExclusiveForm>(blankExclusive())
   const [savingExclusive, setSavingExclusive] = useState(false)
+  const [rightTab, setRightTab] = useState<'skills' | 'shackles'>('skills')
 
   useEffect(() => { fetchChars() }, [])
 
   const fetchChars = async () => {
     const { data } = await supabase
       .from('characters')
-      .select('id, name, slug, rarity, faction, job_class, portrait_url, skills, exclusive_crimebrand')
+      .select('id, name, slug, rarity, faction, job_class, portrait_url, skills, exclusive_crimebrand, shackles')
       .order('rarity').order('name')
     setCharacters(data || [])
     setLoadingChars(false)
+  }
+
+  const handleShacklesUpdated = (updated: ShackleBreak[]) => {
+    if (!selectedChar) return
+    setCharacters(prev => prev.map(c => c.id === selectedChar.id ? { ...c, shackles: updated } : c))
+    setSelectedChar(prev => prev ? { ...prev, shackles: updated } : prev)
   }
 
   const selectCharacter = (char: Character) => {
@@ -344,18 +352,41 @@ export function AdminSkillsPage() {
         ) : (
           <>
             {/* Header */}
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                {selectedChar.portrait_url && (
-                  <img src={selectedChar.portrait_url} alt={selectedChar.name} className="w-10 h-10 rounded object-cover border border-ptn-border" />
-                )}
-                <div>
-                  <h1 className="font-heading text-xl font-bold text-ptn-text">{selectedChar.name}</h1>
-                  <p className="text-sm text-ptn-muted">
-                    {selectedChar.rarity}-Rank · {JOB_CLASS_LABEL[selectedChar.job_class] || selectedChar.job_class} · {ALIGNMENT_LABEL[selectedChar.faction] || selectedChar.faction}
-                  </p>
-                </div>
+            <div className="flex items-center gap-3 mb-4">
+              {selectedChar.portrait_url && (
+                <img src={selectedChar.portrait_url} alt={selectedChar.name} className="w-10 h-10 rounded object-cover border border-ptn-border" />
+              )}
+              <div>
+                <h1 className="font-heading text-xl font-bold text-ptn-text">{selectedChar.name}</h1>
+                <p className="text-sm text-ptn-muted">
+                  {selectedChar.rarity}-Rank · {JOB_CLASS_LABEL[selectedChar.job_class] || selectedChar.job_class} · {ALIGNMENT_LABEL[selectedChar.faction] || selectedChar.faction}
+                </p>
               </div>
+            </div>
+
+            {/* Tabs: สลับระหว่างสกิล กับ Shackle Break โดยไม่ต้องเปลี่ยนหน้า */}
+            <div className="flex gap-1 mb-4 border-b border-ptn-border">
+              {([['skills', 'สกิล & Crimebrand', Zap], ['shackles', 'Shackle Break', Unlink]] as const).map(([key, label, Icon]) => (
+                <button
+                  key={key}
+                  onClick={() => setRightTab(key)}
+                  className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors ${
+                    rightTab === key
+                      ? 'border-ptn-red text-ptn-text'
+                      : 'border-transparent text-ptn-muted hover:text-ptn-text'
+                  }`}
+                >
+                  <Icon size={14} /> {label}
+                </button>
+              ))}
+            </div>
+
+            {rightTab === 'shackles' ? (
+              <ShacklesPanel character={selectedChar} onUpdated={handleShacklesUpdated} />
+            ) : (
+            <>
+            {/* Add skill */}
+            <div className="flex justify-end mb-3">
               <Button onClick={openCreate} size="sm" disabled={saving}>
                 <Plus size={14} /> เพิ่มสกิล
               </Button>
@@ -479,6 +510,8 @@ export function AdminSkillsPage() {
                 </Button>
               </div>
             </Card>
+            </>
+            )}
           </>
         )}
       </div>
