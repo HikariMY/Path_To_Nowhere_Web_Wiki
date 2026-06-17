@@ -42,6 +42,7 @@ export interface CharacterSkill {
   icon_url?: string
   levels?: string[]     // 10 entries indexed 0-9 (LV1-LV10), empty string = no change
   range?: SkillRange
+  range2?: SkillRange   // optional 2nd range (e.g. a transformed/alternate state)
 }
 
 // Stats schema

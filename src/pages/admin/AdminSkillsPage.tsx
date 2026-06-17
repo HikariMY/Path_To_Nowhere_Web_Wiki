@@ -31,6 +31,8 @@ type SkillForm = {
   levels: string[]   // length 10
   hasRange: boolean
   range: SkillRange
+  hasRange2: boolean
+  range2: SkillRange
 }
 
 const DEFAULT_RANGE: SkillRange = { rows: 3, cols: 3, cells: Array(9).fill(0) }
@@ -65,6 +67,8 @@ const blankForm = (): SkillForm => ({
   levels: Array(10).fill(''),
   hasRange: false,
   range: { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
+  hasRange2: false,
+  range2: { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
 })
 
 const GRID_PRESETS = [
@@ -281,6 +285,8 @@ export function AdminSkillsPage() {
       levels: Array(10).fill('').map((_, i) => skill.levels?.[i] ?? ''),
       hasRange: !!skill.range,
       range: skill.range ? { ...skill.range, cells: [...skill.range.cells] } : { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
+      hasRange2: !!skill.range2,
+      range2: skill.range2 ? { ...skill.range2, cells: [...skill.range2.cells] } : { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
     })
     setModalOpen(true)
   }
@@ -296,6 +302,7 @@ export function AdminSkillsPage() {
       icon_url: form.icon_url.trim() || undefined,
       levels: form.levels.map(l => l.trim()),
       range: form.hasRange ? form.range : undefined,
+      range2: form.hasRange2 ? form.range2 : undefined,
     }
     let updated: CharacterSkill[]
     if (editingId) {
@@ -669,6 +676,25 @@ export function AdminSkillsPage() {
               <RangeGridEditor
                 range={form.range}
                 onChange={range => setForm(p => ({ ...p, range }))}
+              />
+            )}
+          </div>
+
+          {/* Range grid 2 (สถานะพิเศษ เช่น [Unfettered]) */}
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={form.hasRange2}
+                onChange={e => setForm(p => ({ ...p, hasRange2: e.target.checked }))}
+                className="accent-ptn-cyan"
+              />
+              <span className="text-sm font-medium text-ptn-text">มี Range Grid อันที่ 2 (สถานะพิเศษ)</span>
+            </label>
+            {form.hasRange2 && (
+              <RangeGridEditor
+                range={form.range2}
+                onChange={range2 => setForm(p => ({ ...p, range2 }))}
               />
             )}
           </div>

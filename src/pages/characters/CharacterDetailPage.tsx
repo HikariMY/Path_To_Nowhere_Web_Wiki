@@ -117,7 +117,7 @@ function RangeGrid({ range }: { range: { rows: number; cols: number; cells: numb
   // cell size: smaller for 5×5, normal for ≤4 cols
   const cellSize = range.cols >= 5 ? '1.4rem' : '1.75rem'
   return (
-    <div className="flex items-center gap-4 px-4 py-3 bg-black/40 border-b border-ptn-border">
+    <div className="flex items-center gap-4 px-4 py-3 flex-1 min-w-0">
       <span className="text-[10px] tracking-widest text-ptn-disabled font-mono shrink-0">RANGE</span>
       <div
         className="inline-grid gap-[3px]"
@@ -399,9 +399,12 @@ function SkillCard({ skill }: { skill: CharacterSkill }) {
         ))}
       </div>
 
-      {/* ── Range ── */}
-      {skill.range && skill.range.cells?.length > 0 && (
-        <RangeGrid range={skill.range} />
+      {/* ── Range (รองรับ 2 อัน แสดงข้างกัน) ── */}
+      {((skill.range?.cells?.length ?? 0) > 0 || (skill.range2?.cells?.length ?? 0) > 0) && (
+        <div className="flex divide-x divide-ptn-border border-b border-ptn-border bg-black/40">
+          {(skill.range?.cells?.length ?? 0) > 0 && <RangeGrid range={skill.range} />}
+          {(skill.range2?.cells?.length ?? 0) > 0 && <RangeGrid range={skill.range2} />}
+        </div>
       )}
 
       {/* ── Description ── */}
