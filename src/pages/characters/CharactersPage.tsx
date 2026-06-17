@@ -255,12 +255,8 @@ const RARITY_COLOR: Record<string, string> = {
   S: '#FFD700', A: '#C084FC', B: '#60A5FA', C: '#6EE7B7',
 }
 
-// NEW badge threshold: within last 60 days
-const isNew = (char: Character) => {
-  if (!char.release_date) return false
-  const d = new Date(char.release_date)
-  return (Date.now() - d.getTime()) < 60 * 24 * 60 * 60 * 1000
-}
+// ป้าย NEW ควบคุมเองต่อตัวละคร (ตั้งค่าในแอดมิน)
+const isNew = (char: Character) => char.is_new === true
 
 export function CharactersPage() {
   const { groups: abilityTagGroups } = useAbilityTags()

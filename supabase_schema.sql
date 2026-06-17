@@ -67,6 +67,7 @@ create table public.characters (
   shackles      jsonb,
   tags          text[],
   is_limited    boolean not null default false,
+  is_new        boolean not null default false,
   release_date  date,
   release_order integer,
   created_at    timestamptz not null default now(),

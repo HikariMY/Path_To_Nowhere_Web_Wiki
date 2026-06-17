@@ -63,6 +63,7 @@ export interface Database {
           materials: Json | null
           is_limited: boolean
           is_unreleased: boolean
+          is_new: boolean
           release_date: string | null
           release_order: number | null
           created_at: string

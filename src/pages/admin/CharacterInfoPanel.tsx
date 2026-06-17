@@ -23,7 +23,7 @@ type CharStats = { health: StatPair; attack: StatPair; defense: StatPair; magic_
 
 type CharForm = {
   name: string; rarity: 'S' | 'A' | 'B' | 'C'; faction: string; job_class: string
-  portrait_url: string; portrait_pos_x: number; portrait_pos_y: number; portrait_zoom: number; is_limited: boolean; is_unreleased: boolean; release_date: string; release_order: string
+  portrait_url: string; portrait_pos_x: number; portrait_pos_y: number; portrait_zoom: number; is_limited: boolean; is_unreleased: boolean; is_new: boolean; release_date: string; release_order: string
   tags: string; ability_tags: string[]; trivia: string[]
   char_details: CharDetails
   char_stats: CharStats
@@ -69,7 +69,7 @@ const blankMaterials = (): MaterialsData => ({
 
 const defaultForm: CharForm = {
   name: '', rarity: 'A', faction: 'anger', job_class: 'breaker',
-  portrait_url: '', portrait_pos_x: 50, portrait_pos_y: 20, portrait_zoom: 1, is_limited: false, is_unreleased: false, release_date: '', release_order: '0', tags: '',
+  portrait_url: '', portrait_pos_x: 50, portrait_pos_y: 20, portrait_zoom: 1, is_limited: false, is_unreleased: false, is_new: false, release_date: '', release_order: '0', tags: '',
   ability_tags: [], trivia: [],
   char_details: blankDetails(),
   char_stats: blankStats(),
@@ -131,6 +131,7 @@ function mapCharToForm(char: Character): CharForm {
     job_class: char.job_class,
     portrait_url: char.portrait_url || '',
     is_unreleased: char.is_unreleased ?? false,
+    is_new: char.is_new ?? false,
     portrait_pos_x: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[0]) : 50,
     portrait_pos_y: char.portrait_pos ? parseInt(char.portrait_pos.split(' ')[1]) : 20,
     portrait_zoom: char.portrait_zoom ?? 1,
@@ -202,6 +203,7 @@ export function CharacterInfoPanel({ characterId, onSaved, onDeleted }: {
       portrait_zoom: form.portrait_zoom,
       is_limited: form.is_limited,
       is_unreleased: form.is_unreleased,
+      is_new: form.is_new,
       release_date: form.release_date || null,
       release_order: parseInt(form.release_order) || 0,
       tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
@@ -287,6 +289,10 @@ export function CharacterInfoPanel({ characterId, onSaved, onDeleted }: {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.is_unreleased} onChange={e => setForm(prev => ({...prev, is_unreleased: e.target.checked}))} className="accent-ptn-muted" />
                 <span className="text-sm text-ptn-muted">ยังไม่ออก</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.is_new} onChange={e => setForm(prev => ({...prev, is_new: e.target.checked}))} className="accent-blue-500" />
+                <span className="text-sm text-ptn-text">แสดงป้าย NEW</span>
               </label>
             </div>
           </div>
