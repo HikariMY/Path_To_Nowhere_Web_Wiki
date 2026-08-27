@@ -9,6 +9,26 @@ import { cn, formatDate } from '../../lib/utils'
 const ROTATE_MS = 6000
 
 /**
+ * ผู้ใช้ขอลดการเคลื่อนไหวไว้ไหม (Windows: ตั้งค่า > การช่วยการเข้าถึง > เอฟเฟกต์ภาพ > เอฟเฟกต์ภาพเคลื่อนไหว)
+ *
+ * ใช้แค่ตัดสินว่าจะ "ค่อย ๆ จางสลับ" หรือ "สลับทันที" เท่านั้น — ไม่ได้ใช้ปิดการหมุน
+ * เพราะค่านี้หมายถึงลดแอนิเมชัน ไม่ได้แปลว่าไม่อยากให้เนื้อหาเปลี่ยน
+ */
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    if (!mq) return
+    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return reduced
+}
+
+/**
  * แบนเนอร์ใหญ่หน้าแรก — สลับอีเวนต์อัตโนมัติทุก 6 วินาที
  *
  * อีเวนต์ที่เข้ามาที่นี่คือตัวที่ติดดาวไว้ในหน้าแอดมิน (is_featured)
@@ -17,6 +37,7 @@ const ROTATE_MS = 6000
 export function HeroCarousel({ events }: { events: GameEvent[] }) {
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
+  const reducedMotion = usePrefersReducedMotion()
 
   const count = events.length
   // หนีบค่าตอน render แทนที่จะ setState ใน effect — กันหลุด index เมื่อจำนวนอีเวนต์เปลี่ยน
@@ -25,9 +46,6 @@ export function HeroCarousel({ events }: { events: GameEvent[] }) {
 
   useEffect(() => {
     if (count < 2 || paused) return
-    // เคารพการตั้งค่าของผู้ใช้ที่ขอลดการเคลื่อนไหว — ยังกดเลื่อนเองได้
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
-
     // ผูก index ไว้ใน deps ด้วย เพื่อให้กดเลื่อนเองแล้วเริ่มนับเวลาใหม่ ไม่ใช่สลับทันที
     const id = setInterval(() => setIndex(i => (i + 1) % count), ROTATE_MS)
     return () => clearInterval(id)
@@ -65,7 +83,9 @@ export function HeroCarousel({ events }: { events: GameEvent[] }) {
           key={ev.id}
           aria-hidden={i !== active}
           className={cn(
-            'absolute inset-0 transition-opacity duration-700 ease-in-out',
+            'absolute inset-0 transition-opacity ease-in-out',
+            // ขอลดการเคลื่อนไหว = สลับทันที ไม่ต้องค่อย ๆ จาง (แต่ยังสลับอยู่)
+            reducedMotion ? 'duration-0' : 'duration-700',
             i === active ? 'opacity-100' : 'opacity-0',
           )}
         >
@@ -89,7 +109,7 @@ export function HeroCarousel({ events }: { events: GameEvent[] }) {
 
       {/* เนื้อหาของสไลด์ที่กำลังแสดง — key ทำให้ animate ใหม่ทุกครั้งที่สลับ */}
       <div className="relative w-full mx-auto max-w-7xl px-4 py-12 md:py-20">
-        <div key={current.id} className="max-w-xl animate-slide-up">
+        <div key={current.id} className={cn('max-w-xl', !reducedMotion && 'animate-slide-up')}>
           <div className="flex items-center gap-2 mb-3">
             <div className="h-1 w-8 bg-ptn-red rounded" />
             <span className="text-xs font-medium text-ptn-red uppercase tracking-widest">
