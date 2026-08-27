@@ -59,15 +59,29 @@ create table public.characters (
   rarity        text not null check (rarity in ('S', 'A', 'B', 'C')),
   faction       text not null,
   job_class     text not null,
+
+  -- Portrait framing (ตั้งค่าจากสไลเดอร์ในหน้าแก้ไขตัวละคร)
   portrait_url  text,
+  portrait_pos  text not null default '50% 20%',   -- object-position เช่น '50% 20%'
+  portrait_zoom numeric not null default 1,        -- 1 – 3
   splash_url    text,
+
   overview      text,
-  stats         jsonb,
-  skills        jsonb,
-  shackles      jsonb,
+  stats         jsonb,          -- CharacterStats: health/attack/defense/magic_resistance/attack_speed/block
+  skills        jsonb,          -- CharacterSkill[]
+  shackles      jsonb,          -- ShackleBreak[]
   tags          text[],
+  ability_tags  text[],         -- คีย์อ้างอิงตาราง game_info (category = 'tag')
+  trivia        jsonb default '[]'::jsonb,   -- string[] รองรับ markdown
+  char_details  jsonb,          -- birthday / height / alignment / tendency / birthplace / ability / case_name
+  overview_cards jsonb,         -- [{ title, content }]
+  materials     jsonb,          -- วัสดุอัปเกรด แยกเป็นหมวด
+  crimebrand_sets      jsonb,   -- legacy — ยังอ่านอยู่ในหน้ารายละเอียดตัวละคร
+  exclusive_crimebrand jsonb,   -- Crimebrand เฉพาะตัว
+
   is_limited    boolean not null default false,
-  is_new        boolean not null default false,
+  is_unreleased boolean not null default false,
+  is_new        boolean not null default false,    -- ป้าย NEW เปิด/ปิดเองต่อตัวละคร
   release_date  date,
   release_order integer,
   created_at    timestamptz not null default now(),
@@ -98,6 +112,7 @@ create policy "Only admins can delete characters"
 create table public.events (
   id             uuid primary key default uuid_generate_v4(),
   title          text not null,
+  subtitle       text,
   description    text,
   event_type     text not null check (event_type in (
                    'gacha_new', 'gacha_new_limited', 'gacha_rerun', 'gacha_rerun_limited',
@@ -112,11 +127,11 @@ create table public.events (
   is_active      boolean not null default true,
   is_featured    boolean not null default false,
   image_position             text not null default '50% 50%',
-  featured_character_images  jsonb default null,
+  featured_character_ids     uuid[] default '{}',   -- ตัวละครที่โผล่ในการ์ดอีเวนต์
+  featured_character_images  jsonb default null,    -- { character_id: image_url }
   created_at                 timestamptz not null default now()
 );
--- Migration (run if table already exists):
--- ALTER TABLE public.events ADD COLUMN featured_character_images jsonb DEFAULT NULL;
+-- ตาราง events ที่มีอยู่แล้ว: ดูสคริปต์ย้ายข้อมูลใน supabase_migration_full_sync.sql
 
 alter table public.events enable row level security;
 
@@ -179,6 +194,7 @@ create table public.forum_posts (
   author_id     uuid not null references public.profiles(id) on delete cascade,
   title         text not null,
   content       text not null,
+  image_urls    text[] default '{}',
   is_pinned     boolean not null default false,
   is_locked     boolean not null default false,
   is_deleted    boolean not null default false,
@@ -227,6 +243,7 @@ create table public.forum_replies (
   post_id       uuid not null references public.forum_posts(id) on delete cascade,
   author_id     uuid not null references public.profiles(id) on delete cascade,
   content       text not null,
+  image_urls    text[] default '{}',
   is_deleted    boolean not null default false,
   parent_id     uuid references public.forum_replies(id),
   created_at    timestamptz not null default now(),
@@ -393,6 +410,123 @@ create policy "Admins can delete announcements"
   using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')));
 
 -- ============================================================
+-- CRIMEBRANDS
+-- ============================================================
+create table public.crimebrands (
+  id                   uuid primary key default uuid_generate_v4(),
+  name                 text not null,
+  slug                 text not null unique,
+  rank                 text not null default 'B' check (rank in ('S', 'A', 'B')),
+  slot                 integer,
+  icon_url             text,
+  artwork_url          text,
+  source               text,                        -- ได้จากไหน
+  unreleased           boolean not null default false,
+  release_order        integer not null default 0,
+  effects              jsonb not null default '[]'::jsonb,  -- [{ piece, name, min, max }]
+  set_bonus            text,
+  note                 text,
+  flavor_texts         jsonb not null default '[]'::jsonb,  -- [{ piece, text }]
+  recommended_char_ids uuid[] not null default '{}',
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now()
+);
+
+create index idx_crimebrands_release_order on public.crimebrands(release_order desc);
+
+alter table public.crimebrands enable row level security;
+
+create policy "Crimebrands are viewable by everyone"
+  on public.crimebrands for select using (true);
+
+create policy "Only admins can insert crimebrands"
+  on public.crimebrands for insert
+  with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+create policy "Only admins can update crimebrands"
+  on public.crimebrands for update
+  using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+  with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+create policy "Only admins can delete crimebrands"
+  on public.crimebrands for delete
+  using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+-- ============================================================
+-- CHARACTER CRIMEBRAND BUILDS (เซ็ตแนะนำต่อตัวละคร)
+-- ============================================================
+create table public.character_crimebrand_builds (
+  id           uuid primary key default uuid_generate_v4(),
+  character_id uuid not null references public.characters(id) on delete cascade,
+  build_name   text not null,
+  description  text,
+  slot1_cb_id  uuid references public.crimebrands(id) on delete set null,
+  slot1_piece  integer check (slot1_piece between 1 and 3),
+  slot2_cb_id  uuid references public.crimebrands(id) on delete set null,
+  slot2_piece  integer check (slot2_piece between 1 and 3),
+  slot3_cb_id  uuid references public.crimebrands(id) on delete set null,
+  slot3_piece  integer check (slot3_piece between 1 and 3),
+  sort_order   integer not null default 0,
+  created_at   timestamptz not null default now()
+);
+
+create index idx_cb_builds_character on public.character_crimebrand_builds(character_id, sort_order);
+
+alter table public.character_crimebrand_builds enable row level security;
+
+create policy "Builds are viewable by everyone"
+  on public.character_crimebrand_builds for select using (true);
+
+create policy "Only admins can insert builds"
+  on public.character_crimebrand_builds for insert
+  with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+create policy "Only admins can update builds"
+  on public.character_crimebrand_builds for update
+  using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+  with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+create policy "Only admins can delete builds"
+  on public.character_crimebrand_builds for delete
+  using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+-- ============================================================
+-- GAME INFO (ทับค่า default ของ Ability Tag / Alignment / Tendency)
+-- ============================================================
+-- แต่ละแถวคือการ "override" หรือ "เพิ่มของใหม่" ทับค่าที่ hardcode ไว้ใน
+-- src/lib/constants.ts และ src/lib/abilityTags.ts
+--   category : 'tag' | 'alignment' | 'tendency'
+--   key      : ชื่อ tag / คีย์ alignment / คีย์ tendency
+--   data     : { desc?, color?, icon_url?, label?, group_label?, is_custom? }
+create table public.game_info (
+  id         uuid primary key default uuid_generate_v4(),
+  category   text not null check (category in ('tag', 'alignment', 'tendency')),
+  key        text not null,
+  data       jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (category, key)
+);
+
+alter table public.game_info enable row level security;
+
+create policy "Game info is viewable by everyone"
+  on public.game_info for select using (true);
+
+create policy "Only admins can insert game info"
+  on public.game_info for insert
+  with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+create policy "Only admins can update game info"
+  on public.game_info for update
+  using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+  with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+create policy "Only admins can delete game info"
+  on public.game_info for delete
+  using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+-- ============================================================
 -- INDEXES
 -- ============================================================
 create index idx_forum_posts_category on public.forum_posts(category_id);
@@ -418,7 +552,7 @@ insert into public.forum_categories (name, slug, description, icon, color, sort_
 -- ============================================================
 -- STORAGE BUCKETS (สร้างใน Supabase Dashboard > Storage)
 -- ============================================================
--- สร้าง bucket ชื่อ: avatars, characters, events  (public = true)
+-- สร้าง bucket ชื่อ: avatars, characters, events, forum  (public = true)
 
 -- ============================================================
 -- ตั้งค่า Admin คนแรก:
