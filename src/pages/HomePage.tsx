@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom'
 import { Calendar, Users, BarChart3, MessageSquare, ChevronRight, Clock, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { GameEvent } from '../types'
-import { EventCountdown } from '../components/events/EventCountdown'
-import { Badge } from '../components/ui/Badge'
+import { HeroCarousel } from '../components/events/HeroCarousel'
 import { Card } from '../components/ui/Card'
 import { formatDate } from '../lib/utils'
 import { useCountdown } from '../hooks/useCountdown'
@@ -136,69 +135,23 @@ export function HomePage() {
   }, [])
 
   const now = new Date()
-  const currentEvent = events.find(e => e.is_featured) || events.find(e => new Date(e.end_date) > now && new Date(e.start_date) <= now)
-  const activeEvents = events.filter(e => new Date(e.end_date) > now && new Date(e.start_date) <= now && e.id !== currentEvent?.id)
-  const upcomingEvents = events.filter(e => new Date(e.start_date) > now && e.id !== currentEvent?.id)
+  const isRunning = (e: GameEvent) => new Date(e.end_date) > now && new Date(e.start_date) <= now
+
+  // แบนเนอร์ใหญ่ = อีเวนต์ที่ติดดาวไว้ (ติดได้หลายอัน แล้วมันจะสลับให้เอง)
+  // ถ้ายังไม่ได้ติดดาวไว้เลย ใช้อีเวนต์ที่กำลังดำเนินอยู่ 1 อันแทน เหมือนพฤติกรรมเดิม
+  const featured = events.filter(e => e.is_featured)
+  const heroEvents = featured.length > 0 ? featured : events.filter(isRunning).slice(0, 1)
+  const heroIds = new Set(heroEvents.map(e => e.id))
+
+  const activeEvents = events.filter(e => isRunning(e) && !heroIds.has(e.id))
+  const upcomingEvents = events.filter(e => new Date(e.start_date) > now && !heroIds.has(e.id))
 
   if (loading) return <PageLoader />
 
   return (
     <div className="min-h-screen">
-      {/* Hero / Current Event */}
-      <section className="relative overflow-hidden min-h-[340px] md:min-h-[400px] flex items-center">
-        {currentEvent?.banner_url && (
-          <>
-            <div
-              className="absolute inset-0 bg-cover bg-no-repeat"
-              style={{
-                backgroundImage: `url(${currentEvent.banner_url})`,
-                backgroundPosition: currentEvent.image_position || '50% 50%',
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-ptn-bg/90 via-ptn-bg/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-ptn-bg/50 via-transparent to-transparent" />
-          </>
-        )}
-        {!currentEvent?.banner_url && <div className="absolute inset-0 bg-red-glow" />}
-
-        <div className="relative w-full mx-auto max-w-7xl px-4 py-12 md:py-20">
-          <div className="max-w-xl">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-1 w-8 bg-ptn-red rounded" />
-              <span className="text-xs font-medium text-ptn-red uppercase tracking-widest">
-                อีเวนต์ปัจจุบัน
-              </span>
-            </div>
-            {currentEvent ? (
-              <>
-                <h1 className="font-heading text-3xl md:text-4xl font-bold text-ptn-text mb-3 leading-tight drop-shadow-lg">
-                  {currentEvent.title}
-                </h1>
-                <p className="text-ptn-muted mb-6 leading-relaxed">
-                  {currentEvent.description}
-                </p>
-                <div className="flex items-center gap-4 mb-6">
-                  <Badge variant="event" value={currentEvent.event_type} />
-                  <span className="flex items-center gap-1.5 text-xs text-ptn-muted">
-                    <Clock size={12} />
-                    สิ้นสุด {formatDate(currentEvent.end_date)}
-                  </span>
-                </div>
-                <EventCountdown targetDate={currentEvent.end_date} />
-              </>
-            ) : (
-              <div>
-                <h1 className="font-heading text-4xl md:text-5xl font-bold text-ptn-text mb-3">
-                  PTN Wiki <span className="text-ptn-red">TH</span>
-                </h1>
-                <p className="text-ptn-muted text-lg">
-                  แหล่งรวมข้อมูล Path to Nowhere ภาษาไทย
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      {/* Hero — สลับอีเวนต์ที่ติดดาวไว้อัตโนมัติ */}
+      <HeroCarousel events={heroEvents} />
 
       {/* Stats bar */}
       <section className="border-y border-ptn-border/20 bg-black/5 backdrop-blur-sm">

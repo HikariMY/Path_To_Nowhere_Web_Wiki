@@ -234,15 +234,13 @@ export function AdminEventsPage() {
     if (!error) setEvents(prev => prev.map(e => e.id === ev.id ? { ...e, is_active: !e.is_active } : e))
   }
 
-  const setFeatured = async (ev: GameEvent) => {
-    if (ev.is_featured) return
-    // unset all, then set this one
-    await supabase.from('events').update({ is_featured: false } as never).neq('id', ev.id)
-    const { error } = await supabase.from('events').update({ is_featured: true } as never).eq('id', ev.id)
-    if (!error) {
-      setEvents(prev => prev.map(e => ({ ...e, is_featured: e.id === ev.id })))
-      toast('ตั้งเป็น Hero ของหน้าแรกแล้ว', 'success')
-    }
+  // ติดดาวได้หลายอีเวนต์พร้อมกัน — หน้าแรกจะสลับให้อัตโนมัติทุก 6 วินาที
+  const toggleFeatured = async (ev: GameEvent) => {
+    const next = !ev.is_featured
+    const { error } = await supabase.from('events').update({ is_featured: next } as never).eq('id', ev.id)
+    if (error) { toast(error.message, 'error'); return }
+    setEvents(prev => prev.map(e => e.id === ev.id ? { ...e, is_featured: next } : e))
+    toast(next ? 'เพิ่มเข้าสไลด์หน้าแรกแล้ว' : 'เอาออกจากสไลด์หน้าแรกแล้ว', 'success')
   }
 
   const set = (field: keyof EventForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -253,7 +251,13 @@ export function AdminEventsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-heading text-2xl font-bold text-ptn-text">จัดการอีเวนต์</h1>
+        <div>
+          <h1 className="font-heading text-2xl font-bold text-ptn-text">จัดการอีเวนต์</h1>
+          <p className="text-sm text-ptn-muted mt-1">
+            กดรูปดาวเพื่อเลือกอีเวนต์ที่จะขึ้นแบนเนอร์ใหญ่หน้าแรก — ติดดาวได้หลายอัน หน้าแรกจะสลับให้เองทุก 6 วินาที
+            {' '}(ตอนนี้ติดไว้ {events.filter(e => e.is_featured).length} อัน)
+          </p>
+        </div>
         <Button onClick={openCreate} size="sm"><Plus size={14} /> เพิ่มอีเวนต์</Button>
       </div>
 
@@ -272,7 +276,7 @@ export function AdminEventsPage() {
                   </span>
                   {ev.is_featured && (
                     <span className="flex items-center gap-1 text-xs text-ptn-gold bg-ptn-gold/10 px-1.5 py-0.5 rounded">
-                      <Star size={10} className="fill-ptn-gold" /> Hero
+                      <Star size={10} className="fill-ptn-gold" /> สไลด์หน้าแรก
                     </span>
                   )}
                 </div>
@@ -284,8 +288,8 @@ export function AdminEventsPage() {
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button
-                  onClick={() => setFeatured(ev)}
-                  title={ev.is_featured ? 'Hero ปัจจุบัน' : 'ตั้งเป็น Hero หน้าแรก'}
+                  onClick={() => toggleFeatured(ev)}
+                  title={ev.is_featured ? 'เอาออกจากสไลด์หน้าแรก' : 'เพิ่มเข้าสไลด์หน้าแรก'}
                   className={`p-1 transition-colors ${ev.is_featured ? 'text-ptn-gold' : 'text-ptn-disabled hover:text-ptn-gold'}`}
                 >
                   <Star size={15} className={ev.is_featured ? 'fill-ptn-gold' : ''} />
