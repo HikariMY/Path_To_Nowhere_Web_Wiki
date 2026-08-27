@@ -74,7 +74,13 @@ alter table public.events add constraint events_event_type_check check (event_ty
 ));
 
 -- ------------------------------------------------------------
--- 3) FORUM — แนบรูปในกระทู้/คอมเมนต์
+-- 3) PROFILES — ชื่อที่แสดง
+-- ------------------------------------------------------------
+alter table public.profiles
+  add column if not exists display_name text;
+
+-- ------------------------------------------------------------
+-- 4) FORUM — แนบรูปในกระทู้/คอมเมนต์
 -- ------------------------------------------------------------
 alter table public.forum_posts
   add column if not exists image_urls text[] default '{}';
@@ -83,7 +89,7 @@ alter table public.forum_replies
   add column if not exists image_urls text[] default '{}';
 
 -- ------------------------------------------------------------
--- 4) CRIMEBRANDS
+-- 5) CRIMEBRANDS
 -- ------------------------------------------------------------
 create table if not exists public.crimebrands (
   id                   uuid primary key default uuid_generate_v4(),
@@ -134,7 +140,7 @@ do $$ begin
 end $$;
 
 -- ------------------------------------------------------------
--- 5) CHARACTER CRIMEBRAND BUILDS
+-- 6) CHARACTER CRIMEBRAND BUILDS
 -- ------------------------------------------------------------
 create table if not exists public.character_crimebrand_builds (
   id           uuid primary key default uuid_generate_v4(),
@@ -180,7 +186,7 @@ do $$ begin
 end $$;
 
 -- ------------------------------------------------------------
--- 6) GAME INFO
+-- 7) GAME INFO
 -- ------------------------------------------------------------
 create table if not exists public.game_info (
   id         uuid primary key default uuid_generate_v4(),
@@ -218,7 +224,7 @@ do $$ begin
 end $$;
 
 -- ------------------------------------------------------------
--- 7) STORAGE BUCKETS
+-- 8) STORAGE BUCKETS
 -- ------------------------------------------------------------
 -- ต้องมี bucket (public = true) ครบ 4 อัน — สร้างที่ Dashboard → Storage:
 --   avatars, characters, events, forum
@@ -226,7 +232,7 @@ end $$;
 --   select id, public from storage.buckets order by id;
 
 -- ------------------------------------------------------------
--- 8) ตรวจผล — ควรขึ้น "ok" ทุกบรรทัด
+-- 9) ตรวจผล — ควรขึ้น "ok" ทุกบรรทัด
 -- ------------------------------------------------------------
 -- ถ้ามีบรรทัดไหนขึ้น MISSING แปลว่า migration ยังไม่ครบ อย่าเพิ่ง deploy
 with expected(tbl, col) as (values
@@ -247,6 +253,7 @@ with expected(tbl, col) as (values
   ('events', 'image_position'),
   ('events', 'featured_character_ids'),
   ('events', 'featured_character_images'),
+  ('profiles', 'display_name'),
   ('forum_posts', 'image_urls'),
   ('forum_replies', 'image_urls'),
   ('crimebrands', 'id'),

@@ -177,3 +177,13 @@ export const ROLE_COLORS: Record<string, string> = {
 }
 
 export const PAGE_SIZE = 20
+
+/** แท็กบริบทของไกด์ — ไกด์คนละบริบทเถียงกันไม่จบ ติดแท็กไว้ให้ชัด */
+export const GUIDE_TAGS = [
+  'PvE ทั่วไป',
+  'Crimson Abyss',
+  'Interlocking Chaos',
+  'สายฟรี (F2P)',
+  'มือใหม่',
+  'สายจัดเต็ม',
+]

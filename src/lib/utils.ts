@@ -71,3 +71,8 @@ export function truncate(text: string, length: number): string {
   if (text.length <= length) return text
   return text.substring(0, length) + '...'
 }
+
+/** ผ่านมากี่วันแล้วนับจากเวลาที่ให้มา — ใช้เตือนว่าไกด์อาจล้าสมัย */
+export function daysSince(iso: string): number {
+  return (Date.now() - new Date(iso).getTime()) / 86_400_000
+}

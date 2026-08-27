@@ -223,6 +223,41 @@ export type CharacterCrimebrandBuildRow = {
   created_at: string
 }
 
+/** หัวข้อหนึ่งก้อนในเนื้อไกด์ — body เป็น markdown */
+export type GuideSection = {
+  heading: string
+  body: string
+}
+
+export type CharacterGuideRow = {
+  id: string
+  character_id: string
+  author_id: string
+  title: string
+  patch_version: string | null
+  tags: string[]
+  /** id (หรือชื่อ) ของสกิล เรียงตามลำดับที่ควรอัป */
+  skill_priority: string[]
+  level_from: string | null
+  level_to: string | null
+  /** เลข stage ของ Shackle ที่คุ้มค่า */
+  notable_shackles: number[]
+  recommended_ecb_id: string | null
+  /** character id ของเพื่อนร่วมทีม */
+  recommended_team: string[]
+  sections: GuideSection[]
+  upvotes: number
+  created_at: string
+  updated_at: string
+}
+
+export type CharacterGuideVoteRow = {
+  id: string
+  guide_id: string
+  user_id: string
+  created_at: string
+}
+
 export type GameInfoRow = {
   id: string
   category: 'tag' | 'alignment' | 'tendency'
@@ -268,6 +303,16 @@ export interface Database {
       character_crimebrand_builds: TableOf<CharacterCrimebrandBuildRow, [
         FK<'character_crimebrand_builds_character_id_fkey', 'character_id', 'characters'>,
       ]>
+
+      character_guides: TableOf<CharacterGuideRow, [
+        FK<'character_guides_author_id_fkey', 'author_id', 'profiles'>,
+        FK<'character_guides_character_id_fkey', 'character_id', 'characters'>,
+      ]>
+      character_guide_votes: TableOf<CharacterGuideVoteRow, [
+        FK<'character_guide_votes_guide_id_fkey', 'guide_id', 'character_guides'>,
+        FK<'character_guide_votes_user_id_fkey', 'user_id', 'profiles'>,
+      ]>
+
       game_info: TableOf<GameInfoRow>
     }
     Views: Record<never, never>

@@ -13,6 +13,7 @@ import { formatDate } from '../../lib/utils'
 import { useAbilityTags } from '../../hooks/useAbilityTags'
 import type { TagGroup } from '../../lib/abilityTags'
 import { Modal } from '../../components/ui/Modal'
+import { CharacterGuidesTab } from './CharacterGuidesTab'
 
 // ---- Tabs ----------------------------------------------------------------
 
@@ -21,6 +22,7 @@ const TABS = [
   { id: 'skills',   label: 'สกิล' },
   { id: 'shackles', label: 'Shackles' },
   { id: 'story',    label: 'เรื่องราว' },
+  { id: 'guides',   label: 'ไกด์โดยผู้เล่น' },
 ]
 
 // ---- Shackle icon --------------------------------------------------------
@@ -1082,6 +1084,15 @@ export function CharacterDetailPage() {
           ) : (
             <Card className="p-8 text-center text-ptn-disabled">ยังไม่มีข้อมูล Trivia / Lore</Card>
           )
+        )}
+
+        {/* GUIDES TAB */}
+        {activeTab === 'guides' && (
+          <CharacterGuidesTab
+            characterId={character.id}
+            skills={skills}
+            shackles={shackles}
+          />
         )}
       </div>
 
