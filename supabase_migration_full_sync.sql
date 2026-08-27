@@ -8,7 +8,13 @@
 -- ถ้าเพิ่งสร้างโปรเจกต์ใหม่ ให้รัน supabase_schema.sql อย่างเดียวพอ ไม่ต้องรันไฟล์นี้
 --
 -- วิธีใช้: Supabase Dashboard → SQL Editor → วางทั้งไฟล์ → Run
+-- แนะนำให้ backup ก่อน (Dashboard → Database → Backups)
+-- ส่วนที่ 8 ท้ายไฟล์คือคำสั่งตรวจผล — ดูว่าขึ้น ok ครบทุกบรรทัดไหม
 -- ============================================================
+
+-- ตารางด้านล่างใช้ uuid_generate_v4() — DB เดิมน่าจะมี extension นี้อยู่แล้ว
+-- แต่ประกาศไว้กันพลาดสำหรับ DB ที่ยังไม่มี
+create extension if not exists "uuid-ossp";
 
 -- ------------------------------------------------------------
 -- 1) CHARACTERS — คอลัมน์ที่เพิ่มมาหลังสร้างตารางครั้งแรก
@@ -38,7 +44,27 @@ alter table public.events
   add column if not exists featured_character_images jsonb  default null;
 
 -- event_type เดิมมี check constraint ที่แคบกว่า — ขยายให้ครอบคลุมชนิดใหม่ทั้งหมด
-alter table public.events drop constraint if exists events_event_type_check;
+--
+-- ไล่ลบ check constraint ทุกตัวบน events ที่อ้างถึง event_type แทนที่จะลบตามชื่อ
+-- เพราะถ้า constraint เดิมถูกตั้งชื่ออื่น (ไม่ใช่ events_event_type_check)
+-- การลบตามชื่อจะไม่เกิดอะไรขึ้นเลย แล้วตัวเก่าที่แคบกว่าจะยังบล็อกชนิดใหม่อยู่เงียบ ๆ
+do $$
+declare c record;
+begin
+  for c in
+    select con.conname
+    from pg_constraint con
+    join pg_class rel     on rel.oid = con.conrelid
+    join pg_namespace ns  on ns.oid  = rel.relnamespace
+    where ns.nspname = 'public'
+      and rel.relname = 'events'
+      and con.contype = 'c'
+      and pg_get_constraintdef(con.oid) ilike '%event_type%'
+  loop
+    execute format('alter table public.events drop constraint %I', c.conname);
+  end loop;
+end $$;
+
 alter table public.events add constraint events_event_type_check check (event_type in (
   'gacha_new', 'gacha_new_limited', 'gacha_rerun', 'gacha_rerun_limited',
   'event_new', 'event_rerun', 'event_collab',
@@ -196,3 +222,57 @@ end $$;
 -- ------------------------------------------------------------
 -- ต้องมี bucket (public = true) ครบ 4 อัน — สร้างที่ Dashboard → Storage:
 --   avatars, characters, events, forum
+-- ตรวจว่ามีครบไหมด้วยคำสั่งนี้:
+--   select id, public from storage.buckets order by id;
+
+-- ------------------------------------------------------------
+-- 8) ตรวจผล — ควรขึ้น "ok" ทุกบรรทัด
+-- ------------------------------------------------------------
+-- ถ้ามีบรรทัดไหนขึ้น MISSING แปลว่า migration ยังไม่ครบ อย่าเพิ่ง deploy
+with expected(tbl, col) as (values
+  ('characters', 'portrait_pos'),
+  ('characters', 'portrait_zoom'),
+  ('characters', 'ability_tags'),
+  ('characters', 'trivia'),
+  ('characters', 'char_details'),
+  ('characters', 'overview_cards'),
+  ('characters', 'materials'),
+  ('characters', 'crimebrand_sets'),
+  ('characters', 'exclusive_crimebrand'),
+  ('characters', 'is_unreleased'),
+  ('characters', 'is_new'),
+  ('characters', 'release_order'),
+  ('events', 'subtitle'),
+  ('events', 'is_featured'),
+  ('events', 'image_position'),
+  ('events', 'featured_character_ids'),
+  ('events', 'featured_character_images'),
+  ('forum_posts', 'image_urls'),
+  ('forum_replies', 'image_urls'),
+  ('crimebrands', 'id'),
+  ('crimebrands', 'effects'),
+  ('crimebrands', 'flavor_texts'),
+  ('crimebrands', 'recommended_char_ids'),
+  ('crimebrands', 'release_order'),
+  ('crimebrands', 'unreleased'),
+  ('character_crimebrand_builds', 'character_id'),
+  ('character_crimebrand_builds', 'build_name'),
+  ('character_crimebrand_builds', 'slot1_cb_id'),
+  ('character_crimebrand_builds', 'slot2_cb_id'),
+  ('character_crimebrand_builds', 'slot3_cb_id'),
+  ('character_crimebrand_builds', 'sort_order'),
+  ('game_info', 'category'),
+  ('game_info', 'key'),
+  ('game_info', 'data')
+)
+select
+  e.tbl                                              as "ตาราง",
+  e.col                                              as "คอลัมน์",
+  case when c.column_name is null
+       then '>>> MISSING <<<' else 'ok' end          as "สถานะ"
+from expected e
+left join information_schema.columns c
+  on  c.table_schema = 'public'
+  and c.table_name   = e.tbl
+  and c.column_name  = e.col
+order by (c.column_name is null) desc, e.tbl, e.col;
