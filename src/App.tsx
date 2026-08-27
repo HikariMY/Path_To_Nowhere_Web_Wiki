@@ -37,7 +37,6 @@ import { AdminForumPage } from './pages/admin/AdminForumPage'
 import { AdminLogsPage } from './pages/admin/AdminLogsPage'
 import { AdminAnnouncementsPage } from './pages/admin/AdminAnnouncementsPage'
 import { AdminSkillsPage } from './pages/admin/AdminSkillsPage'
-import { AdminShacklesPage } from './pages/admin/AdminShacklesPage'
 import { AdminGameInfoPage } from './pages/admin/AdminGameInfoPage'
 
 export default function App() {
@@ -115,7 +114,6 @@ export default function App() {
               <Route path="announcements" element={<AdminAnnouncementsPage />} />
               <Route path="forum" element={<AdminForumPage />} />
               <Route path="skills" element={<AdminSkillsPage />} />
-              <Route path="shackles" element={<AdminShacklesPage />} />
               <Route path="game-info" element={<AdminGameInfoPage />} />
               <Route path="crimebrands" element={<AdminCrimebrandsPage />} />
               <Route path="crimebrand-builds" element={<AdminCrimebrandBuildsPage />} />
