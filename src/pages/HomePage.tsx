@@ -28,9 +28,19 @@ const DEMO_ANNOUNCEMENTS: Announcement[] = [
   { id: '3', content: 'ร่วมสร้างเทียร์ลิสต์ของชุมชนได้แล้ว' },
 ]
 
+// ค่าตั้งต้นของฟิลด์ที่ demo event ไม่ได้ใช้ — กันไม่ให้ต้องเขียนซ้ำทุกก้อน
+const DEMO_EVENT_BASE = {
+  subtitle: null,
+  is_featured: false,
+  image_position: '50% 50%',
+  featured_character_ids: null,
+  featured_character_images: null,
+} satisfies Partial<GameEvent>
+
 // Fallback demo events — synced with s1n.gg data (as of 2026-03-22)
 const DEMO_EVENTS: GameEvent[] = [
   {
+    ...DEMO_EVENT_BASE,
     id: '1',
     title: 'Midnight Silhouette — คิสึกิ ฮิโตมิ',
     description: 'อีเวนต์สุ่มตัวละคร S-Rank ใหม่ Kisugi Hitomi ผู้มีพลังพิเศษอันลึกลับแห่งราตรี ร่วมเดินทางและไขปริศนาแห่งเงาในคืนมืด',
@@ -42,6 +52,7 @@ const DEMO_EVENTS: GameEvent[] = [
     created_at: new Date().toISOString(),
   },
   {
+    ...DEMO_EVENT_BASE,
     id: '2',
     title: 'Velvet Nightglow — คิสึกิ รุย',
     description: 'อีเวนต์สุ่มตัวละคร S-Rank Kisugi Rui แห่งแสงกำมะหยี่ยามค่ำคืน สัมผัสพลังของตระกูล Kisugi ทั้งสองพี่น้องในอีเวนต์นี้',
@@ -53,6 +64,7 @@ const DEMO_EVENTS: GameEvent[] = [
     created_at: new Date().toISOString(),
   },
   {
+    ...DEMO_EVENT_BASE,
     id: '3',
     title: 'Jelena & Raven — Directional',
     description: 'อีเวนต์ Directional สุ่มตัวละคร A-Rank Jelena และ Raven ทั้งคู่พร้อมกัน โอกาสพิเศษในการรับตัวละครหายากทั้งสองในคราวเดียว',
@@ -64,6 +76,7 @@ const DEMO_EVENTS: GameEvent[] = [
     created_at: new Date().toISOString(),
   },
   {
+    ...DEMO_EVENT_BASE,
     id: '4',
     title: 'Rebellious Uproar — Synex รีรัน',
     description: 'รีรัน Routine สุ่มตัวละคร S-Rank Synex กลับมาอีกครั้ง! หากพลาดครั้งก่อน นี่คือโอกาสของคุณในการรับ Synex มาร่วมทีม',
@@ -75,6 +88,7 @@ const DEMO_EVENTS: GameEvent[] = [
     created_at: new Date().toISOString(),
   },
   {
+    ...DEMO_EVENT_BASE,
     id: '5',
     title: 'Lichen — อีเวนต์ใหม่',
     description: 'อีเวนต์สุ่มตัวละคร S-Rank ใหม่ Lichen กำลังจะมาในเร็วๆ นี้ เตรียมพลังงานและสะสมทรัพยากรให้พร้อม',

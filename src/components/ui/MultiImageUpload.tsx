@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useRef, useState } from 'react'
 import { ImagePlus, X, Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'

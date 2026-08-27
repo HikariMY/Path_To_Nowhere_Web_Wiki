@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
 import { Search, Shield, ShieldOff } from 'lucide-react'
 import { supabase } from '../../lib/supabase'

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
 import { Trash2, Search, Pin, Eye, Lock, Unlock } from 'lucide-react'
 import { Link } from 'react-router-dom'

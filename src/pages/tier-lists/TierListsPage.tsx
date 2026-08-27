@@ -17,14 +17,14 @@ const DEMO_TIERS: TierListWithAuthor[] = [
       { label: 'S', color: '#FFD700', character_ids: [] },
       { label: 'A', color: '#C084FC', character_ids: [] },
     ], upvotes: 142, created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), updated_at: new Date().toISOString(),
-    author: { id: 'a1', username: 'AdminPTN', avatar_url: null, role: 'admin' as const },
+    author: { id: 'a1', username: 'AdminPTN', display_name: null, avatar_url: null, role: 'admin' as const },
   },
   {
     id: '2', author_id: 'u1', title: 'เทียร์ลิสต์สำหรับ PvE ด่านยาก', description: 'จัดอันดับเฉพาะด่านยากระดับ Crimson Abyss', is_official: false, is_public: true, patch_version: '2.9', tiers: [
       { label: 'S', color: '#FFD700', character_ids: [] as string[] },
       { label: 'A', color: '#C084FC', character_ids: [] as string[] },
     ], upvotes: 38, created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), updated_at: new Date().toISOString(),
-    author: { id: 'u1', username: 'Sinnercraft', avatar_url: null, role: 'user' as const },
+    author: { id: 'u1', username: 'Sinnercraft', display_name: null, avatar_url: null, role: 'user' as const },
   },
 ]
 

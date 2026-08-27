@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from 'react'
 import { User, Lock, Save } from 'lucide-react'
 import { supabase } from '../../lib/supabase'

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
 import { Trash2, Search, Eye, Star, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -97,7 +96,9 @@ export function AdminTierListsPage() {
                 <td className="p-3">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     {tl.is_official && (
-                      <Shield size={11} className="text-ptn-cyan shrink-0" title="Official" />
+                      <span title="Official" className="inline-flex shrink-0">
+                        <Shield size={11} className="text-ptn-cyan" />
+                      </span>
                     )}
                     <span className="text-ptn-text font-medium line-clamp-1">{tl.title}</span>
                   </div>

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect } from 'react'
 import { Edit2, RotateCcw, Plus, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -14,8 +13,14 @@ import { useToast } from '../../components/ui/Toast'
 
 // ---- Types -----------------------------------------------------------------
 
+/** category ของตาราง game_info — ต้องตรงกับ check constraint ฝั่ง DB */
+type GameInfoCategory = 'tag' | 'alignment' | 'tendency'
+
+/** แท็บบนหน้าจอ — 'tags' (พหูพจน์) map ไปเป็น category 'tag' */
+type GameInfoTab = 'tags' | 'alignment' | 'tendency'
+
 type GameInfoRow = {
-  category: string
+  category: GameInfoCategory
   key: string
   data: {
     desc?: string
@@ -28,7 +33,7 @@ type GameInfoRow = {
 }
 
 type EditState = {
-  category: string
+  category: GameInfoCategory
   key: string
   label: string
   desc: string
@@ -78,7 +83,7 @@ const DEFAULT_TENDENCY: Record<string, { desc: string; color: string }> = {
   reticle:   { desc: 'นักยิงระยะไกล Reticle โจมตีจากระยะปลอดภัย มักมีสกิลที่ใช้ Weakspot หรือ True DMG', color: '#eab308' },
 }
 
-const TABS = [
+const TABS: { id: GameInfoTab; label: string }[] = [
   { id: 'tags',      label: 'Ability Tags' },
   { id: 'alignment', label: 'Alignment' },
   { id: 'tendency',  label: 'Tendency' },
@@ -87,7 +92,7 @@ const TABS = [
 // ---- Page ------------------------------------------------------------------
 
 export function AdminGameInfoPage() {
-  const [activeTab, setActiveTab] = useState('tags')
+  const [activeTab, setActiveTab] = useState<GameInfoTab>('tags')
   const [rows, setRows] = useState<GameInfoRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -115,34 +120,34 @@ export function AdminGameInfoPage() {
     setLoading(false)
   }
 
-  function getRow(category: string, key: string): GameInfoRow | undefined {
+  function getRow(category: GameInfoCategory, key: string): GameInfoRow | undefined {
     return rows.find(r => r.category === category && r.key === key)
   }
 
-  function getDesc(category: string, key: string, fallback: string) {
+  function getDesc(category: GameInfoCategory, key: string, fallback: string) {
     return getRow(category, key)?.data?.desc ?? fallback
   }
 
-  function getColor(category: string, key: string, fallback: string) {
+  function getColor(category: GameInfoCategory, key: string, fallback: string) {
     return getRow(category, key)?.data?.color ?? fallback
   }
 
-  function isCustom(category: string, key: string) {
+  function isCustom(category: GameInfoCategory, key: string) {
     return !!getRow(category, key)?.data?.is_custom
   }
 
-  function isModified(category: string, key: string) {
+  function isModified(category: GameInfoCategory, key: string) {
     return !!getRow(category, key) && !isCustom(category, key)
   }
 
   // Custom rows for a category
-  function customRows(category: string) {
+  function customRows(category: GameInfoCategory) {
     return rows.filter(r => r.category === category && r.data?.is_custom)
   }
 
   // ---- Edit ----------------------------------------------------------------
 
-  function openEdit(category: string, key: string, label: string, defaultDesc: string, defaultColor?: string) {
+  function openEdit(category: GameInfoCategory, key: string, label: string, defaultDesc: string, defaultColor?: string) {
     const row = getRow(category, key)
     setEditState({
       category,
@@ -155,7 +160,7 @@ export function AdminGameInfoPage() {
     })
   }
 
-  async function saveRow(category: string, itemKey: string, data: Record<string, unknown>) {
+  async function saveRow(category: GameInfoCategory, itemKey: string, data: Record<string, unknown>) {
     const existing = getRow(category, itemKey)
     let error
     if (existing) {
@@ -196,7 +201,7 @@ export function AdminGameInfoPage() {
 
   // ---- Reset / Delete ------------------------------------------------------
 
-  async function handleReset(category: string, itemKey: string) {
+  async function handleReset(category: GameInfoCategory, itemKey: string) {
     const id = `${category}:${itemKey}`
     setResetting(id)
     const { error } = await supabase
@@ -209,7 +214,7 @@ export function AdminGameInfoPage() {
     setResetting(null)
   }
 
-  async function handleDelete(category: string, itemKey: string) {
+  async function handleDelete(category: GameInfoCategory, itemKey: string) {
     const id = `${category}:${itemKey}`
     setDeleting(id)
     const { error } = await supabase
@@ -233,7 +238,7 @@ export function AdminGameInfoPage() {
     if (!addForm.key.trim()) return
     setAdding(true)
 
-    const category = activeTab === 'tags' ? 'tag' : activeTab
+    const category: GameInfoCategory = activeTab === 'tags' ? 'tag' : activeTab
     const itemKey  = addForm.key.trim()
     const data: Record<string, unknown> = { desc: addForm.desc, is_custom: true }
 
@@ -264,7 +269,7 @@ export function AdminGameInfoPage() {
   const modifiedBadge = <span className="text-xs text-ptn-cyan border border-ptn-cyan/30 px-1.5 py-0.5 rounded">แก้ไขแล้ว</span>
   const newBadge      = <span className="text-xs text-green-400 border border-green-400/30 px-1.5 py-0.5 rounded">ใหม่</span>
 
-  function editBtn(cat: string, k: string, lbl: string, defDesc: string, defColor?: string) {
+  function editBtn(cat: GameInfoCategory, k: string, lbl: string, defDesc: string, defColor?: string) {
     return (
       <Button size="sm" variant="ghost" onClick={() => openEdit(cat, k, lbl, defDesc, defColor)}>
         <Edit2 size={13} />
@@ -272,7 +277,7 @@ export function AdminGameInfoPage() {
     )
   }
 
-  function resetBtn(cat: string, k: string) {
+  function resetBtn(cat: GameInfoCategory, k: string) {
     return (
       <Button size="sm" variant="ghost" loading={resetting === `${cat}:${k}`} onClick={() => handleReset(cat, k)} title="คืนค่าเริ่มต้น">
         <RotateCcw size={13} />
@@ -280,7 +285,7 @@ export function AdminGameInfoPage() {
     )
   }
 
-  function deleteBtn(cat: string, k: string) {
+  function deleteBtn(cat: GameInfoCategory, k: string) {
     return (
       <Button size="sm" variant="danger" loading={deleting === `${cat}:${k}`} onClick={() => handleDelete(cat, k)} title="ลบ">
         <Trash2 size={13} />

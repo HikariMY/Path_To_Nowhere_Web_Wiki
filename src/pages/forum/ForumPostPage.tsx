@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState, type FormEvent } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ChevronLeft, MessageSquare, Send, Trash2, Eye } from 'lucide-react'

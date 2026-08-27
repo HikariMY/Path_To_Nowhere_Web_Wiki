@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
 import { Plus, Edit2, Trash2, Search, Zap, Unlink, Sword, Layers } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -20,6 +19,13 @@ import { CharacterInfoPanel } from './CharacterInfoPanel'
 import { CrimebrandBuildsPanel } from './CrimebrandBuildsPanel'
 
 // ── types ───────────────────────────────────────────────────────────────────
+
+/** คอลัมน์ชุดย่อยที่รายชื่อตัวละครด้านซ้ายดึงมาจริง — ไม่ใช่ทั้งแถว */
+type CharListItem = Pick<
+  Character,
+  'id' | 'name' | 'slug' | 'rarity' | 'faction' | 'job_class'
+  | 'portrait_url' | 'skills' | 'exclusive_crimebrand' | 'shackles'
+>
 
 type SkillForm = {
   id: string
@@ -148,10 +154,10 @@ export function AdminSkillsPage() {
   const { profile } = useAuth()
   const { toast } = useToast()
 
-  const [characters, setCharacters] = useState<Character[]>([])
+  const [characters, setCharacters] = useState<CharListItem[]>([])
   const [loadingChars, setLoadingChars] = useState(true)
   const [search, setSearch] = useState('')
-  const [selectedChar, setSelectedChar] = useState<Character | null>(null)
+  const [selectedChar, setSelectedChar] = useState<CharListItem | null>(null)
   const [skills, setSkills] = useState<CharacterSkill[]>([])
   const [saving, setSaving] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -203,7 +209,7 @@ export function AdminSkillsPage() {
     setRightTab('info')
   }
 
-  const selectCharacter = (char: Character) => {
+  const selectCharacter = (char: CharListItem) => {
     setCreating(false)
     setSelectedChar(char)
     setSkills(Array.isArray(char.skills) ? (char.skills as CharacterSkill[]) : [])

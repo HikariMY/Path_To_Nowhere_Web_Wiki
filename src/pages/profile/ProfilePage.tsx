@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { MessageSquare, Calendar } from 'lucide-react'

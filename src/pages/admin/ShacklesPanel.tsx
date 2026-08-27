@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react'
 import { Plus, Edit2, Trash2 } from 'lucide-react'
 import { ImageUpload } from '../../components/ui/ImageUpload'
@@ -45,7 +44,7 @@ const STAGE_COLORS = [
  * จัดการสถานะภายในเอง โดยอ่านข้อมูลเริ่มต้นจาก character.shackles
  */
 export function ShacklesPanel({ character, onUpdated }: {
-  character: Character
+  character: Pick<Character, 'id' | 'name' | 'shackles'>
   onUpdated?: (shackles: ShackleBreak[]) => void
 }) {
   const { profile } = useAuth()
