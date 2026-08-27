@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import type { GameEvent } from '../types'
 import { HeroCarousel } from '../components/events/HeroCarousel'
 import { Card } from '../components/ui/Card'
-import { formatDate } from '../lib/utils'
+import { cn, formatDate } from '../lib/utils'
 import { useCountdown } from '../hooks/useCountdown'
 import { PageLoader } from '../components/ui/Spinner'
 import { EVENT_TYPE_LABEL } from '../lib/constants'
@@ -20,6 +20,9 @@ interface Stats {
 }
 
 type Announcement = { id: string; content: string }
+
+/** จำนวนการ์ดอีเวนต์ที่โชว์ก่อนต้องกด "ดูเพิ่ม" — กันหน้าแรกยาวเกินจนเสียสมดุลกับคอลัมน์ขวา */
+const VISIBLE_EVENTS = 3
 
 const DEMO_ANNOUNCEMENTS: Announcement[] = [
   { id: '1', content: 'PTN Wiki TH เปิดให้บริการแล้ว!' },
@@ -100,11 +103,32 @@ const DEMO_EVENTS: GameEvent[] = [
   },
 ]
 
+/** ปุ่มกาง/ย่อรายการอีเวนต์ที่เกิน VISIBLE_EVENTS */
+function ShowMoreEvents({ total, expanded, onToggle }: {
+  total: number
+  expanded: boolean
+  onToggle: () => void
+}) {
+  if (total <= VISIBLE_EVENTS) return null
+  return (
+    <button
+      onClick={onToggle}
+      aria-expanded={expanded}
+      className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg border border-ptn-border bg-ptn-surface py-2.5 text-sm text-ptn-muted hover:text-ptn-text hover:border-ptn-red/40 transition-colors"
+    >
+      {expanded ? 'ย่อรายการ' : `ดูอีก ${total - VISIBLE_EVENTS} อีเวนต์`}
+      <ChevronDown size={14} className={cn('transition-transform', expanded && 'rotate-180')} />
+    </button>
+  )
+}
+
 export function HomePage() {
   const [events, setEvents] = useState<GameEvent[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [stats, setStats] = useState<Stats>({ characters: 0, events: 0, posts: 0, tierLists: 0 })
   const [loading, setLoading] = useState(true)
+  const [showAllActive, setShowAllActive] = useState(false)
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -188,10 +212,15 @@ export function HomePage() {
             {activeEvents.length === 0 && (
               <Card className="p-6 text-center text-ptn-muted">ไม่มีอีเวนต์ที่กำลังดำเนินอยู่ในขณะนี้</Card>
             )}
-            {activeEvents.map(event => (
+            {(showAllActive ? activeEvents : activeEvents.slice(0, VISIBLE_EVENTS)).map(event => (
               <EventBannerCard key={event.id} event={event} countdownTarget={event.end_date} countdownLabel="สิ้นสุดใน" />
             ))}
           </div>
+          <ShowMoreEvents
+            total={activeEvents.length}
+            expanded={showAllActive}
+            onToggle={() => setShowAllActive(v => !v)}
+          />
 
           {/* Upcoming Events */}
           {upcomingEvents.length > 0 && (
@@ -203,10 +232,15 @@ export function HomePage() {
                 </h2>
               </div>
               <div className="space-y-2">
-                {upcomingEvents.slice(0, 3).map(event => (
+                {(showAllUpcoming ? upcomingEvents : upcomingEvents.slice(0, VISIBLE_EVENTS)).map(event => (
                   <EventBannerCard key={event.id} event={event} countdownTarget={event.start_date} countdownLabel="เริ่มใน" upcoming />
                 ))}
               </div>
+              <ShowMoreEvents
+                total={upcomingEvents.length}
+                expanded={showAllUpcoming}
+                onToggle={() => setShowAllUpcoming(v => !v)}
+              />
             </>
           )}
         </div>
