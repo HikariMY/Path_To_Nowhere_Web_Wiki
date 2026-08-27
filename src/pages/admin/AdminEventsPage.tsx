@@ -14,7 +14,7 @@ import { ImageUpload } from '../../components/ui/ImageUpload'
 import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../contexts/AuthContext'
 import { formatDate } from '../../lib/utils'
-import { GACHA_EVENT_TYPES } from '../../lib/constants'
+import { GACHA_EVENT_TYPES, PERMANENT_EVENT_TYPES } from '../../lib/constants'
 
 type CharOption = { id: string; name: string; portrait_url: string | null }
 
@@ -158,6 +158,9 @@ export function AdminEventsPage() {
   const [allChars, setAllChars] = useState<CharOption[]>([])
   const [charSearch, setCharSearch] = useState('')
 
+  // ประเภทที่อยู่ในเกมถาวร — ไม่บังคับกรอกวัน
+  const isPermanent = PERMANENT_EVENT_TYPES.includes(form.event_type)
+
   useEffect(() => { fetchEvents() }, [])
 
   useEffect(() => {
@@ -183,8 +186,8 @@ export function AdminEventsPage() {
     setEditingEvent(ev)
     setForm({
       title: ev.title, subtitle: ev.subtitle || '', description: ev.description || '', event_type: ev.event_type,
-      banner_url: ev.banner_url || '', start_date: ev.start_date.slice(0, 16),
-      end_date: ev.end_date.slice(0, 16), is_active: ev.is_active,
+      banner_url: ev.banner_url || '', start_date: ev.start_date?.slice(0, 16) || '',
+      end_date: ev.end_date?.slice(0, 16) || '', is_active: ev.is_active,
       image_position: ev.image_position || '50% 50%',
       featured_character_ids: (ev.featured_character_ids as string[]) || [],
       featured_character_images: (ev.featured_character_images as Record<string, string>) || {},
@@ -193,16 +196,21 @@ export function AdminEventsPage() {
   }
 
   const handleSave = async () => {
-    if (!form.title.trim() || !form.start_date || !form.end_date) {
-      toast('กรุณากรอกข้อมูลให้ครบ', 'error'); return
+    if (!form.title.trim()) {
+      toast('กรุณากรอกชื่ออีเวนต์', 'error'); return
+    }
+    // อีเวนต์ถาวรกรอกวันหรือไม่กรอกก็ได้ ที่เหลือยังต้องกรอกครบเหมือนเดิม
+    if (!isPermanent && (!form.start_date || !form.end_date)) {
+      toast('กรุณากรอกวันเริ่มต้นและวันสิ้นสุด', 'error'); return
     }
     setSaving(true)
     const payload = {
       title: form.title.trim(), subtitle: form.subtitle.trim() || null,
       description: form.description.trim() || null,
       event_type: form.event_type, banner_url: form.banner_url.trim() || null,
-      start_date: new Date(form.start_date).toISOString(),
-      end_date: new Date(form.end_date).toISOString(), is_active: form.is_active,
+      start_date: form.start_date ? new Date(form.start_date).toISOString() : null,
+      end_date: form.end_date ? new Date(form.end_date).toISOString() : null,
+      is_active: form.is_active,
       image_position: form.image_position,
       featured_character_ids: form.featured_character_ids,
       featured_character_images: Object.keys(form.featured_character_images).length > 0 ? form.featured_character_images : null,
@@ -283,7 +291,15 @@ export function AdminEventsPage() {
                 <h3 className="font-medium text-ptn-text">{ev.title}</h3>
                 {ev.description && <p className="text-xs text-ptn-muted mt-0.5 line-clamp-1">{ev.description}</p>}
                 <div className="flex items-center gap-3 text-xs text-ptn-muted mt-1">
-                  <span>{formatDate(ev.start_date, { month: 'short', day: 'numeric' })} — {formatDate(ev.end_date, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  <span>
+                    {ev.end_date
+                      ? <>
+                          {ev.start_date ? formatDate(ev.start_date, { month: 'short', day: 'numeric' }) : '—'}
+                          {' — '}
+                          {formatDate(ev.end_date, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </>
+                      : <span className="text-ptn-cyan">ถาวร · ไม่มีกำหนดสิ้นสุด</span>}
+                  </span>
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
@@ -331,9 +347,22 @@ export function AdminEventsPage() {
             </optgroup>
           </Select>
           <div className="grid sm:grid-cols-2 gap-4">
-            <Input label="วันเริ่มต้น" type="datetime-local" value={form.start_date} onChange={set('start_date')} />
-            <Input label="วันสิ้นสุด" type="datetime-local" value={form.end_date} onChange={set('end_date')} />
+            <Input
+              label={isPermanent ? 'วันเริ่มต้น (ไม่บังคับ)' : 'วันเริ่มต้น'}
+              type="datetime-local" value={form.start_date} onChange={set('start_date')}
+            />
+            <Input
+              label={isPermanent ? 'วันสิ้นสุด (ไม่บังคับ)' : 'วันสิ้นสุด'}
+              type="datetime-local" value={form.end_date} onChange={set('end_date')}
+            />
           </div>
+          {isPermanent && (
+            <p className="-mt-2 text-xs text-ptn-muted">
+              ประเภทนี้อยู่ในเกมถาวร เว้นว่างไว้ได้ทั้งคู่ — เว้นวันสิ้นสุดแล้วการ์ดจะขึ้นป้าย
+              <span className="text-ptn-cyan"> ถาวร </span>
+              แทนนาฬิกานับถอยหลัง และจะค้างอยู่ในรายการ “กำลังดำเนินอยู่” ตลอด
+            </p>
+          )}
           <ImageUpload
             bucket="events"
             label="รูปแบนเนอร์"

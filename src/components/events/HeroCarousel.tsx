@@ -124,12 +124,22 @@ export function HeroCarousel({ events }: { events: GameEvent[] }) {
           )}
           <div className="flex items-center gap-4 mb-6">
             <Badge variant="event" value={current.event_type} />
-            <span className="flex items-center gap-1.5 text-xs text-ptn-muted">
-              <Clock size={12} />
-              สิ้นสุด {formatDate(current.end_date)}
-            </span>
+            {current.end_date && (
+              <span className="flex items-center gap-1.5 text-xs text-ptn-muted">
+                <Clock size={12} />
+                สิ้นสุด {formatDate(current.end_date)}
+              </span>
+            )}
           </div>
-          <EventCountdown targetDate={current.end_date} />
+          {/* ไม่มีวันสิ้นสุด = อยู่ในเกมถาวร ไม่ต้องนับถอยหลัง */}
+          {current.end_date ? (
+            <EventCountdown targetDate={current.end_date} />
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-ptn-cyan/40 bg-ptn-cyan/15 px-3 py-1.5 text-sm font-medium text-ptn-cyan">
+              <Clock size={13} />
+              ถาวร · เล่นได้ตลอด
+            </span>
+          )}
         </div>
       </div>
 

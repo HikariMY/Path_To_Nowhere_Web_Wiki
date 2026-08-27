@@ -97,8 +97,9 @@ export type EventRow = {
   banner_url: string | null
   featured_character_ids: string[] | null
   featured_character_images: Record<string, string> | null
-  start_date: string
-  end_date: string
+  /** ว่างได้ — อีเวนต์ถาวรไม่มีกำหนดเริ่ม/ปิด (ดู PERMANENT_EVENT_TYPES) */
+  start_date: string | null
+  end_date: string | null
   is_active: boolean
   is_featured: boolean
   image_position: string | null

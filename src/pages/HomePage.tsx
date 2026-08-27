@@ -8,7 +8,7 @@ import { Card } from '../components/ui/Card'
 import { cn, formatDate } from '../lib/utils'
 import { useCountdown } from '../hooks/useCountdown'
 import { PageLoader } from '../components/ui/Spinner'
-import { EVENT_TYPE_LABEL } from '../lib/constants'
+import { EVENT_TYPE_LABEL, isPermanentEvent } from '../lib/constants'
 
 type CharOption = { id: string; name: string; portrait_url: string | null; slug: string }
 
@@ -159,7 +159,10 @@ export function HomePage() {
   }, [])
 
   const now = new Date()
-  const isRunning = (e: GameEvent) => new Date(e.end_date) > now && new Date(e.start_date) <= now
+  // วันว่าง = ไม่มีกำหนด — อีเวนต์ถาวรจึงนับว่ากำลังดำเนินอยู่เสมอ
+  const isRunning = (e: GameEvent) =>
+    (!e.start_date || new Date(e.start_date) <= now) &&
+    (!e.end_date || new Date(e.end_date) > now)
 
   // แบนเนอร์ใหญ่ = อีเวนต์ที่ติดดาวไว้ (ติดได้หลายอัน แล้วมันจะสลับให้เอง)
   // ถ้ายังไม่ได้ติดดาวไว้เลย ใช้อีเวนต์ที่กำลังดำเนินอยู่ 1 อันแทน เหมือนพฤติกรรมเดิม
@@ -168,7 +171,7 @@ export function HomePage() {
   const heroIds = new Set(heroEvents.map(e => e.id))
 
   const activeEvents = events.filter(e => isRunning(e) && !heroIds.has(e.id))
-  const upcomingEvents = events.filter(e => new Date(e.start_date) > now && !heroIds.has(e.id))
+  const upcomingEvents = events.filter(e => e.start_date && new Date(e.start_date) > now && !heroIds.has(e.id))
 
   if (loading) return <PageLoader />
 
@@ -296,12 +299,14 @@ function EventBannerCard({
   upcoming,
 }: {
   event: GameEvent
-  countdownTarget: string
+  countdownTarget: string | null
   countdownLabel?: string
   upcoming?: boolean
 }) {
   const characterName = event.subtitle || null
   const eventName = event.title
+  // ไม่มีวันสิ้นสุด = อยู่ในเกมถาวร ไม่ต้องนับถอยหลัง
+  const permanent = isPermanentEvent(event)
   const [expanded, setExpanded] = useState(false)
   const [chars, setChars] = useState<CharOption[]>([])
 
@@ -365,7 +370,11 @@ function EventBannerCard({
             <span className="text-xs text-white/80 bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/10">
               {EVENT_TYPE_LABEL[event.event_type] || event.event_type}
             </span>
-            {isExpired ? (
+            {permanent ? (
+              <span className="text-xs font-medium text-white bg-ptn-cyan/25 backdrop-blur-sm px-2.5 py-1 rounded-full border border-ptn-cyan/40">
+                ถาวร
+              </span>
+            ) : isExpired ? (
               <span className="text-xs text-white/60">สิ้นสุดแล้ว</span>
             ) : (
               <div className="flex items-center gap-1">
@@ -418,14 +427,24 @@ function EventBannerCard({
 
           {/* Date range */}
           <div className="flex justify-between px-5 py-2 text-xs text-ptn-muted">
-            <span>{formatDate(event.start_date, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: false })}</span>
-            <span>{formatDate(event.end_date, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: false })}</span>
+            <span>
+              {event.start_date
+                ? formatDate(event.start_date, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: false })
+                : 'ไม่ระบุวันเริ่ม'}
+            </span>
+            <span>
+              {event.end_date
+                ? formatDate(event.end_date, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: false })
+                : 'ไม่มีกำหนดสิ้นสุด'}
+            </span>
           </div>
 
           {/* Status bar */}
           <div className="px-5 pb-4">
             <div className="w-full bg-ptn-red text-white text-center text-sm font-semibold py-2.5 rounded-lg">
-              {isExpired
+              {permanent
+                ? 'เปิดให้เล่นตลอด'
+                : isExpired
                 ? 'สิ้นสุดแล้ว'
                 : upcoming
                 ? `เริ่มในอีก ${days} วัน`

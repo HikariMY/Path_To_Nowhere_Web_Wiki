@@ -116,6 +116,17 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
 
 export const GACHA_EVENT_TYPES = ['gacha_new', 'gacha_new_limited', 'gacha_rerun', 'gacha_rerun_limited']
 
+/**
+ * ประเภทที่อยู่ในเกมถาวร — หน้าแอดมินจะไม่บังคับกรอกวันเริ่ม/วันสิ้นสุด
+ *
+ * ใช้แค่ตอนกรอกฟอร์มเท่านั้น ส่วนการแสดงผลดูจาก end_date ว่าว่างไหม
+ * (อีเวนต์ประเภทอื่นที่ลบวันสิ้นสุดทิ้งก็ถือเป็นถาวรเหมือนกัน)
+ */
+export const PERMANENT_EVENT_TYPES = ['story_new', 'story_eternal']
+
+/** อีเวนต์นี้ไม่มีกำหนดปิดใช่ไหม */
+export const isPermanentEvent = (e: { end_date: string | null }) => !e.end_date
+
 export const EVENT_TYPE_COLORS: Record<string, string> = {
   gacha_new:          'bg-ptn-gold/20 text-ptn-gold border-ptn-gold/30',
   gacha_new_limited:  'bg-ptn-red/20 text-ptn-red border-ptn-red/30',

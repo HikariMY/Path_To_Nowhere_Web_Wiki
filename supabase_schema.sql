@@ -122,8 +122,9 @@ create table public.events (
                    'story', 'rerun', 'collab'
                  )),
   banner_url     text,
-  start_date     timestamptz not null,
-  end_date       timestamptz not null,
+  -- ว่างได้ทั้งคู่ — อีเวนต์ถาวร (เนื้อเรื่องหลัก / Eternal Nightmare) ไม่มีกำหนดเริ่ม-ปิด
+  start_date     timestamptz,
+  end_date       timestamptz,
   is_active      boolean not null default true,
   is_featured    boolean not null default false,
   image_position             text not null default '50% 50%',
