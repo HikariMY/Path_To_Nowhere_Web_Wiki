@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { RotateCcw, Star } from 'lucide-react'
 import { Button } from '../ui/Button'
-import { decodeBuild, encodeBuild, toggleNode, totalCost, type ExAnchorOption } from '../../lib/reforge'
+import { sanitizeBuild, toggleNode, totalCost, type ExAnchorOption } from '../../lib/reforge'
 import type { ReforgeData } from '../../types/models'
 import { ReforgeTree, type ReforgeSelection } from '../reforge/ReforgeTree'
 import { CostMeter } from '../reforge/CostMeter'
@@ -32,7 +32,7 @@ export function GuideReforgePicker({ data, exOptions, nodes, ex, onChange }: {
               type="button"
               size="sm"
               variant="cyan"
-              onClick={() => onChange(decodeBuild(data, encodeBuild(p.node_ids)), ex)}
+              onClick={() => onChange(sanitizeBuild(data, p.node_ids), ex)}
             >
               <Star size={13} /> {p.name}
             </Button>

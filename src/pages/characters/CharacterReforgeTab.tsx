@@ -4,7 +4,7 @@ import { Link2, List, Network, RotateCcw, Sparkles, Star } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useToast } from '../../components/ui/Toast'
 import { Button } from '../../components/ui/Button'
-import { activateAll, decodeBuild, encodeBuild, toggleNode, totalCost } from '../../lib/reforge'
+import { activateAll, decodeBuild, encodeBuild, sanitizeBuild, toggleNode, totalCost } from '../../lib/reforge'
 import { useExAnchorOptions } from '../../hooks/useExAnchorOptions'
 import type { ReforgeData, ReforgeGuideBuild } from '../../types/models'
 import { ReforgeTree, type ReforgeSelection } from '../../components/reforge/ReforgeTree'
@@ -30,10 +30,10 @@ export function CharacterReforgeTab({ character, data, initialBuild = null }: {
 
   // ลำดับความสำคัญ: build จากไกด์ > ?build= ใน URL > Recommended Set ชุดแรก
   const [activeIds, setActiveIds] = useState<string[]>(() => {
-    if (initialBuild) return decodeBuild(data, encodeBuild(initialBuild.nodes))
+    if (initialBuild) return sanitizeBuild(data, initialBuild.nodes)
     const fromUrl = decodeBuild(data, searchParams.get('build'))
     if (fromUrl.length > 0) return fromUrl
-    return decodeBuild(data, encodeBuild(data.presets[0]?.node_ids ?? []))
+    return sanitizeBuild(data, data.presets[0]?.node_ids ?? [])
   })
   const [exId, setExId] = useState<string | null>(() => {
     if (initialBuild) return initialBuild.ex
@@ -99,7 +99,7 @@ export function CharacterReforgeTab({ character, data, initialBuild = null }: {
             <RotateCcw size={14} /> ล้าง
           </Button>
           {data.presets.map(p => (
-            <Button key={p.id} size="sm" variant="cyan" onClick={() => setActiveIds(decodeBuild(data, encodeBuild(p.node_ids)))}>
+            <Button key={p.id} size="sm" variant="cyan" onClick={() => setActiveIds(sanitizeBuild(data, p.node_ids))}>
               <Star size={14} /> {p.name}
             </Button>
           ))}

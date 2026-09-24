@@ -81,8 +81,16 @@ export function ReforgePanel({ characterId, characterName }: { characterId: stri
     setErrors(problems)
     if (problems.length > 0) { toast('ยังบันทึกไม่ได้ — ดูรายการปัญหาด้านบน', 'error'); return }
     // ไม่มีทั้งโหนดและ EX = ไม่มี Reforge → เก็บเป็น null เพื่อซ่อนแท็บ
-    const value = draft.nodes.length === 0 && !draft.ex_anchor ? null : draft
-    if (await persist(value, 'แก้ไข Reforge')) toast('บันทึก Reforge แล้ว', 'success')
+    const empty = draft.nodes.length === 0 && !draft.ex_anchor
+    // Effect / ชุดแนะนำที่ไม่มีโหนดรองรับจะหายไปด้วย — ต้องถามก่อน ไม่ลบเงียบ ๆ
+    if (empty && (draft.effects.length > 0 || draft.presets.length > 0)
+      && !confirm('ยังไม่มีโหนดและ EX — บันทึกตอนนี้จะลบ Reforge ของตัวละครนี้ทั้งหมด รวม Reforge Effect และ Recommended Set ด้วย ต้องการบันทึกไหม?')) {
+      return
+    }
+    if (await persist(empty ? null : draft, 'แก้ไข Reforge')) {
+      if (empty) setDraft(null)
+      toast(empty ? 'ลบข้อมูล Reforge แล้ว (ไม่มีโหนดและ EX)' : 'บันทึก Reforge แล้ว', 'success')
+    }
   }
 
   const handleClearAll = async () => {
@@ -120,9 +128,21 @@ export function ReforgePanel({ characterId, characterName }: { characterId: stri
     }
     const parsed = parseReforge(raw)
     if (!parsed) { toast('ไม่พบโหนดหรือ EX ที่ใช้ได้ใน JSON', 'error'); return }
+    // parseReforge ทิ้งรายการที่ข้อมูลไม่ครบแบบเงียบ ๆ — บอกแอดมินว่าหายไปกี่รายการ
+    const count = (key: string) => {
+      const list = (raw as Record<string, unknown>)[key]
+      return Array.isArray(list) ? list.length : 0
+    }
+    const dropped = (count('nodes') - parsed.nodes.length)
+      + (count('effects') - parsed.effects.length)
+      + (count('presets') - parsed.presets.length)
     edit(parsed)
     setJsonOpen(false)
-    toast('นำเข้าร่างแล้ว — อย่าลืมกดบันทึก', 'info')
+    if (dropped > 0) {
+      toast(`นำเข้าแล้ว แต่ข้ามไป ${dropped} รายการที่ข้อมูลไม่ครบ (เช่น stage/row/cost ผิดชนิด) — ตรวจก่อนบันทึก`, 'error')
+    } else {
+      toast('นำเข้าร่างแล้ว — อย่าลืมกดบันทึก', 'info')
+    }
   }
 
   if (loading) return <div className="flex justify-center py-12"><Spinner /></div>

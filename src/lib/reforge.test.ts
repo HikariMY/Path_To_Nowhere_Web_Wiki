@@ -10,8 +10,9 @@ import {
   newReforgeId,
   parseGuideBuild,
   parseReforge,
-  toGuideBuild,
+  sanitizeBuild,
   sumStats,
+  toGuideBuild,
   toggleNode,
   totalCost,
   validateReforge,
@@ -104,6 +105,12 @@ describe('sumStats', () => {
   })
 })
 
+describe('sanitizeBuild', () => {
+  test('keeps real ids in order and resolves choice conflicts without a string round-trip', () => {
+    expect(sanitizeBuild(data, ['river', 'ghost', 'atk', 'dance', 'atk'])).toEqual(['river', 'atk'])
+  })
+})
+
 describe('encodeBuild / decodeBuild', () => {
   test('round-trips a build', () => {
     const ids = ['atk', 'sword', 'river']
@@ -166,6 +173,11 @@ describe('validateReforge', () => {
     }
     // cost_base, duplicate id, cost, stage, lone choice, linked_to, preset ref, slot clash (a & c)
     expect(validateReforge(bad)).toHaveLength(8)
+  })
+
+  test('rejects node ids that would break share links', () => {
+    const errors = validateReforge({ ...data, nodes: [node({ id: 'a.b' }), node({ id: '', col: 2 })], presets: [] })
+    expect(errors).toHaveLength(2)
   })
 
   test('allows members of one choice group to share a slot', () => {

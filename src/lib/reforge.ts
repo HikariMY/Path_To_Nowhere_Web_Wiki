@@ -17,6 +17,8 @@ import type {
 
 export const DEFAULT_COST_BASE = 21
 const BUILD_SEPARATOR = '.'
+// id โหนดต้องไม่มีตัวคั่น build และใช้ใน URL ได้ตรง ๆ
+const NODE_ID_PATTERN = /^[A-Za-z0-9_-]+$/
 
 const NODE_CATEGORIES = new Set(['attribute', 'special'])
 const NODE_ROWS = new Set(['top', 'bottom'])
@@ -55,11 +57,11 @@ export function toggleNode(data: ReforgeData, activeIds: readonly string[], node
 
 /** เปิดทุกโหนด โดย choice_group เลือกตัวแรกของกลุ่ม */
 export function activateAll(data: ReforgeData): string[] {
-  return resolveBuild(data, data.nodes.map(n => n.id))
+  return sanitizeBuild(data, data.nodes.map(n => n.id))
 }
 
 /** กรอง id ที่ไม่มีจริง / ซ้ำ / ชนกันใน choice_group — ตัวที่มาก่อนชนะ */
-function resolveBuild(data: ReforgeData, ids: readonly string[]): string[] {
+export function sanitizeBuild(data: ReforgeData, ids: readonly string[]): string[] {
   const byId = new Map(data.nodes.map(n => [n.id, n]))
   const picked: string[] = []
   const usedGroups = new Set<string>()
@@ -105,7 +107,7 @@ export function encodeBuild(activeIds: readonly string[]): string {
 
 export function decodeBuild(data: ReforgeData, encoded: string | null | undefined): string[] {
   if (!encoded) return []
-  return resolveBuild(data, encoded.split(BUILD_SEPARATOR))
+  return sanitizeBuild(data, encoded.split(BUILD_SEPARATOR))
 }
 
 // ---- build ที่แนบในไกด์ -----------------------------------------
@@ -129,7 +131,7 @@ export function parseGuideBuild(raw: unknown, data: ReforgeData): ParsedGuideBui
 
   const known = new Set(data.nodes.map(n => n.id))
   return {
-    nodes: resolveBuild(data, ids),
+    nodes: sanitizeBuild(data, ids),
     ex,
     missing: new Set(ids.filter(id => !known.has(id))).size,
   }
@@ -209,6 +211,7 @@ export function validateReforge(data: ReforgeData): string[] {
   for (const n of data.nodes) {
     if (seen.has(n.id)) errors.push(`id โหนดซ้ำ: ${n.id}`)
     seen.add(n.id)
+    if (!NODE_ID_PATTERN.test(n.id)) errors.push(`id ของ "${n.name}" ใช้ได้แค่ a-z A-Z 0-9 _ - (id นี้อยู่ในลิงก์แชร์ build)`)
     if (n.cost < 0) errors.push(`COST ของ "${n.name}" ต้องไม่ติดลบ`)
     if (n.stage < 1) errors.push(`Stage ของ "${n.name}" ต้องเริ่มที่ 1`)
     if (n.linked_to && !ids.has(n.linked_to)) errors.push(`"${n.name}" เชื่อมไปโหนดที่ไม่มีอยู่`)
