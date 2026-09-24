@@ -9,9 +9,14 @@ interface ModalProps {
   children: ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
+  /**
+   * กดพื้นที่ว่างรอบหน้าต่างแล้วปิด — ปิดไว้เป็นค่าเริ่มต้น เพราะ Modal ส่วนใหญ่เป็นฟอร์ม
+   * เผลอคลิกข้างนอกแล้วข้อมูลที่กรอกหายหมด เปิดเฉพาะ Modal ที่แสดงข้อมูลอย่างเดียว
+   */
+  dismissOnBackdrop?: boolean
 }
 
-export function Modal({ open, onClose, title, children, size = 'md', className }: ModalProps) {
+export function Modal({ open, onClose, title, children, size = 'md', className, dismissOnBackdrop = false }: ModalProps) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden'
@@ -41,7 +46,7 @@ export function Modal({ open, onClose, title, children, size = 'md', className }
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto"
-      onClick={onClose}
+      onClick={dismissOnBackdrop ? onClose : undefined}
     >
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div className="flex min-h-full items-center justify-center p-4">

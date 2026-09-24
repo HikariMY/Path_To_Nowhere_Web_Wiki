@@ -72,7 +72,7 @@ function TagsInfoModal({ open, onClose, tags, groups, descriptions }: { open: bo
     .filter(g => g.items.length > 0)
 
   return (
-    <Modal open={open} onClose={onClose} title="Ability Tags" size="md">
+    <Modal open={open} onClose={onClose} title="Ability Tags" size="md" dismissOnBackdrop>
       <div className="space-y-5">
         {grouped.map(({ group, items }) => (
           <div key={group.label}>

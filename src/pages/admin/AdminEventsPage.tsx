@@ -15,6 +15,7 @@ import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../contexts/AuthContext'
 import { formatDate } from '../../lib/utils'
 import { GACHA_EVENT_TYPES, PERMANENT_EVENT_TYPES } from '../../lib/constants'
+import { fromDateTimeInput, toDateTimeInput } from '../../lib/datetime'
 
 type CharOption = { id: string; name: string; portrait_url: string | null }
 
@@ -186,8 +187,8 @@ export function AdminEventsPage() {
     setEditingEvent(ev)
     setForm({
       title: ev.title, subtitle: ev.subtitle || '', description: ev.description || '', event_type: ev.event_type,
-      banner_url: ev.banner_url || '', start_date: ev.start_date?.slice(0, 16) || '',
-      end_date: ev.end_date?.slice(0, 16) || '', is_active: ev.is_active,
+      banner_url: ev.banner_url || '', start_date: toDateTimeInput(ev.start_date),
+      end_date: toDateTimeInput(ev.end_date), is_active: ev.is_active,
       image_position: ev.image_position || '50% 50%',
       featured_character_ids: (ev.featured_character_ids as string[]) || [],
       featured_character_images: (ev.featured_character_images as Record<string, string>) || {},
@@ -208,8 +209,8 @@ export function AdminEventsPage() {
       title: form.title.trim(), subtitle: form.subtitle.trim() || null,
       description: form.description.trim() || null,
       event_type: form.event_type, banner_url: form.banner_url.trim() || null,
-      start_date: form.start_date ? new Date(form.start_date).toISOString() : null,
-      end_date: form.end_date ? new Date(form.end_date).toISOString() : null,
+      start_date: fromDateTimeInput(form.start_date),
+      end_date: fromDateTimeInput(form.end_date),
       is_active: form.is_active,
       image_position: form.image_position,
       featured_character_ids: form.featured_character_ids,
