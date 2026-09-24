@@ -7,6 +7,7 @@ import {
   eligibleExAnchors,
   encodeBuild,
   isOverCap,
+  newReforgeId,
   parseReforge,
   sumStats,
   toggleNode,
@@ -167,6 +168,14 @@ describe('validateReforge', () => {
 
   test('allows members of one choice group to share a slot', () => {
     expect(validateReforge({ ...data, nodes: data.nodes.filter(n => n.choice_group === 'ult'), presets: [] })).toEqual([])
+  })
+})
+
+describe('newReforgeId', () => {
+  test('makes unique url-safe ids without the build separator', () => {
+    const ids = Array.from({ length: 200 }, () => newReforgeId('n'))
+    expect(new Set(ids).size).toBe(200)
+    for (const id of ids) expect(id).toMatch(/^n_[a-z0-9]+$/)
   })
 })
 

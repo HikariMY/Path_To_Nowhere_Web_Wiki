@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, Search, Zap, Unlink, Sword, Layers } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, Zap, Unlink, Sword, Layers, Network } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Character } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -17,6 +17,7 @@ import type { CharacterSkill, SkillRange, ShackleBreak } from '../../types/model
 import { ShacklesPanel } from './ShacklesPanel'
 import { CharacterInfoPanel } from './CharacterInfoPanel'
 import { CrimebrandBuildsPanel } from './CrimebrandBuildsPanel'
+import { ReforgePanel } from './ReforgePanel'
 
 // ── types ───────────────────────────────────────────────────────────────────
 
@@ -166,7 +167,7 @@ export function AdminSkillsPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [exclusiveForm, setExclusiveForm] = useState<ExclusiveForm>(blankExclusive())
   const [savingExclusive, setSavingExclusive] = useState(false)
-  const [rightTab, setRightTab] = useState<'info' | 'skills' | 'shackles' | 'builds'>('info')
+  const [rightTab, setRightTab] = useState<'info' | 'skills' | 'shackles' | 'builds' | 'reforge'>('info')
   const [creating, setCreating] = useState(false)
 
   useEffect(() => { fetchChars() }, [])
@@ -417,7 +418,7 @@ export function AdminSkillsPage() {
 
             {/* Tabs: ข้อมูลตัวละคร / สกิล / Shackle — ใช้ตัวละครที่เลือกร่วมกัน */}
             <div className="flex gap-1 mb-4 border-b border-ptn-border">
-              {([['info', 'ข้อมูลตัวละคร', Sword], ['skills', 'สกิล & Crimebrand', Zap], ['shackles', 'Shackle Break', Unlink], ['builds', 'Crimebrand Builds', Layers]] as const).map(([key, label, Icon]) => (
+              {([['info', 'ข้อมูลตัวละคร', Sword], ['skills', 'สกิล & Crimebrand', Zap], ['shackles', 'Shackle Break', Unlink], ['builds', 'Crimebrand Builds', Layers], ['reforge', 'Reforge', Network]] as const).map(([key, label, Icon]) => (
                 <button
                   key={key}
                   onClick={() => setRightTab(key)}
@@ -436,6 +437,8 @@ export function AdminSkillsPage() {
               <CharacterInfoPanel key={selectedChar.id} characterId={selectedChar.id} onSaved={handleCharSaved} onDeleted={handleCharDeleted} />
             ) : rightTab === 'builds' ? (
               <CrimebrandBuildsPanel key={selectedChar.id} characterId={selectedChar.id} />
+            ) : rightTab === 'reforge' ? (
+              <ReforgePanel key={selectedChar.id} characterId={selectedChar.id} characterName={selectedChar.name} />
             ) : rightTab === 'shackles' ? (
               <ShacklesPanel character={selectedChar} onUpdated={handleShacklesUpdated} />
             ) : (

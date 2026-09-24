@@ -107,6 +107,16 @@ export function decodeBuild(data: ReforgeData, encoded: string | null | undefine
   return resolveBuild(data, encoded.split(BUILD_SEPARATOR))
 }
 
+let idCounter = 0
+
+/** id สั้น ใช้ใน URL ได้ ไม่มีตัวคั่น build — เช่น n_lx3k2a0 */
+export function newReforgeId(prefix: string): string {
+  idCounter = (idCounter + 1) % 1296
+  const time = Date.now().toString(36)
+  const rand = Math.floor(Math.random() * 1296).toString(36)
+  return `${prefix}_${time}${idCounter.toString(36)}${rand}`
+}
+
 // ---- อ่าน jsonb จาก DB (ข้อมูลภายนอก — ห้ามเชื่อ) -----------------
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
