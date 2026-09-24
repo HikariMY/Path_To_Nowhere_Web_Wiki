@@ -127,6 +127,12 @@ export interface ReforgeData {
   presets: ReforgePreset[]
 }
 
+// build Reforge ที่แนบในไกด์ (character_guides.reforge_build jsonb)
+export interface ReforgeGuideBuild {
+  nodes: string[]        // id โหนดที่เปิด
+  ex: string | null      // character_id เจ้าของ EX ที่เลือก
+}
+
 // Tier list tiers schema
 export interface TierRow {
   label: string

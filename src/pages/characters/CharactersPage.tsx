@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Filter, Users, ChevronDown, SlidersHorizontal } from 'lucide-react'
+import { Search, Filter, Users, ChevronDown, SlidersHorizontal, Network } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Character } from '../../types'
 import { Input } from '../../components/ui/Input'
@@ -8,6 +8,7 @@ import { Select } from '../../components/ui/Select'
 import { PageLoader } from '../../components/ui/Spinner'
 import { JOB_CLASS_LABEL, ALIGNMENT_LABEL, ALIGNMENT_ICON } from '../../lib/constants'
 import { cn } from '../../lib/utils'
+import { parseReforge } from '../../lib/reforge'
 import { useAbilityTags } from '../../hooks/useAbilityTags'
 
 // ── Tendency icons from /TenIcon/ ────────────────────────────────────────
@@ -272,6 +273,7 @@ export function CharactersPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [showTagFilter, setShowTagFilter] = useState(false)
   const [sort, setSort] = useState<'release' | 'alpha'>('release')
+  const [onlyReforge, setOnlyReforge] = useState(false)
 
   const toggleTag = (tag: string) => {
     setSelectedTags(prev =>
@@ -298,12 +300,19 @@ export function CharactersPage() {
       })
   }, [])
 
+  // ตัวละครที่มีข้อมูล Reforge ใช้ได้จริง — คำนวณครั้งเดียวต่อรายการ
+  const reforgeIds = useMemo(
+    () => new Set(characters.filter(c => parseReforge(c.reforge) !== null).map(c => c.id)),
+    [characters],
+  )
+
   const filtered = (() => {
     let out = characters.filter(c => {
       if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false
       if (filterRarity && c.rarity !== filterRarity) return false
       if (filterClass && c.job_class !== filterClass) return false
       if (filterFaction && c.faction !== filterFaction) return false
+      if (onlyReforge && !reforgeIds.has(c.id)) return false
       if (selectedTags.length > 0) {
         const charTags = (c.ability_tags as string[] | null) || []
         if (!selectedTags.some(t => charTags.includes(t))) return false
@@ -384,6 +393,20 @@ export function CharactersPage() {
             {label}
           </button>
         ))}
+        {reforgeIds.size > 0 && (
+          <button
+            onClick={() => setOnlyReforge(v => !v)}
+            aria-pressed={onlyReforge}
+            className={cn(
+              'flex items-center gap-1 px-3 py-1 rounded text-xs font-medium border transition-all',
+              onlyReforge
+                ? 'border-rose-500 bg-rose-500/20 text-rose-300'
+                : 'border-ptn-border text-ptn-muted hover:border-ptn-border/80'
+            )}
+          >
+            <Network size={12} /> มี Reforge
+          </button>
+        )}
         <span className="text-xs text-ptn-disabled ml-1">{filtered.length} ตัว</span>
       </div>
 
@@ -446,14 +469,14 @@ export function CharactersPage() {
         </div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-2 md:gap-3">
-          {filtered.map(char => <CharacterCard key={char.id} character={char} />)}
+          {filtered.map(char => <CharacterCard key={char.id} character={char} hasReforge={reforgeIds.has(char.id)} />)}
         </div>
       )}
     </div>
   )
 }
 
-function CharacterCard({ character }: { character: Character }) {
+function CharacterCard({ character, hasReforge }: { character: Character; hasReforge: boolean }) {
   const color = RARITY_COLOR[character.rarity] || '#888'
   const mbccId = (character.tags as string[])?.[0] || ''
   const isCN = COLLAB_SLUGS.has(character.slug)
@@ -550,6 +573,11 @@ function CharacterCard({ character }: { character: Character }) {
           {character.is_limited && !isCN && (
             <span className="text-[8px] font-bold border text-ptn-gold border-ptn-gold/40 bg-ptn-gold/10 px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
               Limited
+            </span>
+          )}
+          {hasReforge && (
+            <span className="text-[8px] font-bold border text-rose-300 border-rose-400/50 bg-rose-500/20 px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
+              Reforge
             </span>
           )}
         </div>

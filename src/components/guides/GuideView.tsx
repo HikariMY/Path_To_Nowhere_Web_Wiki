@@ -7,7 +7,10 @@ import {
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { CharacterGuideRow } from '../../types/database.types'
-import type { CharacterSkill, ShackleBreak } from '../../types/models'
+import type { CharacterSkill, ReforgeData, ReforgeGuideBuild, ShackleBreak } from '../../types/models'
+import { parseGuideBuild, type ExAnchorOption } from '../../lib/reforge'
+import { displayName } from '../reforge/reforgeStyle'
+import { GuideReforgeBuild } from './GuideReforgeBuild'
 import { Card } from '../ui/Card'
 import { Avatar } from '../ui/Avatar'
 import { cn, daysSince, formatRelativeTime } from '../../lib/utils'
@@ -47,12 +50,14 @@ function InvestmentRow({ icon: Icon, label, children }: {
 }
 
 /** กล่องสรุปการลงทุน — อ่านครั้งเดียวรู้ว่าต้องอัปอะไรก่อน */
-function InvestmentBox({ guide, skills, shackles, ecbName, team }: {
+function InvestmentBox({ guide, skills, shackles, ecbName, team, extra }: {
   guide: GuideWithAuthor
   skills: CharacterSkill[]
   shackles: ShackleBreak[]
   ecbName: string | null
   team: TeamMate[]
+  /** แถวเพิ่มเติมเต็มความกว้าง เช่น build Reforge */
+  extra?: React.ReactNode
 }) {
   // skill_priority เก็บ id ไว้ — map กลับเป็นชื่อสกิลจริง เผื่อสกิลถูกลบไปแล้วก็ยังไม่พัง
   const priority = guide.skill_priority
@@ -63,7 +68,7 @@ function InvestmentBox({ guide, skills, shackles, ecbName, team }: {
     .map(stage => ({ stage, data: shackles.find(s => s.stage === stage) }))
 
   const hasAny = priority.length > 0 || guide.level_from || guide.level_to
-    || notable.length > 0 || ecbName || team.length > 0
+    || notable.length > 0 || ecbName || team.length > 0 || extra
   if (!hasAny) return null
 
   return (
@@ -133,6 +138,8 @@ function InvestmentBox({ guide, skills, shackles, ecbName, team }: {
             </span>
           </InvestmentRow>
         )}
+
+        {extra}
       </div>
     </div>
   )
@@ -162,6 +169,7 @@ function GuideSectionBlock({ heading, body }: { heading: string; body: string })
 export function GuideView({
   guide, skills, shackles, ecbName, team,
   voted, voting, onVote, canEdit, onEdit, onDelete,
+  reforge = null, exOptions = [], onOpenReforge,
 }: {
   guide: GuideWithAuthor
   skills: CharacterSkill[]
@@ -174,8 +182,13 @@ export function GuideView({
   canEdit: boolean
   onEdit: () => void
   onDelete: () => void
+  reforge?: ReforgeData | null
+  exOptions?: ExAnchorOption[]
+  onOpenReforge?: (build: ReforgeGuideBuild) => void
 }) {
   const author = guide.author
+  const build = reforge ? parseGuideBuild(guide.reforge_build, reforge) : null
+  const exOption = build?.ex ? exOptions.find(o => o.character_id === build.ex) ?? null : null
   const ageDays = daysSince(guide.updated_at)
   const stale = ageDays > STALE_AFTER_DAYS
 
@@ -248,7 +261,17 @@ export function GuideView({
           </div>
         )}
 
-        <InvestmentBox guide={guide} skills={skills} shackles={shackles} ecbName={ecbName} team={team} />
+        <InvestmentBox
+          guide={guide} skills={skills} shackles={shackles} ecbName={ecbName} team={team}
+          extra={reforge && build && (
+            <GuideReforgeBuild
+              build={build}
+              data={reforge}
+              exName={exOption ? `${exOption.character_name} - ${displayName(exOption.anchor)}` : null}
+              onOpen={onOpenReforge && (() => onOpenReforge(build))}
+            />
+          )}
+        />
 
         {guide.sections.map((s, i) => (
           <GuideSectionBlock key={i} heading={s.heading || `หัวข้อ ${i + 1}`} body={s.body} />

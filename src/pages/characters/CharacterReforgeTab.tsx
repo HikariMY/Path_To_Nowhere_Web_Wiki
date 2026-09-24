@@ -6,7 +6,7 @@ import { useToast } from '../../components/ui/Toast'
 import { Button } from '../../components/ui/Button'
 import { activateAll, decodeBuild, encodeBuild, toggleNode, totalCost } from '../../lib/reforge'
 import { useExAnchorOptions } from '../../hooks/useExAnchorOptions'
-import type { ReforgeData } from '../../types/models'
+import type { ReforgeData, ReforgeGuideBuild } from '../../types/models'
 import { ReforgeTree, type ReforgeSelection } from '../../components/reforge/ReforgeTree'
 import { ReforgeDetailPanel } from '../../components/reforge/ReforgeDetailPanel'
 import { ReforgeOverview } from '../../components/reforge/ReforgeOverview'
@@ -19,20 +19,26 @@ type View = 'tree' | 'list'
  * แท็บ Reforge — ผู้เล่นเปิด/ปิดโหนดได้อิสระเพื่อดูผลตอนปลดครบก่อนไปทำในเกม
  * build เก็บใน URL (?build=a.b.c&ex=<character_id>) เพื่อแชร์ลิงก์ได้ ไม่บันทึกลง DB
  */
-export function CharacterReforgeTab({ character, data }: {
+export function CharacterReforgeTab({ character, data, initialBuild = null }: {
   character: { id: string; name: string; job_class: string }
   data: ReforgeData
+  /** build ที่ส่งมาจากปุ่มในไกด์ — มาก่อน URL */
+  initialBuild?: ReforgeGuideBuild | null
 }) {
   const { toast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // ลำดับความสำคัญ: ?build= ใน URL > Recommended Set ชุดแรก
+  // ลำดับความสำคัญ: build จากไกด์ > ?build= ใน URL > Recommended Set ชุดแรก
   const [activeIds, setActiveIds] = useState<string[]>(() => {
+    if (initialBuild) return decodeBuild(data, encodeBuild(initialBuild.nodes))
     const fromUrl = decodeBuild(data, searchParams.get('build'))
     if (fromUrl.length > 0) return fromUrl
     return decodeBuild(data, encodeBuild(data.presets[0]?.node_ids ?? []))
   })
-  const [exId, setExId] = useState<string | null>(() => searchParams.get('ex') ?? (data.ex_anchor ? character.id : null))
+  const [exId, setExId] = useState<string | null>(() => {
+    if (initialBuild) return initialBuild.ex
+    return searchParams.get('ex') ?? (data.ex_anchor ? character.id : null)
+  })
   const [selection, setSelection] = useState<ReforgeSelection>(null)
   const [view, setView] = useState<View>('tree')
   const exOptions = useExAnchorOptions(character.job_class)

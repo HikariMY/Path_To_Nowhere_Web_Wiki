@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { Plus, Trash2, X, Eye, EyeOff, ArrowUp, ArrowDown } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import type { CharacterSkill, ShackleBreak } from '../../types/models'
+import type { CharacterSkill, ReforgeData, ShackleBreak } from '../../types/models'
+import type { ExAnchorOption } from '../../lib/reforge'
 import type { GuideDraft, EcbOption, CharOption } from './guideDraft'
+import { GuideReforgePicker } from './GuideReforgePicker'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Select } from '../ui/Select'
@@ -55,7 +57,7 @@ function MarkdownBox({ value, onChange }: { value: string; onChange: (v: string)
 
 export function GuideEditor({
   open, onClose, draft, setDraft, onSave, saving, editing,
-  skills, shackles, ecbOptions, charOptions,
+  skills, shackles, ecbOptions, charOptions, reforge = null, exOptions = [],
 }: {
   open: boolean
   onClose: () => void
@@ -68,6 +70,8 @@ export function GuideEditor({
   shackles: ShackleBreak[]
   ecbOptions: EcbOption[]
   charOptions: CharOption[]
+  reforge?: ReforgeData | null
+  exOptions?: ExAnchorOption[]
 }) {
   const [teamSearch, setTeamSearch] = useState('')
 
@@ -266,6 +270,19 @@ export function GuideEditor({
             )}
           </Field>
         </div>
+
+        {/* ── build Reforge (เฉพาะตัวละครที่มี Reforge) ── */}
+        {reforge && (
+          <Field label="Build Reforge ที่แนะนำ (ไม่บังคับ)">
+            <GuideReforgePicker
+              data={reforge}
+              exOptions={exOptions}
+              nodes={draft.reforge_nodes}
+              ex={draft.reforge_ex}
+              onChange={(nodes, ex) => setDraft(p => ({ ...p, reforge_nodes: nodes, reforge_ex: ex }))}
+            />
+          </Field>
+        )}
 
         {/* ── เนื้อไกด์ ── */}
         <div className="space-y-3">

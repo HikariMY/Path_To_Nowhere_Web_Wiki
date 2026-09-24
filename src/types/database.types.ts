@@ -246,6 +246,8 @@ export type CharacterGuideRow = {
   recommended_ecb_id: string | null
   /** character id ของเพื่อนร่วมทีม */
   recommended_team: string[]
+  /** ReforgeGuideBuild — { nodes, ex } หรือ null ถ้าไม่ได้แนบ */
+  reforge_build: Json | null
   sections: GuideSection[]
   upvotes: number
   created_at: string

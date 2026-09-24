@@ -2,6 +2,7 @@ import type {
   ReforgeData,
   ReforgeEffect,
   ReforgeExAnchor,
+  ReforgeGuideBuild,
   ReforgeNode,
   ReforgePreset,
   ReforgeStat,
@@ -105,6 +106,33 @@ export function encodeBuild(activeIds: readonly string[]): string {
 export function decodeBuild(data: ReforgeData, encoded: string | null | undefined): string[] {
   if (!encoded) return []
   return resolveBuild(data, encoded.split(BUILD_SEPARATOR))
+}
+
+// ---- build ที่แนบในไกด์ -----------------------------------------
+
+/** แปลงสถานะในฟอร์มเป็นค่าที่เก็บลง DB — ไม่ได้เลือกอะไรเลย = null */
+export function toGuideBuild(activeIds: readonly string[], exId: string | null): ReforgeGuideBuild | null {
+  if (activeIds.length === 0 && !exId) return null
+  return { nodes: [...activeIds], ex: exId }
+}
+
+export interface ParsedGuideBuild extends ReforgeGuideBuild {
+  missing: number   // โหนดที่ถูกลบจากต้นไม้หลังไกด์ถูกเขียน
+}
+
+/** อ่าน build จากไกด์เทียบกับต้นไม้ปัจจุบัน — ข้อมูลเสีย/ว่างคืน null */
+export function parseGuideBuild(raw: unknown, data: ReforgeData): ParsedGuideBuild | null {
+  if (!isRecord(raw) || !Array.isArray(raw.nodes)) return null
+  const ids = raw.nodes.filter(isStr)
+  const ex = isStr(raw.ex) && raw.ex !== '' ? raw.ex : null
+  if (ids.length === 0 && !ex) return null
+
+  const known = new Set(data.nodes.map(n => n.id))
+  return {
+    nodes: resolveBuild(data, ids),
+    ex,
+    missing: new Set(ids.filter(id => !known.has(id))).size,
+  }
 }
 
 let idCounter = 0

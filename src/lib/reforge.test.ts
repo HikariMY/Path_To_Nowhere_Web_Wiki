@@ -8,7 +8,9 @@ import {
   encodeBuild,
   isOverCap,
   newReforgeId,
+  parseGuideBuild,
   parseReforge,
+  toGuideBuild,
   sumStats,
   toggleNode,
   totalCost,
@@ -168,6 +170,34 @@ describe('validateReforge', () => {
 
   test('allows members of one choice group to share a slot', () => {
     expect(validateReforge({ ...data, nodes: data.nodes.filter(n => n.choice_group === 'ult'), presets: [] })).toEqual([])
+  })
+})
+
+describe('toGuideBuild / parseGuideBuild', () => {
+  test('returns null when nothing is picked', () => {
+    expect(toGuideBuild([], null)).toBeNull()
+  })
+
+  test('keeps nodes and ex id', () => {
+    expect(toGuideBuild(['atk'], null)).toEqual({ nodes: ['atk'], ex: null })
+    expect(toGuideBuild([], 'char-1')).toEqual({ nodes: [], ex: 'char-1' })
+  })
+
+  test('parses a stored build against the current tree', () => {
+    expect(parseGuideBuild({ nodes: ['atk', 'river'], ex: 'char-1' }, data))
+      .toEqual({ nodes: ['atk', 'river'], ex: 'char-1', missing: 0 })
+  })
+
+  test('drops nodes removed from the tree and counts them', () => {
+    expect(parseGuideBuild({ nodes: ['atk', 'gone', 'old'], ex: null }, data))
+      .toEqual({ nodes: ['atk'], ex: null, missing: 2 })
+  })
+
+  test('returns null for malformed or empty builds', () => {
+    expect(parseGuideBuild(null, data)).toBeNull()
+    expect(parseGuideBuild('atk', data)).toBeNull()
+    expect(parseGuideBuild({ nodes: [], ex: null }, data)).toBeNull()
+    expect(parseGuideBuild({ nodes: [1, 2], ex: 5 }, data)).toBeNull()
   })
 })
 

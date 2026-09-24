@@ -13,14 +13,20 @@ import {
   blankDraft, draftFromGuide,
   type GuideDraft, type EcbOption, type CharOption,
 } from '../../components/guides/guideDraft'
-import type { CharacterSkill, ShackleBreak } from '../../types/models'
+import type { CharacterSkill, ReforgeData, ReforgeGuideBuild, ShackleBreak } from '../../types/models'
+import { toGuideBuild } from '../../lib/reforge'
+import { useExAnchorOptions } from '../../hooks/useExAnchorOptions'
 import { cn, formatRelativeTime } from '../../lib/utils'
 
-export function CharacterGuidesTab({ characterId, skills, shackles }: {
+export function CharacterGuidesTab({ characterId, skills, shackles, reforge = null, jobClass = '', onOpenReforge }: {
   characterId: string
   skills: CharacterSkill[]
   shackles: ShackleBreak[]
+  reforge?: ReforgeData | null
+  jobClass?: string
+  onOpenReforge?: (build: ReforgeGuideBuild) => void
 }) {
+  const exOptions = useExAnchorOptions(jobClass, !!reforge)
   const { user, profile, isAdmin } = useAuth()
   const { toast } = useToast()
 
@@ -127,6 +133,8 @@ export function CharacterGuidesTab({ characterId, skills, shackles }: {
       notable_shackles: draft.notable_shackles,
       recommended_ecb_id: draft.recommended_ecb_id || null,
       recommended_team: draft.recommended_team,
+      // ตัวละครไม่มี Reforge (แล้ว) = ไม่แตะ build เดิมในไกด์
+      ...(reforge ? { reforge_build: toGuideBuild(draft.reforge_nodes, draft.reforge_ex || null) } : {}),
       sections,
       updated_at: new Date().toISOString(),
     }
@@ -225,6 +233,9 @@ export function CharacterGuidesTab({ characterId, skills, shackles }: {
           canEdit={canEdit(selected)}
           onEdit={() => openEdit(selected)}
           onDelete={() => handleDelete(selected)}
+          reforge={reforge}
+          exOptions={exOptions}
+          onOpenReforge={onOpenReforge}
         />
       )}
 
@@ -272,6 +283,8 @@ export function CharacterGuidesTab({ characterId, skills, shackles }: {
         shackles={shackles}
         ecbOptions={ecbOptions}
         charOptions={charOptions}
+        reforge={reforge}
+        exOptions={exOptions}
       />
     </div>
   )

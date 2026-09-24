@@ -16,6 +16,7 @@ import { Modal } from '../../components/ui/Modal'
 import { CharacterGuidesTab } from './CharacterGuidesTab'
 import { CharacterReforgeTab } from './CharacterReforgeTab'
 import { parseReforge } from '../../lib/reforge'
+import type { ReforgeGuideBuild } from '../../types/models'
 
 // ---- Tabs ----------------------------------------------------------------
 
@@ -532,6 +533,7 @@ export function CharacterDetailPage() {
   const [character, setCharacter] = useState<Character | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchParams] = useSearchParams()
+  const [guideBuild, setGuideBuild] = useState<ReforgeGuideBuild | null>(null)
   // ลิงก์แชร์ build Reforge (?build=...) เปิดแท็บ Reforge ทันที
   const [activeTab, setActiveTab] = useState(() => (searchParams.has('build') ? 'reforge' : 'info'))
   const [tagsModalOpen, setTagsModalOpen] = useState(false)
@@ -593,6 +595,14 @@ export function CharacterDetailPage() {
   const visibleTabs = TABS.filter(t => t.id !== 'reforge' || reforge)
   // แท็บที่เลือกไว้อาจถูกซ่อน (เช่นลิงก์ ?build= ของตัวละครที่ไม่มี Reforge แล้ว) — ถอยไปแท็บข้อมูล
   const currentTab = visibleTabs.some(t => t.id === activeTab) ? activeTab : 'info'
+
+  // ปุ่มจากไกด์: ส่ง build เข้าแท็บ Reforge ตรง ๆ (URL อัปเดตไม่ทันตอนแท็บ mount)
+  // แท็บจะเขียน build ลง URL เองหลัง mount
+  const openReforgeBuild = (build: ReforgeGuideBuild) => {
+    setGuideBuild(build)
+    setActiveTab('reforge')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const tags = (character.tags as string[] | null) || []
   const abilityTags = (character.ability_tags as string[] | null) || []
@@ -750,7 +760,7 @@ export function CharacterDetailPage() {
           {visibleTabs.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => { setActiveTab(tab.id); setGuideBuild(null) }}
               className={`shrink-0 whitespace-nowrap px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
                 currentTab === tab.id
                   ? 'border-ptn-red text-ptn-text'
@@ -1098,7 +1108,7 @@ export function CharacterDetailPage() {
 
         {/* REFORGE TAB */}
         {currentTab === 'reforge' && reforge && (
-          <CharacterReforgeTab character={character} data={reforge} />
+          <CharacterReforgeTab character={character} data={reforge} initialBuild={guideBuild} />
         )}
 
         {/* GUIDES TAB */}
@@ -1107,6 +1117,9 @@ export function CharacterDetailPage() {
             characterId={character.id}
             skills={skills}
             shackles={shackles}
+            reforge={reforge}
+            jobClass={character.job_class}
+            onOpenReforge={openReforgeBuild}
           />
         )}
       </div>
