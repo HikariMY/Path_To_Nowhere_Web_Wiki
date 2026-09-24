@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
 import { ArrowLeftRight } from 'lucide-react'
-import { sumStats, type ExAnchorOption } from '../../lib/reforge'
-import type { ReforgeData, ReforgeNode } from '../../types/models'
-import { CATEGORY_LABEL, EFFECT_LABEL, displayName, formatStat } from './reforgeStyle'
+import { REFORGE_SLOTS, REFORGE_STAGES, STAGE_ORBS, nodeCategory, sumStats, type ExAnchorOption } from '../../lib/reforge'
+import type { ReforgeData, ReforgeNodeCategory } from '../../types/models'
+import { CATEGORY_LABEL, ORB_LABEL, ROMAN, displayName, formatStat } from './reforgeStyle'
+
+const SLOT_ORDER = new Map(REFORGE_SLOTS.map((s, i) => [s.id, i]))
 
 interface OverviewProps {
   data: ReforgeData
@@ -14,8 +16,11 @@ interface OverviewProps {
 /** มุมมองรายการ (Overview ในเกม) — checkbox ต่อโหนด + สรุปสเตตัสรวม */
 export function ReforgeOverview({ data, activeIds, onToggle, ex }: OverviewProps) {
   const stats = sumStats(data, activeIds)
-  const byCategory = (c: ReforgeNode['category']) =>
-    data.nodes.filter(n => n.category === c).sort((a, b) => a.stage - b.stage || a.col - b.col)
+  const byCategory = (c: ReforgeNodeCategory) =>
+    data.nodes
+      .filter(n => nodeCategory(n) === c)
+      .sort((a, b) => (SLOT_ORDER.get(a.slot) ?? 0) - (SLOT_ORDER.get(b.slot) ?? 0))
+  const isChoice = (slot: string) => data.nodes.filter(n => n.slot === slot).length > 1
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -26,7 +31,7 @@ export function ReforgeOverview({ data, activeIds, onToggle, ex }: OverviewProps
               <label key={n.id} className="flex cursor-pointer items-center gap-3 py-1.5 text-sm">
                 <span className="flex-1 text-ptn-text">
                   {displayName(n)}
-                  {n.choice_group && <ArrowLeftRight size={11} className="ml-1 inline text-rose-300" aria-label="Choice" />}
+                  {isChoice(n.slot) && <ArrowLeftRight size={11} className="ml-1 inline text-rose-300" aria-label="Choice" />}
                 </span>
                 <span className="w-8 text-center font-heading font-bold text-amber-400">{n.cost}</span>
                 <input
@@ -55,16 +60,14 @@ export function ReforgeOverview({ data, activeIds, onToggle, ex }: OverviewProps
           )}
         </Group>
 
-        {data.effects.length > 0 && (
-          <Group title="Reforge Effect">
-            {data.effects.map(e => (
-              <div key={e.id} className="flex justify-between py-1 text-sm">
-                <span className="text-ptn-text">{EFFECT_LABEL[e.type]} <span className="text-xs text-ptn-disabled">S{e.stage}</span></span>
-                <span className="text-green-400">ปลดแล้ว</span>
-              </div>
-            ))}
-          </Group>
-        )}
+        <Group title="Reforge Effect">
+          {REFORGE_STAGES.flatMap(stage => (STAGE_ORBS[stage] ?? []).map(orb => (
+            <div key={`${stage}-${orb}`} className="flex justify-between py-1 text-sm">
+              <span className="text-ptn-text">{ORB_LABEL[orb]} <span className="text-xs text-ptn-disabled">Stage {ROMAN[stage - 1]}</span></span>
+              <span className="text-green-400">ปลดแล้ว</span>
+            </div>
+          )))}
+        </Group>
 
         <Group title="Overlimit Anchor">
           <p className="py-1 text-sm text-ptn-text">

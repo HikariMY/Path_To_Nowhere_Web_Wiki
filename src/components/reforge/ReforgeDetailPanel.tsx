@@ -4,10 +4,10 @@ import { ArrowLeftRight } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/utils'
 import { JOB_CLASS_LABEL } from '../../lib/constants'
-import type { ExAnchorOption } from '../../lib/reforge'
+import { COST_CAP, COST_LEAP_BONUS, STAGE_COST_CAPS, nodeCategory, type ExAnchorOption, type ReforgeOrb } from '../../lib/reforge'
 import type { ReforgeData, ReforgeStat } from '../../types/models'
 import type { ReforgeSelection } from './ReforgeTree'
-import { CATEGORY_LABEL, EFFECT_LABEL, displayName, formatStat, nodeRingColor } from './reforgeStyle'
+import { CATEGORY_LABEL, ORB_LABEL, ROMAN, displayName, formatStat, nodeRingColor } from './reforgeStyle'
 
 interface PanelProps {
   data: ReforgeData
@@ -26,13 +26,14 @@ export function ReforgeDetailPanel(props: PanelProps) {
     <aside className="rounded-lg border border-ptn-border bg-ptn-surface p-4 lg:min-h-[22rem]">
       {selection === null && (
         <p className="py-10 text-center text-sm text-ptn-disabled">
-          กดที่โหนดเพื่อดูรายละเอียด
+          กดที่โหนด วงรางวัล หรือส่วนกลางของ Stage เพื่อดูรายละเอียด
           <br />
           <span className="text-xs">ดับเบิลคลิกโหนดเพื่อเปิด/ปิดได้ทันที</span>
         </p>
       )}
       {selection?.kind === 'node' && <NodeDetail {...props} nodeId={selection.id} />}
-      {selection?.kind === 'effect' && <EffectDetail data={props.data} effectId={selection.id} />}
+      {selection?.kind === 'orb' && <OrbDetail data={props.data} stage={selection.stage} orb={selection.orb} />}
+      {selection?.kind === 'stage' && <StageDetail data={props.data} stage={selection.stage} />}
       {selection?.kind === 'ex' && <ExPicker {...props} />}
     </aside>
   )
@@ -68,20 +69,18 @@ function NodeDetail({ data, activeIds, onToggle, nodeId }: PanelProps & { nodeId
   if (!node) return null
   const active = activeIds.includes(node.id)
   const ring = nodeRingColor(node)
-  const rival = node.choice_group
-    ? data.nodes.find(n => n.choice_group === node.choice_group && n.id !== node.id)
-    : undefined
+  const rival = data.nodes.find(n => n.slot === node.slot && n.id !== node.id)
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-1.5">
-        {node.choice_group && (
+        {rival && (
           <span className="inline-flex items-center gap-1 rounded bg-rose-700/70 px-1.5 py-0.5 text-[11px] font-bold text-white">
             <ArrowLeftRight size={11} /> Choice
           </span>
         )}
         <span className="rounded px-1.5 py-0.5 text-[11px] font-bold text-white" style={{ background: ring }}>
-          {CATEGORY_LABEL[node.category]}
+          {CATEGORY_LABEL[nodeCategory(node)]}
         </span>
       </div>
 
@@ -112,22 +111,65 @@ function NodeDetail({ data, activeIds, onToggle, nodeId }: PanelProps & { nodeId
   )
 }
 
-function EffectDetail({ data, effectId }: { data: ReforgeData; effectId: string }) {
-  const effect = data.effects.find(e => e.id === effectId)
-  if (!effect) return null
+function OrbDetail({ data, stage, orb }: { data: ReforgeData; stage: number; orb: ReforgeOrb }) {
+  const intensify = data.stages.find(s => s.stage === stage)?.intensify ?? []
   return (
     <div>
-      <h3 className="font-heading text-xl font-bold text-ptn-text">{EFFECT_LABEL[effect.type]}</h3>
-      <p className="text-xs text-ptn-muted">รางวัล Stage {effect.stage}</p>
-      <StatList stats={effect.stats} />
+      <h3 className="font-heading text-xl font-bold text-ptn-text">{ORB_LABEL[orb]}</h3>
+      <p className="text-xs text-ptn-muted">รางวัล Stage {ROMAN[stage - 1]}</p>
+      {orb === 'intensify' ? (
+        intensify.length > 0
+          ? <StatList stats={intensify} />
+          : <p className="mt-3 text-sm text-ptn-disabled">ยังไม่มีข้อมูลสเตตัส</p>
+      ) : (
+        <p className="mt-3 text-sm leading-relaxed text-ptn-text">
+          เพิ่มเพดาน COST — วง COST ใน Stage III และ IV รวมกันเพิ่มได้{' '}
+          <span className="font-bold text-ptn-cyan">+{COST_LEAP_BONUS}</span>{' '}
+          (เพดานรวม {COST_CAP})
+        </p>
+      )}
       <p className="mt-4 text-center text-sm font-medium text-amber-400">ปลดแล้ว</p>
+    </div>
+  )
+}
+
+function StageDetail({ data, stage }: { data: ReforgeData; stage: number }) {
+  const materials = data.stages.find(s => s.stage === stage)?.materials ?? []
+  return (
+    <div className="text-center">
+      <div aria-hidden className="mx-auto flex h-10 items-center justify-center gap-1">
+        {Array.from({ length: stage }, (_, i) => (
+          <span key={i} className="h-8 w-[3px] rounded-full bg-white shadow-[0_0_8px_#fb7185]" />
+        ))}
+      </div>
+      <h3 className="mt-1 font-heading text-xl font-bold text-ptn-text">Stage {ROMAN[stage - 1]}</h3>
+
+      <p className="mt-4 border-b border-ptn-border pb-1 text-left text-xs tracking-wide text-ptn-muted">วัสดุที่ใช้ปลด</p>
+      {materials.length === 0 ? (
+        <p className="mt-2 text-sm text-ptn-disabled">ยังไม่มีข้อมูลวัสดุ</p>
+      ) : (
+        <ul className="mt-2 space-y-2 text-left">
+          {materials.map((m, i) => (
+            <li key={i} className="flex items-center gap-2 text-sm text-ptn-text">
+              {m.icon_url
+                ? <img src={m.icon_url} alt="" className="h-9 w-9 rounded border border-ptn-border object-contain" />
+                : <span className="flex h-9 w-9 items-center justify-center rounded border border-ptn-border text-xs text-ptn-disabled">?</span>}
+              <span className="flex-1">{m.name}</span>
+              <span className="font-heading font-bold text-amber-400">×{m.qty}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="mt-5 border-b border-ptn-border pb-1 text-left text-xs tracking-wide text-ptn-muted">COST limit can still be increased</p>
+      <p className="mt-2 font-heading text-4xl font-bold text-indigo-200">{STAGE_COST_CAPS[stage - 1]}</p>
     </div>
   )
 }
 
 function ExPicker({ exOptions, exId, onPickEx }: PanelProps) {
   if (exOptions.length === 0) {
-    return <p className="py-10 text-center text-sm text-ptn-disabled">ยังไม่มี Overlimit Anchor ที่ใส่ได้</p>
+    return <p className="py-10 text-center text-sm text-ptn-disabled">ยังไม่มี Overlimit Anchor ในระบบ</p>
   }
   return (
     <div className="space-y-2">
@@ -138,7 +180,7 @@ function ExPicker({ exOptions, exId, onPickEx }: PanelProps) {
           <button
             key={o.character_id}
             type="button"
-            onClick={() => onPickEx(on ? null : o.character_id)}
+            onClick={() => onPickEx(o.character_id)}
             aria-pressed={on}
             className={cn(
               'w-full rounded border p-3 text-left transition-colors',
@@ -154,14 +196,17 @@ function ExPicker({ exOptions, exId, onPickEx }: PanelProps) {
             </div>
             <p className="mt-1 text-xs leading-relaxed text-ptn-muted">{o.anchor.description_th || o.anchor.description}</p>
             {o.anchor.exclusive_classes.length > 0 && (
-              <p className="mt-1 text-[11px] text-ptn-cyan">
-                เฉพาะ: {o.anchor.exclusive_classes.map(c => JOB_CLASS_LABEL[c] ?? c).join(', ')}
+              <p className={cn('mt-1 text-[11px]', o.matches_class ? 'text-ptn-cyan' : 'text-ptn-disabled')}>
+                Exclusive to: {o.anchor.exclusive_classes.map(c => JOB_CLASS_LABEL[c] ?? c).join(', ')}
               </p>
             )}
-            {on && <p className="mt-1 text-[11px] font-bold text-green-400">ใช้อยู่</p>}
+            {on && <p className="mt-1 text-[11px] font-bold text-green-400">ON</p>}
           </button>
         )
       })}
+      {exId && (
+        <Button variant="danger" className="w-full" onClick={() => onPickEx(null)}>Unequip</Button>
+      )}
     </div>
   )
 }

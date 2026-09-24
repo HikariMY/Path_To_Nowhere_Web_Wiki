@@ -68,13 +68,14 @@ export function CharacterReforgeTab({ character, data, initialBuild = null }: {
     }
   }
 
-  const exSlot = data.ex_anchor || exOptions.length > 0 ? (
+  // ช่อง EX มีทุกตัวละครที่ Stage 3 ล่างขวา
+  const exSlot = (
     <button
       type="button"
       onClick={() => setSelection({ kind: 'ex' })}
       aria-label="เลือก Overlimit Anchor"
       className={cn(
-        'relative flex h-20 w-20 items-center justify-center rounded-full border-2 border-pink-400 bg-black/60 transition-transform',
+        'relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-pink-400 bg-black/60 transition-transform sm:h-20 sm:w-20',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-ptn-cyan',
         selection?.kind === 'ex' && 'scale-110',
         ex ? 'shadow-[0_0_18px_#f472b6]' : 'opacity-50',
@@ -85,7 +86,7 @@ export function CharacterReforgeTab({ character, data, initialBuild = null }: {
         : <span className="font-heading text-2xl font-black italic text-pink-400">EX</span>}
       <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-black bg-black text-xs font-bold text-amber-400">0</span>
     </button>
-  ) : undefined
+  )
 
   return (
     <div className="space-y-3">
@@ -121,7 +122,7 @@ export function CharacterReforgeTab({ character, data, initialBuild = null }: {
               </button>
             ))}
           </div>
-          <CostMeter used={used} base={data.cost_base} bonus={data.cost_bonus} />
+          <CostMeter used={used} />
         </div>
       </div>
 

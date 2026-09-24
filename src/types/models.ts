@@ -77,32 +77,43 @@ export interface ReforgeStat {
 
 export type ReforgeNodeCategory = 'attribute' | 'special'
 
+/**
+ * ช่องโหนดตายตัว เหมือนกันทุกตัวละคร — ความหมายของแต่ละช่องดู REFORGE_SLOTS ใน lib/reforge.ts
+ * s<stage>-<top|bot>-<a ซ้าย|b ขวา>; ช่อง EX (Stage 3 ล่างขวา) ไม่ใช่โหนด จึงไม่อยู่ในนี้
+ */
+export type ReforgeSlotId =
+  | 's1-top-a' | 's1-top-b' | 's1-bot-a' | 's1-bot-b'
+  | 's2-top-a' | 's2-top-b' | 's2-bot-a' | 's2-bot-b'
+  | 's3-top-a' | 's3-bot-a'
+  | 's4-bot-a' | 's4-bot-b'
+
 export interface ReforgeNode {
   id: string
+  slot: ReforgeSlotId      // โหนด 2 ตัวในช่องเดียวกัน = คู่ Choice เลือกได้ 1
   name: string
   name_th?: string
-  category: ReforgeNodeCategory
   cost: number
   icon_url?: string
   description?: string
   description_th?: string
   stats?: ReforgeStat[]
-  stage: number            // 1-based
-  row: 'top' | 'bottom'
-  col: number              // ตำแหน่งซ้าย→ขวาภายใน stage
-  choice_group?: string    // โหนดกลุ่มเดียวกันเปิดได้ทีละ 1
-  linked_to?: string       // เส้นเชื่อมไปโหนดนี้ — ตกแต่งอย่างเดียว ไม่บังคับลำดับ
 }
 
-// Intensify / Leap / COST — ปลดครบเสมอในหน้าเว็บ
-export interface ReforgeEffect {
-  id: string
+// วัสดุที่ใช้ปลด Stage (1–2 ชิ้นต่อ Stage)
+export interface ReforgeMaterial {
+  name: string
+  icon_url?: string
+  qty: number
+}
+
+// ข้อมูลราย Stage ของตัวละคร — วง Intensify มีทุก Stage, วง COST (Leap) เป็นค่าคงที่ของระบบ
+export interface ReforgeStageInfo {
   stage: number
-  type: 'intensify' | 'leap' | 'cost'
-  stats: ReforgeStat[]
+  intensify: ReforgeStat[]
+  materials: ReforgeMaterial[]
 }
 
-// Overlimit Anchor (EX) ของตัวละครนี้ — ตัวละครอื่นที่คลาสตรงยืมไปใช้ได้
+// Overlimit Anchor (EX) ของตัวละครนี้ — ตัวละครอื่นยืมไปใส่ได้ทุกตัว (exclusive_classes เป็นข้อมูลอ้างอิงเท่านั้น)
 export interface ReforgeExAnchor {
   name: string
   name_th?: string
@@ -119,10 +130,8 @@ export interface ReforgePreset {
 }
 
 export interface ReforgeData {
-  cost_base: number    // 21
-  cost_bonus: number   // +5
   nodes: ReforgeNode[]
-  effects: ReforgeEffect[]
+  stages: ReforgeStageInfo[]   // ครบ 4 Stage เสมอหลัง parseReforge
   ex_anchor?: ReforgeExAnchor
   presets: ReforgePreset[]
 }
