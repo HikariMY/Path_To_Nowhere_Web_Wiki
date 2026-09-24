@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useSearchParams, Link } from 'react-router-dom'
 import { ChevronLeft, Star, Zap, Heart, Sword, Shield, ShieldCheck, Layers } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Character, CharacterSkill, ShackleBreak } from '../../types'
@@ -14,6 +14,8 @@ import { useAbilityTags } from '../../hooks/useAbilityTags'
 import type { TagGroup } from '../../lib/abilityTags'
 import { Modal } from '../../components/ui/Modal'
 import { CharacterGuidesTab } from './CharacterGuidesTab'
+import { CharacterReforgeTab } from './CharacterReforgeTab'
+import { parseReforge } from '../../lib/reforge'
 
 // ---- Tabs ----------------------------------------------------------------
 
@@ -22,6 +24,7 @@ const TABS = [
   { id: 'skills',   label: 'สกิล' },
   { id: 'shackles', label: 'Shackles' },
   { id: 'story',    label: 'เรื่องราว' },
+  { id: 'reforge',  label: 'Reforge' },  // แสดงเฉพาะตัวละครที่มีข้อมูล Reforge
   { id: 'guides',   label: 'ไกด์โดยผู้เล่น' },
 ]
 
@@ -528,7 +531,9 @@ export function CharacterDetailPage() {
   const { groups: abilityTagGroups, descriptions: tagDescriptions } = useAbilityTags()
   const [character, setCharacter] = useState<Character | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('info')
+  const [searchParams] = useSearchParams()
+  // ลิงก์แชร์ build Reforge (?build=...) เปิดแท็บ Reforge ทันที
+  const [activeTab, setActiveTab] = useState(() => (searchParams.has('build') ? 'reforge' : 'info'))
   const [tagsModalOpen, setTagsModalOpen] = useState(false)
   const [builds, setBuilds] = useState<CrimebrandBuild[]>([])
   const [buildCbs, setBuildCbs] = useState<CrimebrandSimple[]>([])
@@ -584,6 +589,11 @@ export function CharacterDetailPage() {
   const rarityColor = RARITY_COLORS[character.rarity]
   const skills = (character.skills as CharacterSkill[] | null) || []
   const shackles = (character.shackles as ShackleBreak[] | null) || []
+  const reforge = parseReforge(character.reforge)
+  const visibleTabs = TABS.filter(t => t.id !== 'reforge' || reforge)
+  // แท็บที่เลือกไว้อาจถูกซ่อน (เช่นลิงก์ ?build= ของตัวละครที่ไม่มี Reforge แล้ว) — ถอยไปแท็บข้อมูล
+  const currentTab = visibleTabs.some(t => t.id === activeTab) ? activeTab : 'info'
+
   const tags = (character.tags as string[] | null) || []
   const abilityTags = (character.ability_tags as string[] | null) || []
   const trivia = (character.trivia as string[] | null) || []
@@ -736,13 +746,13 @@ export function CharacterDetailPage() {
         </div>
 
         {/* ── Tab bar ── */}
-        <div className="flex border-t border-ptn-border bg-ptn-bg">
-          {TABS.map(tab => (
+        <div className="flex overflow-x-auto border-t border-ptn-border bg-ptn-bg">
+          {visibleTabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
+              className={`shrink-0 whitespace-nowrap px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+                currentTab === tab.id
                   ? 'border-ptn-red text-ptn-text'
                   : 'border-transparent text-ptn-muted hover:text-ptn-text hover:border-ptn-border'
               }`}
@@ -757,7 +767,7 @@ export function CharacterDetailPage() {
       <div className="mt-4 space-y-4">
 
         {/* INFO TAB */}
-        {activeTab === 'info' && (
+        {currentTab === 'info' && (
           <div className="space-y-4">
 
             {/* INFO + MATERIALS row */}
@@ -993,7 +1003,7 @@ export function CharacterDetailPage() {
         )}
 
         {/* SKILLS TAB */}
-        {activeTab === 'skills' && (
+        {currentTab === 'skills' && (
           <div className="space-y-3">
             {skills.length > 0 ? (
               skills.map((skill, i) => <SkillCard key={i} skill={skill} />)
@@ -1007,7 +1017,7 @@ export function CharacterDetailPage() {
         )}
 
         {/* SHACKLES TAB */}
-        {activeTab === 'shackles' && (
+        {currentTab === 'shackles' && (
           <div className="space-y-2">
             {shackles.length > 0 ? (
               shackles.map((s) => (
@@ -1036,7 +1046,7 @@ export function CharacterDetailPage() {
         )}
 
         {/* STORY TAB */}
-        {activeTab === 'story' && (
+        {currentTab === 'story' && (
           trivia.length > 0 ? (
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-widest text-ptn-disabled mb-4">Trivia</h2>
@@ -1086,8 +1096,13 @@ export function CharacterDetailPage() {
           )
         )}
 
+        {/* REFORGE TAB */}
+        {currentTab === 'reforge' && reforge && (
+          <CharacterReforgeTab character={character} data={reforge} />
+        )}
+
         {/* GUIDES TAB */}
-        {activeTab === 'guides' && (
+        {currentTab === 'guides' && (
           <CharacterGuidesTab
             characterId={character.id}
             skills={skills}
