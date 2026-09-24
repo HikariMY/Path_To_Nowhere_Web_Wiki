@@ -1,7 +1,9 @@
 import { AlertTriangle, Network } from 'lucide-react'
-import { costCap, totalCost, type ParsedGuideBuild } from '../../lib/reforge'
+import { COST_CAP, COST_LEAP_BONUS, REFORGE_SLOTS, slotDef, totalCost, type ParsedGuideBuild } from '../../lib/reforge'
 import type { ReforgeData } from '../../types/models'
 import { displayName, nodeRingColor } from '../reforge/reforgeStyle'
+
+const SLOT_ORDER = new Map(REFORGE_SLOTS.map((s, i) => [s.id, i]))
 
 /** สรุป build Reforge ที่แนบในไกด์ + ปุ่มเปิดในแท็บ Reforge */
 export function GuideReforgeBuild({ build, data, exName, onOpen }: {
@@ -12,9 +14,9 @@ export function GuideReforgeBuild({ build, data, exName, onOpen }: {
 }) {
   const picked = data.nodes
     .filter(n => build.nodes.includes(n.id))
-    .sort((a, b) => a.stage - b.stage || a.col - b.col)
+    .sort((a, b) => (SLOT_ORDER.get(a.slot) ?? 0) - (SLOT_ORDER.get(b.slot) ?? 0))
   const used = totalCost(data, build.nodes)
-  const over = used > costCap(data)
+  const over = used > COST_CAP
 
   return (
     <div className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-950/20 px-3 py-2.5 sm:col-span-2">
@@ -23,7 +25,7 @@ export function GuideReforgeBuild({ build, data, exName, onOpen }: {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[10px] uppercase tracking-widest text-ptn-muted">Build Reforge</p>
           <span className={over ? 'text-xs font-bold text-red-400' : 'text-xs font-bold text-amber-400'}>
-            COST {used}/{data.cost_base}{data.cost_bonus > 0 && `(+${data.cost_bonus})`}
+            COST {used}/{COST_CAP}(+{COST_LEAP_BONUS})
           </span>
         </div>
 
@@ -36,7 +38,7 @@ export function GuideReforgeBuild({ build, data, exName, onOpen }: {
                 style={{ borderLeftColor: nodeRingColor(n) }}
                 title={n.description_th || n.description}
               >
-                S{n.stage} · {displayName(n)}
+                S{slotDef(n.slot).stage} · {displayName(n)}
               </span>
             ))}
           </div>

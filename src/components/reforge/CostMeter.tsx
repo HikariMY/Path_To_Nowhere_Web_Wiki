@@ -1,8 +1,12 @@
 import { cn } from '../../lib/utils'
+import { COST_CAP, COST_LEAP_BONUS } from '../../lib/reforge'
 
-/** แถบ COST แบบในเกม: "COST 21/21(+5)" — เกินเพดานเป็นสีแดงพร้อมคำเตือน แต่ไม่บล็อก */
-export function CostMeter({ used, base, bonus }: { used: number; base: number; bonus: number }) {
-  const cap = base + bonus
+/**
+ * แถบ COST แบบในเกม: "COST 21/21(+5)" — 21 คือเพดานรวมที่นับ +5 จากวง COST แล้ว
+ * เกินเพดานเป็นสีแดงพร้อมคำเตือน แต่ไม่บล็อก
+ */
+export function CostMeter({ used }: { used: number }) {
+  const cap = COST_CAP
   const over = used > cap
   const full = used === cap
 
@@ -17,8 +21,8 @@ export function CostMeter({ used, base, bonus }: { used: number; base: number; b
       >
         <span className="text-xs tracking-widest text-ptn-muted">COST</span>
         <span className={cn('text-lg font-bold', over ? 'text-red-400' : 'text-ptn-text')}>
-          {used}/{base}
-          {bonus > 0 && <span className="text-sm text-ptn-muted">(+{bonus})</span>}
+          {used}/{cap}
+          <span className="text-sm text-ptn-muted">(+{COST_LEAP_BONUS})</span>
         </span>
         {full && <span className="text-xs font-bold text-amber-400">MAX</span>}
       </div>

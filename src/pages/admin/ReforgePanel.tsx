@@ -1,22 +1,25 @@
 import { useEffect, useState } from 'react'
-import { Braces, Edit2, Plus, Save, Trash2 } from 'lucide-react'
+import { Braces, Plus, Save, Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
-import { Input } from '../../components/ui/Input'
 import { Modal } from '../../components/ui/Modal'
 import { Spinner } from '../../components/ui/Spinner'
 import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../contexts/AuthContext'
-import { DEFAULT_COST_BASE, parseReforge, toggleNode, totalCost, validateReforge } from '../../lib/reforge'
-import type { ReforgeData, ReforgeNode } from '../../types/models'
+import { REFORGE_STAGES, parseReforge, toggleNode, totalCost, validateReforge } from '../../lib/reforge'
+import type { ReforgeData, ReforgeNode, ReforgeSlotId } from '../../types/models'
 import { ReforgeTree, type ReforgeSelection } from '../../components/reforge/ReforgeTree'
 import { CostMeter } from '../../components/reforge/CostMeter'
-import { nodeRingColor } from '../../components/reforge/reforgeStyle'
 import { ReforgeNodeModal } from './reforge/ReforgeNodeModal'
-import { EffectsEditor, ExAnchorEditor, PresetsEditor } from './reforge/ReforgeExtrasEditor'
+import { ExAnchorEditor, PresetsEditor, StagesEditor } from './reforge/ReforgeExtrasEditor'
+import { ReforgeSlotGrid } from './reforge/ReforgeSlotGrid'
 
-const emptyReforge = (): ReforgeData => ({ cost_base: DEFAULT_COST_BASE, cost_bonus: 5, nodes: [], effects: [], presets: [] })
+const emptyReforge = (): ReforgeData => ({
+  nodes: [],
+  stages: REFORGE_STAGES.map(stage => ({ stage, intensify: [], materials: [] })),
+  presets: [],
+})
 
 /**
  * แผง Reforge ของตัวละครหนึ่งตัว — แก้เป็นร่างในเครื่องก่อน แล้วกด "บันทึก Reforge" ครั้งเดียว
@@ -32,7 +35,8 @@ export function ReforgePanel({ characterId, characterName }: { characterId: stri
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
 
-  const [nodeModal, setNodeModal] = useState<{ open: boolean; editing: ReforgeNode | null }>({ open: false, editing: null })
+  // เปิดอยู่ = มี slot; editing = null คือเพิ่มโหนดใหม่ในช่องนั้น
+  const [nodeModal, setNodeModal] = useState<{ slot: ReforgeSlotId; editing: ReforgeNode | null } | null>(null)
   const [jsonOpen, setJsonOpen] = useState(false)
   const [jsonText, setJsonText] = useState('')
 
@@ -82,9 +86,10 @@ export function ReforgePanel({ characterId, characterName }: { characterId: stri
     if (problems.length > 0) { toast('ยังบันทึกไม่ได้ — ดูรายการปัญหาด้านบน', 'error'); return }
     // ไม่มีทั้งโหนดและ EX = ไม่มี Reforge → เก็บเป็น null เพื่อซ่อนแท็บ
     const empty = draft.nodes.length === 0 && !draft.ex_anchor
-    // Effect / ชุดแนะนำที่ไม่มีโหนดรองรับจะหายไปด้วย — ต้องถามก่อน ไม่ลบเงียบ ๆ
-    if (empty && (draft.effects.length > 0 || draft.presets.length > 0)
-      && !confirm('ยังไม่มีโหนดและ EX — บันทึกตอนนี้จะลบ Reforge ของตัวละครนี้ทั้งหมด รวม Reforge Effect และ Recommended Set ด้วย ต้องการบันทึกไหม?')) {
+    // ข้อมูลราย Stage / ชุดแนะนำที่ไม่มีโหนดรองรับจะหายไปด้วย — ต้องถามก่อน ไม่ลบเงียบ ๆ
+    const hasStageData = draft.stages.some(s => s.intensify.length > 0 || s.materials.length > 0)
+    if (empty && (hasStageData || draft.presets.length > 0)
+      && !confirm('ยังไม่มีโหนดและ EX — บันทึกตอนนี้จะลบ Reforge ของตัวละครนี้ทั้งหมด รวมข้อมูลราย Stage และ Recommended Set ด้วย ต้องการบันทึกไหม?')) {
       return
     }
     if (await persist(empty ? null : draft, 'แก้ไข Reforge')) {
@@ -105,14 +110,14 @@ export function ReforgePanel({ characterId, characterName }: { characterId: stri
     if (!draft) return
     const exists = draft.nodes.some(n => n.id === node.id)
     edit({ ...draft, nodes: exists ? draft.nodes.map(n => (n.id === node.id ? node : n)) : [...draft.nodes, node] })
-    setNodeModal({ open: false, editing: null })
+    setNodeModal(null)
   }
 
   const deleteNode = (id: string) => {
     if (!draft) return
     edit({
       ...draft,
-      nodes: draft.nodes.filter(n => n.id !== id).map(n => (n.linked_to === id ? { ...n, linked_to: undefined } : n)),
+      nodes: draft.nodes.filter(n => n.id !== id),
       presets: draft.presets.map(p => ({ ...p, node_ids: p.node_ids.filter(x => x !== id) })),
     })
     setPreviewIds(prev => prev.filter(x => x !== id))
@@ -134,12 +139,11 @@ export function ReforgePanel({ characterId, characterName }: { characterId: stri
       return Array.isArray(list) ? list.length : 0
     }
     const dropped = (count('nodes') - parsed.nodes.length)
-      + (count('effects') - parsed.effects.length)
       + (count('presets') - parsed.presets.length)
     edit(parsed)
     setJsonOpen(false)
     if (dropped > 0) {
-      toast(`นำเข้าแล้ว แต่ข้ามไป ${dropped} รายการที่ข้อมูลไม่ครบ (เช่น stage/row/cost ผิดชนิด) — ตรวจก่อนบันทึก`, 'error')
+      toast(`นำเข้าแล้ว แต่ข้ามไป ${dropped} รายการที่ข้อมูลไม่ครบ (เช่น slot ไม่ถูกต้อง หรือ cost ไม่ใช่ตัวเลข) — ตรวจก่อนบันทึก`, 'error')
     } else {
       toast('นำเข้าร่างแล้ว — อย่าลืมกดบันทึก', 'info')
     }
@@ -156,19 +160,11 @@ export function ReforgePanel({ characterId, characterName }: { characterId: stri
     )
   }
 
-  const stages = [...new Set(draft.nodes.map(n => n.stage))].sort((a, b) => a - b)
-  const nextStage = stages.length > 0 ? stages[stages.length - 1] : 1
-
   return (
     <div className="space-y-4">
-      {/* ── หัว: COST + ปุ่มบันทึก ── */}
+      {/* ── หัว: ปุ่มบันทึก (COST เป็นค่าคงที่ของระบบ 21(+5)) ── */}
       <Card className="flex flex-wrap items-end gap-3 p-4">
-        <div className="w-24">
-          <Input label="COST ฐาน" type="number" min="0" value={draft.cost_base} onChange={e => edit({ ...draft, cost_base: parseInt(e.target.value) || 0 })} />
-        </div>
-        <div className="w-24">
-          <Input label="COST โบนัส" type="number" min="0" value={draft.cost_bonus} onChange={e => edit({ ...draft, cost_bonus: parseInt(e.target.value) || 0 })} />
-        </div>
+        <p className="text-xs text-ptn-disabled">เพดาน COST 21(+5) เป็นค่าคงที่ของระบบ เหมือนกันทุกตัวละคร</p>
         <div className="ml-auto flex flex-wrap gap-2">
           <Button size="sm" variant="ghost" onClick={() => { setJsonText(JSON.stringify(draft, null, 2)); setJsonOpen(true) }}>
             <Braces size={14} /> JSON
@@ -187,41 +183,14 @@ export function ReforgePanel({ characterId, characterName }: { characterId: stri
         )}
       </Card>
 
-      {/* ── รายการโหนด ── */}
-      <Card className="p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-heading text-base font-bold text-ptn-text">โหนด ({draft.nodes.length})</h3>
-          <Button size="sm" onClick={() => setNodeModal({ open: true, editing: null })}><Plus size={13} /> เพิ่มโหนด</Button>
-        </div>
-        {draft.nodes.length === 0 && <p className="text-sm text-ptn-disabled">ยังไม่มีโหนด</p>}
-        <div className="space-y-3">
-          {stages.map(stage => (
-            <div key={stage}>
-              <p className="mb-1 font-heading text-xs font-bold tracking-widest text-ptn-muted">STAGE {stage}</p>
-              <div className="divide-y divide-ptn-border/50 rounded border border-ptn-border">
-                {draft.nodes
-                  .filter(n => n.stage === stage)
-                  .sort((a, b) => (a.row === b.row ? a.col - b.col : a.row === 'top' ? -1 : 1))
-                  .map(n => (
-                    <div key={n.id} className="flex items-center gap-3 px-3 py-2 text-sm">
-                      <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: nodeRingColor(n) }} />
-                      <span className="flex-1 text-ptn-text">
-                        {n.name}
-                        {n.choice_group && <span className="ml-2 text-xs text-rose-300">Choice: {n.choice_group}</span>}
-                      </span>
-                      <span className="text-xs text-ptn-disabled">{n.row === 'top' ? 'บน' : 'ล่าง'} · คอลัมน์ {n.col}</span>
-                      <span className="w-6 text-center font-heading font-bold text-amber-400">{n.cost}</span>
-                      <Button size="sm" variant="ghost" onClick={() => setNodeModal({ open: true, editing: n })} aria-label="แก้ไข"><Edit2 size={13} /></Button>
-                      <Button size="sm" variant="danger" onClick={() => deleteNode(n.id)} aria-label="ลบ"><Trash2 size={13} /></Button>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+      <ReforgeSlotGrid
+        nodes={draft.nodes}
+        onAdd={slot => setNodeModal({ slot, editing: null })}
+        onEdit={n => setNodeModal({ slot: n.slot, editing: n })}
+        onDelete={deleteNode}
+      />
 
-      <EffectsEditor data={draft} onChange={edit} />
+      <StagesEditor data={draft} onChange={edit} />
       <ExAnchorEditor data={draft} onChange={edit} />
       <PresetsEditor data={draft} onChange={edit} />
 
@@ -229,9 +198,9 @@ export function ReforgePanel({ characterId, characterName }: { characterId: stri
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="font-heading text-base font-bold text-ptn-text">พรีวิว (ร่างปัจจุบัน)</h3>
-          <CostMeter used={totalCost(draft, previewIds)} base={draft.cost_base} bonus={draft.cost_bonus} />
+          <CostMeter used={totalCost(draft, previewIds)} />
         </div>
-        {draft.nodes.length > 0 || draft.effects.length > 0 ? (
+        {draft.nodes.length > 0 ? (
           <ReforgeTree
             data={draft}
             activeIds={previewIds}
@@ -248,12 +217,11 @@ export function ReforgePanel({ characterId, characterName }: { characterId: stri
         <p className="text-[11px] text-ptn-disabled">คลิกโหนดในพรีวิวเพื่อเปิด/ปิด (ไม่บันทึก)</p>
       </div>
 
-      {nodeModal.open && (
+      {nodeModal && (
         <ReforgeNodeModal
           editing={nodeModal.editing}
-          defaultStage={nextStage}
-          allNodes={draft.nodes}
-          onClose={() => setNodeModal({ open: false, editing: null })}
+          slot={nodeModal.slot}
+          onClose={() => setNodeModal(null)}
           onSave={saveNode}
         />
       )}

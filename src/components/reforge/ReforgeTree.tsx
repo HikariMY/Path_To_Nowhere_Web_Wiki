@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react'
-import { ArrowLeftRight, ChevronsUp, Dna, Triangle } from 'lucide-react'
+import { ArrowLeftRight, Dna, Triangle } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import type { ReforgeData, ReforgeEffect, ReforgeNode } from '../../types/models'
+import { EX_SLOT_STAGE, REFORGE_SLOTS, REFORGE_STAGES, STAGE_ORBS, type ReforgeOrb, type ReforgeSlotDef } from '../../lib/reforge'
+import type { ReforgeData, ReforgeNode } from '../../types/models'
 import { ReforgeNodeButton } from './ReforgeNodeButton'
-import { EFFECT_LABEL, REFORGE_RED, stageLabel } from './reforgeStyle'
+import { ORB_LABEL, REFORGE_RED, stageLabel } from './reforgeStyle'
 
 export type ReforgeSelection =
   | { kind: 'node'; id: string }
-  | { kind: 'effect'; id: string }
+  | { kind: 'orb'; stage: number; orb: ReforgeOrb }
+  | { kind: 'stage'; stage: number }
   | { kind: 'ex' }
   | null
 
@@ -17,18 +19,19 @@ interface TreeProps {
   selection: ReforgeSelection
   onSelect: (s: ReforgeSelection) => void
   onToggle: (nodeId: string) => void
-  /** ช่อง Overlimit (EX) ต่อท้ายต้นไม้ — ไม่ส่งมา = ไม่แสดง */
+  /** ปุ่มช่อง EX (Stage 3 ล่างขวา) — ไม่ส่งมา = เว้นช่องว่าง */
   exSlot?: ReactNode
 }
 
-const EFFECT_ICON = { intensify: Dna, leap: ChevronsUp, cost: Triangle } as const
+const ORB_ICON = { intensify: Dna, leap: Triangle } as const
 
-/** ต้นไม้ Reforge แนวนอน: หนึ่งคอลัมน์ต่อ Stage, แถวบน/ล่าง, เส้นเรืองแสงพาดกลาง — เลื่อนซ้ายขวาได้บนจอแคบ */
+/**
+ * ต้นไม้ Reforge ตาม layout ตายตัวของเกม: 4 Stage, แถวบน/ล่าง, ช่องซ้าย ─ ขวา,
+ * วงรางวัลมุมขวาบน, ช่อง EX ที่ Stage 3 ล่างขวา — เลื่อนซ้ายขวาได้บนจอแคบ
+ */
 export function ReforgeTree({ data, activeIds, selection, onSelect, onToggle, exSlot }: TreeProps) {
-  const stages = [...new Set([...data.nodes.map(n => n.stage), ...data.effects.map(e => e.stage)])].sort((a, b) => a - b)
   const active = new Set(activeIds)
-
-  const rowProps = { active, selection, onSelect, onToggle }
+  const rowProps = { data, active, selection, onSelect, onToggle }
 
   return (
     <div className="relative overflow-hidden rounded-lg border border-ptn-border bg-[radial-gradient(ellipse_at_center,rgba(190,18,60,0.35)_0%,rgba(10,10,15,1)_75%)]">
@@ -40,137 +43,142 @@ export function ReforgeTree({ data, activeIds, selection, onSelect, onToggle, ex
       />
 
       <div className="relative flex snap-x snap-mandatory overflow-x-auto">
-        {stages.map(stage => (
+        {REFORGE_STAGES.map(stage => (
           <section
             key={stage}
             aria-label={stageLabel(stage)}
-            className="relative flex min-w-[17rem] shrink-0 snap-start flex-col justify-between gap-6 border-r border-white/5 px-4 py-5 last:border-r-0"
+            className="relative flex min-w-[17rem] shrink-0 snap-start flex-col justify-between gap-4 border-r border-white/5 px-4 py-5 last:border-r-0"
           >
-            <StageRow
-              nodes={data.nodes.filter(n => n.stage === stage && n.row === 'top')}
-              effects={data.effects.filter(e => e.stage === stage)}
-              position="top"
-              {...rowProps}
+            <StageRow stage={stage} row="top" {...rowProps} />
+            <StageMarker
+              stage={stage}
+              selected={selection?.kind === 'stage' && selection.stage === stage}
+              onClick={() => onSelect({ kind: 'stage', stage })}
             />
-            <StageMarker stage={stage} />
-            <StageRow
-              nodes={data.nodes.filter(n => n.stage === stage && n.row === 'bottom')}
-              effects={[]}
-              position="bottom"
-              {...rowProps}
-            />
+            <StageRow stage={stage} row="bottom" exSlot={stage === EX_SLOT_STAGE ? exSlot : undefined} {...rowProps} />
             <p className="text-center font-heading text-xs font-bold tracking-[0.2em] text-white/30">{stageLabel(stage)}</p>
           </section>
         ))}
-
-        {exSlot && (
-          <section aria-label="Overlimit Anchor" className="flex min-w-[12rem] shrink-0 snap-start flex-col items-center justify-center gap-3 px-4 py-5">
-            {exSlot}
-            <p className="font-heading text-xs font-bold tracking-[0.2em] text-white/30">OVERLIMIT</p>
-          </section>
-        )}
       </div>
     </div>
   )
 }
 
-// ---- Stage marker (ขีดตามเลข stage แบบในเกม) -----------------------------
+// ---- ส่วนกลาง (กรงเล็บ) — กดดูวัสดุปลดและ COST limit ------------------------
 
-function StageMarker({ stage }: { stage: number }) {
+function StageMarker({ stage, selected, onClick }: { stage: number; selected: boolean; onClick: () => void }) {
   return (
-    <div aria-hidden className="flex h-10 items-center justify-center gap-1">
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`${stageLabel(stage)} — ดูวัสดุปลดและ COST limit`}
+      className={cn(
+        'mx-auto flex h-14 w-14 items-center justify-center gap-1 rounded-full border border-rose-300/20 bg-black/30 transition-transform',
+        'hover:border-rose-300/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ptn-cyan',
+        selected && 'scale-110 border-rose-300/60',
+      )}
+    >
       {Array.from({ length: stage }, (_, i) => (
-        <span key={i} className="h-8 w-[3px] rounded-full bg-white shadow-[0_0_8px_#fb7185]" />
+        <span key={i} aria-hidden className="h-8 w-[3px] rounded-full bg-white shadow-[0_0_8px_#fb7185]" />
       ))}
-    </div>
+    </button>
   )
 }
 
 // ---- แถวบน/ล่าง ------------------------------------------------------------
 
 interface RowProps {
-  nodes: ReforgeNode[]
-  effects: ReforgeEffect[]
-  position: 'top' | 'bottom'
+  data: ReforgeData
+  stage: number
+  row: 'top' | 'bottom'
   active: Set<string>
   selection: ReforgeSelection
   onSelect: (s: ReforgeSelection) => void
   onToggle: (nodeId: string) => void
+  exSlot?: ReactNode
 }
 
-/** จัดโหนดเป็นช่องตาม col — ช่องที่มีหลายโหนดคือคู่ Choice ซ้อนบน-ล่าง */
-function groupSlots(nodes: ReforgeNode[]): ReforgeNode[][] {
-  const byCol = new Map<number, ReforgeNode[]>()
-  for (const n of nodes) byCol.set(n.col, [...(byCol.get(n.col) ?? []), n])
-  return [...byCol.entries()].sort(([a], [b]) => a - b).map(([, slot]) => slot)
-}
+function StageRow({ data, stage, row, active, selection, onSelect, onToggle, exSlot }: RowProps) {
+  const slots = REFORGE_SLOTS.filter(s => s.stage === stage && s.row === row)
+  const nodesIn = (def: ReforgeSlotDef) => data.nodes.filter(n => n.slot === def.id)
+  const orbs = row === 'top' ? STAGE_ORBS[stage] ?? [] : []
 
-const slotsLinked = (a: ReforgeNode[], b: ReforgeNode[]) =>
-  a.some(x => b.some(y => x.linked_to === y.id || y.linked_to === x.id))
+  const [left, right] = [slots.find(s => s.side === 'a'), slots.find(s => s.side === 'b')]
+  const leftNodes = left ? nodesIn(left) : []
+  const rightNodes = right ? nodesIn(right) : []
+  const hasRight = rightNodes.length > 0 || !!exSlot
+  const linked = leftNodes.length > 0 && rightNodes.length > 0
 
-function StageRow({ nodes, effects, position, active, selection, onSelect, onToggle }: RowProps) {
-  const slots = groupSlots(nodes)
-  const isSelected = (kind: 'node' | 'effect', id: string) =>
-    selection?.kind === kind && selection.id === id
+  const cell = (nodes: ReforgeNode[]) => (
+    <SlotCell nodes={nodes} row={row} active={active} selection={selection} onSelect={onSelect} onToggle={onToggle} />
+  )
 
   return (
-    <div className="flex min-h-[6.5rem] items-center justify-center">
-      {slots.map((slot, i) => (
-        <div key={slot[0].id} className="flex items-center">
-          {i > 0 && (
-            <span
-              aria-hidden
-              className={cn('h-[2px] w-6 sm:w-8', slotsLinked(slots[i - 1], slot) ? 'bg-rose-300/70' : 'bg-transparent')}
-            />
-          )}
-          {slot.length === 1 ? (
-            <ReforgeNodeButton
-              node={slot[0]}
-              active={active.has(slot[0].id)}
-              selected={isSelected('node', slot[0].id)}
-              onSelect={() => onSelect({ kind: 'node', id: slot[0].id })}
-              onToggle={() => onToggle(slot[0].id)}
-              labelPosition={position === 'top' ? 'top' : 'bottom'}
-            />
-          ) : (
-            <div className="flex flex-col items-center gap-1">
-              {slot.map((n, j) => (
-                <div key={n.id} className="flex flex-col items-center">
-                  {j > 0 && <ArrowLeftRight aria-label="เลือกได้ 1" size={14} className="my-0.5 rotate-90 text-rose-300" />}
-                  <ReforgeNodeButton
-                    node={n}
-                    active={active.has(n.id)}
-                    selected={isSelected('node', n.id)}
-                    onSelect={() => onSelect({ kind: 'node', id: n.id })}
-                    onToggle={() => onToggle(n.id)}
-                    labelPosition={j === 0 ? 'top' : 'bottom'}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+    <div className="flex min-h-[6.5rem] items-center">
+      {left && cell(leftNodes)}
+      {hasRight && (
+        <span aria-hidden className={cn('h-[2px] w-6 sm:w-8', linked ? 'bg-rose-300/70' : 'bg-transparent')} />
+      )}
+      {right && rightNodes.length > 0 && cell(rightNodes)}
+      {exSlot}
 
-      {effects.map(e => {
-        const Icon = EFFECT_ICON[e.type]
+      {orbs.map(orb => {
+        const Icon = ORB_ICON[orb]
+        const isSel = selection?.kind === 'orb' && selection.stage === stage && selection.orb === orb
         return (
           <button
-            key={e.id}
+            key={orb}
             type="button"
-            onClick={() => onSelect({ kind: 'effect', id: e.id })}
-            aria-label={`${EFFECT_LABEL[e.type]} (ปลดแล้ว)`}
+            onClick={() => onSelect({ kind: 'orb', stage, orb })}
+            aria-label={`${ORB_LABEL[orb]} (ปลดแล้ว)`}
             className={cn(
-              'ml-4 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-rose-200/40 text-white transition-transform',
+              'ml-4 flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-full border border-rose-200/40 text-white transition-transform',
               'focus:outline-none focus-visible:ring-2 focus-visible:ring-ptn-cyan',
-              isSelected('effect', e.id) && 'scale-110',
+              isSel && 'scale-110',
             )}
             style={{ background: `radial-gradient(circle, #fb7185, ${REFORGE_RED})`, boxShadow: `0 0 12px ${REFORGE_RED}` }}
           >
-            <Icon size={16} />
+            <Icon size={orb === 'leap' ? 13 : 16} />
+            {orb === 'leap' && <span className="text-[7px] font-bold leading-none">COST</span>}
           </button>
         )
       })}
+    </div>
+  )
+}
+
+/** ช่องเดียว: ว่าง = เว้นที่ไว้ให้ตรงแนว, 1 โหนด = ปุ่มเดียว, 2 โหนด = คู่ Choice ซ้อนบน-ล่าง */
+function SlotCell({ nodes, row, active, selection, onSelect, onToggle }: {
+  nodes: ReforgeNode[]
+  row: 'top' | 'bottom'
+  active: Set<string>
+  selection: ReforgeSelection
+  onSelect: (s: ReforgeSelection) => void
+  onToggle: (nodeId: string) => void
+}) {
+  if (nodes.length === 0) return <span aria-hidden className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" />
+
+  const button = (n: ReforgeNode, labelPosition: 'top' | 'bottom') => (
+    <ReforgeNodeButton
+      node={n}
+      active={active.has(n.id)}
+      selected={selection?.kind === 'node' && selection.id === n.id}
+      onSelect={() => onSelect({ kind: 'node', id: n.id })}
+      onToggle={() => onToggle(n.id)}
+      labelPosition={labelPosition}
+    />
+  )
+
+  if (nodes.length === 1) return button(nodes[0], row === 'top' ? 'top' : 'bottom')
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      {nodes.map((n, j) => (
+        <div key={n.id} className="flex flex-col items-center">
+          {j > 0 && <ArrowLeftRight aria-label="เลือกได้ 1" size={14} className="my-0.5 rotate-90 text-rose-300" />}
+          {button(n, j === 0 ? 'top' : 'bottom')}
+        </div>
+      ))}
     </div>
   )
 }

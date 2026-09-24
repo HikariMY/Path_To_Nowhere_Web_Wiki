@@ -1,10 +1,13 @@
 import type {
   ReforgeData,
-  ReforgeEffect,
   ReforgeExAnchor,
   ReforgeGuideBuild,
+  ReforgeMaterial,
   ReforgeNode,
+  ReforgeNodeCategory,
   ReforgePreset,
+  ReforgeSlotId,
+  ReforgeStageInfo,
   ReforgeStat,
 } from '../types/models'
 
@@ -12,23 +15,86 @@ import type {
 // Reforge — logic ล้วน ไม่แตะ React / Supabase
 // หน้าเว็บให้ผู้เล่นเปิด/ปิดโหนดได้อิสระเพื่อดูผลตอนปลดครบ:
 // ไม่บังคับลำดับ ไม่ล็อก stage และ COST เกินได้ (แค่เตือน)
-// ข้อบังคับเดียวคือ choice_group เปิดได้ทีละ 1
+// ข้อบังคับเดียวคือโหนดที่อยู่ช่องเดียวกัน (คู่ Choice) เปิดได้ทีละ 1
 // ============================================================
 
-export const DEFAULT_COST_BASE = 21
+// ---- layout ตายตัว เหมือนกันทุกตัวละคร ---------------------------------
+
+export const REFORGE_STAGES = [1, 2, 3, 4] as const
+
+export interface ReforgeSlotDef {
+  id: ReforgeSlotId
+  stage: number
+  row: 'top' | 'bottom'
+  side: 'a' | 'b'            // a = ซ้าย, b = ขวา (เส้นเชื่อม a ─ b ในแถวเดียวกัน)
+  category: ReforgeNodeCategory
+  defaultCost: number
+  allowChoice: boolean       // ใส่ได้ 2 โหนดเป็นคู่ Choice
+}
+
+const slot = (id: ReforgeSlotId, category: ReforgeNodeCategory, defaultCost: number): ReforgeSlotDef => {
+  const [s, row, side] = id.split('-')
+  return {
+    id,
+    stage: Number(s.slice(1)),
+    row: row === 'top' ? 'top' : 'bottom',
+    side: side === 'a' ? 'a' : 'b',
+    category,
+    defaultCost,
+    allowChoice: side === 'b',
+  }
+}
+
+// ตามภาพในเกม: S1 1─3 / 1─3, S2 2─5 / 2─5, S3 2 / 2 + ช่อง EX, S4 — / 5─3
+export const REFORGE_SLOTS: readonly ReforgeSlotDef[] = [
+  slot('s1-top-a', 'attribute', 1), slot('s1-top-b', 'special', 3),
+  slot('s1-bot-a', 'attribute', 1), slot('s1-bot-b', 'special', 3),
+  slot('s2-top-a', 'attribute', 2), slot('s2-top-b', 'special', 5),
+  slot('s2-bot-a', 'attribute', 2), slot('s2-bot-b', 'special', 5),
+  slot('s3-top-a', 'attribute', 2),
+  slot('s3-bot-a', 'attribute', 2),
+  slot('s4-bot-a', 'special', 5), slot('s4-bot-b', 'special', 3),
+]
+
+const SLOT_BY_ID = new Map(REFORGE_SLOTS.map(s => [s.id, s]))
+
+export function slotDef(id: ReforgeSlotId): ReforgeSlotDef {
+  const def = SLOT_BY_ID.get(id)
+  if (!def) throw new Error(`unknown reforge slot: ${id}`)
+  return def
+}
+
+export const isSlotId = (v: unknown): v is ReforgeSlotId => typeof v === 'string' && SLOT_BY_ID.has(v as ReforgeSlotId)
+
+export function nodeCategory(node: Pick<ReforgeNode, 'slot'>): ReforgeNodeCategory {
+  return slotDef(node.slot).category
+}
+
+// วงรางวัลของแต่ละ Stage: วง Intensify (DNA) ทุก Stage, วง COST (Leap) ใน Stage 3–4
+export type ReforgeOrb = 'intensify' | 'leap'
+export const STAGE_ORBS: Record<number, readonly ReforgeOrb[]> = {
+  1: ['intensify'],
+  2: ['intensify'],
+  3: ['leap', 'intensify'],
+  4: ['leap', 'intensify'],
+}
+
+// ช่อง EX อยู่ Stage 3 แถวล่างขวา
+export const EX_SLOT_STAGE = 3
+
+// ---- COST (ค่าคงที่ของระบบ เหมือนกันทุกตัวละคร) ------------------------
+
+// "COST limit can still be increased" เมื่อปลดถึง Stage I–IV
+export const STAGE_COST_CAPS = [4, 8, 12, 16] as const
+// วง COST สองวง (Stage 3–4) เพิ่มเพดานรวม +5 — ในเกมแสดงเป็น 21/21(+5)
+export const COST_LEAP_BONUS = 5
+export const COST_CAP = STAGE_COST_CAPS[STAGE_COST_CAPS.length - 1] + COST_LEAP_BONUS
+
+export const MAX_MATERIALS_PER_STAGE = 2
+
 const BUILD_SEPARATOR = '.'
 // id โหนดต้องไม่มีตัวคั่น build และใช้ใน URL ได้ตรง ๆ
 const NODE_ID_PATTERN = /^[A-Za-z0-9_-]+$/
-
-const NODE_CATEGORIES = new Set(['attribute', 'special'])
-const NODE_ROWS = new Set(['top', 'bottom'])
-const EFFECT_TYPES = new Set(['intensify', 'leap', 'cost'])
-
-// ---- COST ---------------------------------------------------
-
-export function costCap(data: ReforgeData): number {
-  return data.cost_base + data.cost_bonus
-}
 
 export function totalCost(data: ReforgeData, activeIds: readonly string[]): number {
   const active = new Set(activeIds)
@@ -36,43 +102,36 @@ export function totalCost(data: ReforgeData, activeIds: readonly string[]): numb
 }
 
 export function isOverCap(data: ReforgeData, activeIds: readonly string[]): boolean {
-  return totalCost(data, activeIds) > costCap(data)
+  return totalCost(data, activeIds) > COST_CAP
 }
 
 // ---- การเปิด/ปิดโหนด -----------------------------------------
 
-/** สลับสถานะโหนด — ถ้าอยู่ใน choice_group จะปิดตัวอื่นในกลุ่มให้เอง คืน array ใหม่เสมอ */
+/** สลับสถานะโหนด — ถ้าช่องเดียวกันมีอีกตัว (คู่ Choice) จะปิดให้เอง คืน array ใหม่เสมอ */
 export function toggleNode(data: ReforgeData, activeIds: readonly string[], nodeId: string): string[] {
   const target = data.nodes.find(n => n.id === nodeId)
   if (!target) return [...activeIds]
   if (activeIds.includes(nodeId)) return activeIds.filter(id => id !== nodeId)
 
-  const rivals = new Set(
-    target.choice_group
-      ? data.nodes.filter(n => n.choice_group === target.choice_group).map(n => n.id)
-      : [],
-  )
+  const rivals = new Set(data.nodes.filter(n => n.slot === target.slot).map(n => n.id))
   return [...activeIds.filter(id => !rivals.has(id)), nodeId]
 }
 
-/** เปิดทุกโหนด โดย choice_group เลือกตัวแรกของกลุ่ม */
+/** เปิดทุกโหนด โดยคู่ Choice เลือกตัวแรกของช่อง */
 export function activateAll(data: ReforgeData): string[] {
   return sanitizeBuild(data, data.nodes.map(n => n.id))
 }
 
-/** กรอง id ที่ไม่มีจริง / ซ้ำ / ชนกันใน choice_group — ตัวที่มาก่อนชนะ */
+/** กรอง id ที่ไม่มีจริง / ซ้ำ / ชนกันในช่องเดียวกัน — ตัวที่มาก่อนชนะ */
 export function sanitizeBuild(data: ReforgeData, ids: readonly string[]): string[] {
   const byId = new Map(data.nodes.map(n => [n.id, n]))
   const picked: string[] = []
-  const usedGroups = new Set<string>()
+  const usedSlots = new Set<ReforgeSlotId>()
 
   for (const id of ids) {
     const n = byId.get(id)
-    if (!n || picked.includes(id)) continue
-    if (n.choice_group) {
-      if (usedGroups.has(n.choice_group)) continue
-      usedGroups.add(n.choice_group)
-    }
+    if (!n || usedSlots.has(n.slot)) continue
+    usedSlots.add(n.slot)
     picked.push(id)
   }
   return picked
@@ -82,11 +141,11 @@ export function sanitizeBuild(data: ReforgeData, ids: readonly string[]): string
 
 const roundStat = (v: number) => Math.round(v * 1000) / 1000
 
-/** รวมสเตตัสจาก Reforge Effect (ปลดครบเสมอ) + โหนดที่เปิดอยู่ จัดกลุ่มตาม label + unit */
+/** รวมสเตตัสจากวง Intensify ทุก Stage (ปลดครบเสมอ) + โหนดที่เปิดอยู่ จัดกลุ่มตาม label + unit */
 export function sumStats(data: ReforgeData, activeIds: readonly string[]): ReforgeStat[] {
   const active = new Set(activeIds)
   const sources = [
-    ...data.effects.flatMap(e => e.stats),
+    ...data.stages.flatMap(s => s.intensify),
     ...data.nodes.filter(n => active.has(n.id)).flatMap(n => n.stats ?? []),
   ]
 
@@ -161,14 +220,16 @@ function isNode(v: unknown): v is ReforgeNode {
   return isRecord(v)
     && isStr(v.id) && v.id !== ''
     && isStr(v.name)
-    && NODE_CATEGORIES.has(v.category as string)
-    && isNum(v.cost) && isNum(v.stage) && isNum(v.col)
-    && NODE_ROWS.has(v.row as string)
+    && isSlotId(v.slot)
+    && isNum(v.cost)
 }
 
-function isEffect(v: unknown): v is ReforgeEffect {
-  return isRecord(v) && isStr(v.id) && isNum(v.stage)
-    && EFFECT_TYPES.has(v.type as string) && Array.isArray(v.stats)
+function isStat(v: unknown): v is ReforgeStat {
+  return isRecord(v) && isStr(v.label) && isNum(v.value) && (v.unit === 'percent' || v.unit === 'flat')
+}
+
+function isMaterial(v: unknown): v is ReforgeMaterial {
+  return isRecord(v) && isStr(v.name) && isNum(v.qty)
 }
 
 function isPreset(v: unknown): v is ReforgePreset {
@@ -180,6 +241,22 @@ function parseExAnchor(v: unknown): ReforgeExAnchor | undefined {
   return { ...(v as unknown as ReforgeExAnchor), exclusive_classes: asArray(v.exclusive_classes).filter(isStr) }
 }
 
+/** คืน Stage ครบ 1–4 เสมอ — Stage ที่ไม่มีข้อมูลได้ค่าว่าง */
+function parseStages(raw: unknown): ReforgeStageInfo[] {
+  const byStage = new Map<number, Record<string, unknown>>()
+  for (const s of asArray(raw)) {
+    if (isRecord(s) && isNum(s.stage)) byStage.set(s.stage, s)
+  }
+  return REFORGE_STAGES.map(stage => {
+    const s = byStage.get(stage)
+    return {
+      stage,
+      intensify: asArray(s?.intensify).filter(isStat),
+      materials: asArray(s?.materials).filter(isMaterial),
+    }
+  })
+}
+
 /** คืน null ถ้าตัวละครไม่มีข้อมูล Reforge ที่ใช้ได้ (ไม่มีทั้งโหนดและ EX) */
 export function parseReforge(raw: unknown): ReforgeData | null {
   if (!isRecord(raw) || !Array.isArray(raw.nodes)) return null
@@ -189,10 +266,8 @@ export function parseReforge(raw: unknown): ReforgeData | null {
   if (nodes.length === 0 && !exAnchor) return null
 
   return {
-    cost_base: isNum(raw.cost_base) ? raw.cost_base : DEFAULT_COST_BASE,
-    cost_bonus: isNum(raw.cost_bonus) ? raw.cost_bonus : 0,
     nodes,
-    effects: asArray(raw.effects).filter(isEffect),
+    stages: parseStages(raw.stages),
     presets: asArray(raw.presets).filter(isPreset),
     ...(exAnchor ? { ex_anchor: exAnchor } : {}),
   }
@@ -205,35 +280,29 @@ export function validateReforge(data: ReforgeData): string[] {
   const errors: string[] = []
   const ids = new Set(data.nodes.map(n => n.id))
 
-  if (data.cost_base < 0 || data.cost_bonus < 0) errors.push('COST ฐาน/โบนัส ต้องไม่ติดลบ')
-
   const seen = new Set<string>()
   for (const n of data.nodes) {
     if (seen.has(n.id)) errors.push(`id โหนดซ้ำ: ${n.id}`)
     seen.add(n.id)
     if (!NODE_ID_PATTERN.test(n.id)) errors.push(`id ของ "${n.name}" ใช้ได้แค่ a-z A-Z 0-9 _ - (id นี้อยู่ในลิงก์แชร์ build)`)
     if (n.cost < 0) errors.push(`COST ของ "${n.name}" ต้องไม่ติดลบ`)
-    if (n.stage < 1) errors.push(`Stage ของ "${n.name}" ต้องเริ่มที่ 1`)
-    if (n.linked_to && !ids.has(n.linked_to)) errors.push(`"${n.name}" เชื่อมไปโหนดที่ไม่มีอยู่`)
   }
 
-  const groupSizes = new Map<string, number>()
-  for (const n of data.nodes) {
-    if (n.choice_group) groupSizes.set(n.choice_group, (groupSizes.get(n.choice_group) ?? 0) + 1)
-  }
-  for (const [group, size] of groupSizes) {
-    if (size < 2) errors.push(`กลุ่ม Choice "${group}" ต้องมีอย่างน้อย 2 โหนด`)
-  }
-
-  // ช่องเดียวกันวางได้หลายโหนดเฉพาะเมื่ออยู่ใน choice_group เดียวกัน (คู่ Choice ซ้อนบน-ล่าง)
-  const slots = new Map<string, ReforgeNode>()
-  for (const n of data.nodes) {
-    const key = `${n.stage}-${n.row}-${n.col}`
-    const other = slots.get(key)
-    if (other && (!n.choice_group || other.choice_group !== n.choice_group)) {
-      errors.push(`"${other.name}" กับ "${n.name}" อยู่ตำแหน่งเดียวกัน (Stage ${n.stage}, ${n.row}, คอลัมน์ ${n.col})`)
+  for (const def of REFORGE_SLOTS) {
+    const count = data.nodes.filter(n => n.slot === def.id).length
+    const max = def.allowChoice ? 2 : 1
+    if (count > max) {
+      errors.push(`Stage ${def.stage} ช่อง${def.row === 'top' ? 'บน' : 'ล่าง'}${def.side === 'a' ? 'ซ้าย' : 'ขวา'} ใส่ได้ไม่เกิน ${max} โหนด`)
     }
-    if (!other) slots.set(key, n)
+  }
+
+  for (const s of data.stages) {
+    if (s.materials.length > MAX_MATERIALS_PER_STAGE) {
+      errors.push(`Stage ${s.stage} ใส่วัสดุได้ไม่เกิน ${MAX_MATERIALS_PER_STAGE} ชิ้น`)
+    }
+    if (s.materials.some(m => !m.name.trim() || m.qty <= 0)) {
+      errors.push(`Stage ${s.stage} มีวัสดุที่ไม่มีชื่อหรือจำนวนไม่ถึง 1`)
+    }
   }
 
   for (const p of data.presets) {
@@ -249,17 +318,19 @@ export interface ExAnchorOption {
   character_id: string
   character_name: string
   anchor: ReforgeExAnchor
+  /** คลาสตรงกับ exclusive_classes — ในเกมใส่ได้ทุกตัวอยู่แล้ว ใช้แสดงผลเท่านั้น */
+  matches_class: boolean
 }
 
-/** EX ทุกตัวที่ตัวละครคลาสนี้ใส่ได้ — exclusive_classes ว่าง = ใส่ได้ทุกคลาส */
-export function eligibleExAnchors(
+/** EX ทุกตัวในระบบ — ใส่ได้ทุกตัวเหมือนในเกม */
+export function listExAnchors(
   characters: readonly { id: string; name: string; reforge: unknown }[],
   jobClass: string,
 ): ExAnchorOption[] {
   return characters.flatMap(c => {
     const anchor = parseReforge(c.reforge)?.ex_anchor
     if (!anchor) return []
-    const open = anchor.exclusive_classes.length === 0 || anchor.exclusive_classes.includes(jobClass)
-    return open ? [{ character_id: c.id, character_name: c.name, anchor }] : []
+    const matches = anchor.exclusive_classes.length === 0 || anchor.exclusive_classes.includes(jobClass)
+    return [{ character_id: c.id, character_name: c.name, anchor, matches_class: matches }]
   })
 }

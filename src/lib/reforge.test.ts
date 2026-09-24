@@ -1,16 +1,21 @@
 import { describe, expect, test } from 'vitest'
-import type { ReforgeData, ReforgeNode } from '../types/models'
+import type { ReforgeData, ReforgeNode, ReforgeSlotId } from '../types/models'
 import {
+  COST_CAP,
+  COST_LEAP_BONUS,
+  REFORGE_SLOTS,
+  STAGE_COST_CAPS,
   activateAll,
-  costCap,
   decodeBuild,
-  eligibleExAnchors,
   encodeBuild,
   isOverCap,
+  listExAnchors,
   newReforgeId,
+  nodeCategory,
   parseGuideBuild,
   parseReforge,
   sanitizeBuild,
+  slotDef,
   sumStats,
   toGuideBuild,
   toggleNode,
@@ -18,50 +23,66 @@ import {
   validateReforge,
 } from './reforge'
 
-const node = (over: Partial<ReforgeNode> & Pick<ReforgeNode, 'id'>): ReforgeNode => ({
-  name: over.id,
-  category: 'attribute',
-  cost: 1,
-  stage: 1,
-  row: 'top',
-  col: 1,
-  ...over,
+const node = (id: string, slot: ReforgeSlotId, cost: number, over: Partial<ReforgeNode> = {}): ReforgeNode => ({
+  id, slot, name: id, cost, ...over,
 })
 
-// โครงย่อของ Coquelic จากภาพในเกม
+const emptyStages = () => [1, 2, 3, 4].map(stage => ({ stage, intensify: [], materials: [] }))
+
+// โครงของ Coquelic จากภาพในเกม
 const data: ReforgeData = {
-  cost_base: 21,
-  cost_bonus: 5,
   nodes: [
-    node({ id: 'hp', cost: 1, stats: [{ label: 'HP', value: 4.5, unit: 'percent' }] }),
-    node({ id: 'atk', cost: 1, row: 'bottom', stats: [{ label: 'Attack', value: 4.5, unit: 'percent' }] }),
-    node({ id: 'sword', category: 'special', cost: 3, row: 'bottom', col: 2 }),
-    node({ id: 'dance', category: 'special', cost: 5, stage: 2, row: 'bottom', col: 2, choice_group: 'ult' }),
-    node({ id: 'river', category: 'special', cost: 5, stage: 2, row: 'bottom', col: 2, choice_group: 'ult' }),
-    node({ id: 'glow', category: 'special', cost: 3, stage: 4, row: 'bottom', col: 2, choice_group: 'bloom' }),
-    node({ id: 'momentum', category: 'special', cost: 3, stage: 4, row: 'bottom', col: 2, choice_group: 'bloom' }),
+    node('hp', 's1-top-a', 1, { stats: [{ label: 'HP', value: 4.5, unit: 'percent' }] }),
+    node('sf', 's1-top-b', 3),
+    node('atk', 's1-bot-a', 1, { stats: [{ label: 'Attack', value: 4.5, unit: 'percent' }] }),
+    node('sword', 's1-bot-b', 3),
+    node('na', 's2-top-a', 2),
+    node('heal', 's2-bot-a', 2),
+    node('dance', 's2-bot-b', 5),
+    node('river', 's2-bot-b', 5),
+    node('core', 's3-top-a', 2),
+    node('aspd', 's3-bot-a', 2),
+    node('bab', 's4-bot-a', 5),
+    node('glow', 's4-bot-b', 3),
+    node('momentum', 's4-bot-b', 3),
   ],
-  effects: [
-    { id: 'e1', stage: 1, type: 'intensify', stats: [{ label: 'HP', value: 250, unit: 'flat' }, { label: 'Attack', value: 25, unit: 'flat' }] },
-    { id: 'e2', stage: 2, type: 'leap', stats: [] },
-    { id: 'e3', stage: 2, type: 'intensify', stats: [{ label: 'Attack', value: 25, unit: 'flat' }] },
+  stages: [
+    { stage: 1, intensify: [{ label: 'HP', value: 250, unit: 'flat' }, { label: 'Attack', value: 25, unit: 'flat' }], materials: [{ name: 'Core', qty: 3 }] },
+    { stage: 2, intensify: [{ label: 'Attack', value: 25, unit: 'flat' }], materials: [] },
+    { stage: 3, intensify: [], materials: [] },
+    { stage: 4, intensify: [], materials: [] },
   ],
   presets: [{ id: 'p1', name: 'แนะนำ', node_ids: ['atk', 'sword', 'river'] }],
 }
 
-describe('costCap / totalCost / isOverCap', () => {
-  test('cap is base plus bonus', () => {
-    expect(costCap(data)).toBe(26)
+describe('layout', () => {
+  test('has the twelve fixed node slots of the game', () => {
+    expect(REFORGE_SLOTS).toHaveLength(12)
+    expect(slotDef('s2-bot-b')).toMatchObject({ stage: 2, row: 'bottom', side: 'b', category: 'special', defaultCost: 5 })
+    expect(slotDef('s4-bot-a')).toMatchObject({ stage: 4, row: 'bottom', side: 'a', category: 'special', defaultCost: 5 })
+    expect(slotDef('s3-top-a')).toMatchObject({ stage: 3, category: 'attribute', defaultCost: 2 })
   })
 
+  test('derives a node category from its slot', () => {
+    expect(nodeCategory(node('x', 's1-top-a', 1))).toBe('attribute')
+    expect(nodeCategory(node('x', 's1-top-b', 3))).toBe('special')
+  })
+
+  test('cost cap is the stage IV limit plus the two COST orbs', () => {
+    expect(STAGE_COST_CAPS).toEqual([4, 8, 12, 16])
+    expect(COST_LEAP_BONUS).toBe(5)
+    expect(COST_CAP).toBe(21)
+  })
+})
+
+describe('totalCost / isOverCap', () => {
   test('sums cost of active nodes and ignores unknown ids', () => {
     expect(totalCost(data, ['atk', 'sword', 'river', 'ghost'])).toBe(9)
   })
 
-  test('flags builds above the cap without blocking them', () => {
-    const tight = { ...data, cost_base: 5, cost_bonus: 0 }
-    expect(isOverCap(tight, ['sword', 'river'])).toBe(true)
-    expect(isOverCap(tight, ['atk', 'sword'])).toBe(false)
+  test('flags builds above 21 without blocking them', () => {
+    expect(isOverCap(data, activateAll(data))).toBe(true)
+    expect(isOverCap(data, ['atk', 'sword', 'river'])).toBe(false)
   })
 })
 
@@ -74,7 +95,7 @@ describe('toggleNode', () => {
     expect(toggleNode(data, on, 'sword')).toEqual(['atk'])
   })
 
-  test('swaps the other member of a choice group', () => {
+  test('swaps the other node sharing the slot', () => {
     const withDance = toggleNode(data, ['atk'], 'dance')
     expect(toggleNode(data, withDance, 'river')).toEqual(['atk', 'river'])
   })
@@ -84,14 +105,18 @@ describe('toggleNode', () => {
   })
 })
 
-describe('activateAll', () => {
-  test('turns on every node but only the first of each choice group', () => {
-    expect(activateAll(data)).toEqual(['hp', 'atk', 'sword', 'dance', 'glow'])
+describe('activateAll / sanitizeBuild', () => {
+  test('turns on every node but only the first of each choice slot', () => {
+    expect(activateAll(data)).toEqual(['hp', 'sf', 'atk', 'sword', 'na', 'heal', 'dance', 'core', 'aspd', 'bab', 'glow'])
+  })
+
+  test('keeps real ids in order and resolves choice conflicts', () => {
+    expect(sanitizeBuild(data, ['river', 'ghost', 'atk', 'dance', 'atk'])).toEqual(['river', 'atk'])
   })
 })
 
 describe('sumStats', () => {
-  test('adds unlocked effects and active node stats by label and unit', () => {
+  test('adds stage intensify stats and active node stats by label and unit', () => {
     expect(sumStats(data, ['atk'])).toEqual([
       { label: 'HP', value: 250, unit: 'flat' },
       { label: 'Attack', value: 50, unit: 'flat' },
@@ -100,14 +125,15 @@ describe('sumStats', () => {
   })
 
   test('avoids float noise when adding decimals', () => {
-    const d = { ...data, effects: [], nodes: [node({ id: 'a', stats: [{ label: 'X', value: 0.1, unit: 'percent' }] }), node({ id: 'b', stats: [{ label: 'X', value: 0.2, unit: 'percent' }] })] }
+    const d = {
+      ...data,
+      stages: emptyStages(),
+      nodes: [
+        node('a', 's1-top-a', 1, { stats: [{ label: 'X', value: 0.1, unit: 'percent' }] }),
+        node('b', 's1-bot-a', 1, { stats: [{ label: 'X', value: 0.2, unit: 'percent' }] }),
+      ],
+    }
     expect(sumStats(d, ['a', 'b'])).toEqual([{ label: 'X', value: 0.3, unit: 'percent' }])
-  })
-})
-
-describe('sanitizeBuild', () => {
-  test('keeps real ids in order and resolves choice conflicts without a string round-trip', () => {
-    expect(sanitizeBuild(data, ['river', 'ghost', 'atk', 'dance', 'atk'])).toEqual(['river', 'atk'])
   })
 })
 
@@ -134,23 +160,30 @@ describe('parseReforge', () => {
     expect(parseReforge({ nodes: 'x' })).toBeNull()
   })
 
-  test('fills defaults for optional arrays and costs', () => {
-    expect(parseReforge({ nodes: [node({ id: 'a' })] })).toEqual({
-      cost_base: 21,
-      cost_bonus: 0,
-      nodes: [node({ id: 'a' })],
-      effects: [],
+  test('fills all four stages and optional arrays', () => {
+    expect(parseReforge({ nodes: [node('a', 's1-top-a', 1)] })).toEqual({
+      nodes: [node('a', 's1-top-a', 1)],
+      stages: emptyStages(),
       presets: [],
     })
   })
 
-  test('returns null when nodes is empty and no ex anchor', () => {
-    expect(parseReforge({ nodes: [] })).toBeNull()
+  test('keeps stage data by stage number and ignores unknown stages', () => {
+    const parsed = parseReforge({
+      nodes: [node('a', 's1-top-a', 1)],
+      stages: [
+        { stage: 2, intensify: [{ label: 'HP', value: 1, unit: 'flat' }], materials: [{ name: 'M', qty: 2 }] },
+        { stage: 9, intensify: [], materials: [] },
+      ],
+    })
+    expect(parsed?.stages[1]).toEqual({ stage: 2, intensify: [{ label: 'HP', value: 1, unit: 'flat' }], materials: [{ name: 'M', qty: 2 }] })
+    expect(parsed?.stages.map(s => s.stage)).toEqual([1, 2, 3, 4])
   })
 
-  test('drops nodes missing required fields', () => {
-    const parsed = parseReforge({ nodes: [node({ id: 'a' }), { id: 'b' }] })
-    expect(parsed?.nodes.map(n => n.id)).toEqual(['a'])
+  test('drops nodes without a known slot, such as the old free-position format', () => {
+    const legacy = { id: 'old', name: 'old', category: 'attribute', cost: 1, stage: 1, row: 'top', col: 1 }
+    expect(parseReforge({ nodes: [legacy] })).toBeNull()
+    expect(parseReforge({ nodes: [legacy, node('a', 's1-top-a', 1)] })?.nodes.map(n => n.id)).toEqual(['a'])
   })
 })
 
@@ -159,29 +192,25 @@ describe('validateReforge', () => {
     expect(validateReforge(data)).toEqual([])
   })
 
-  test('reports duplicate ids, bad numbers, lone choices, bad refs and position clashes', () => {
+  test('reports bad ids, costs, crowded slots, materials and preset refs', () => {
+    const stages = emptyStages()
+    stages[0] = { stage: 1, intensify: [], materials: [{ name: 'A', qty: 1 }, { name: 'B', qty: 1 }, { name: 'C', qty: 1 }] }
+    stages[1] = { stage: 2, intensify: [], materials: [{ name: 'D', qty: 0 }] }
     const bad: ReforgeData = {
-      ...data,
-      cost_base: -1,
       nodes: [
-        node({ id: 'a' }),
-        node({ id: 'a', col: 2 }),
-        node({ id: 'b', cost: -2, stage: 0, col: 3 }),
-        node({ id: 'c', col: 1, choice_group: 'solo', linked_to: 'zzz' }),
+        node('a', 's1-top-a', 1),
+        node('a', 's1-bot-a', 1),                 // duplicate id
+        node('b.c', 's1-top-b', -1),              // bad id + negative cost
+        node('d', 's1-top-a', 1),                 // second node in a left slot
+        node('e', 's2-bot-b', 5),
+        node('f', 's2-bot-b', 5),
+        node('g', 's2-bot-b', 5),                 // third node in a choice slot
       ],
+      stages,
       presets: [{ id: 'p', name: 'x', node_ids: ['nope'] }],
     }
-    // cost_base, duplicate id, cost, stage, lone choice, linked_to, preset ref, slot clash (a & c)
+    // duplicate id, bad id, negative cost, left slot >1, choice slot >2, 3 materials, qty 0, preset ref
     expect(validateReforge(bad)).toHaveLength(8)
-  })
-
-  test('rejects node ids that would break share links', () => {
-    const errors = validateReforge({ ...data, nodes: [node({ id: 'a.b' }), node({ id: '', col: 2 })], presets: [] })
-    expect(errors).toHaveLength(2)
-  })
-
-  test('allows members of one choice group to share a slot', () => {
-    expect(validateReforge({ ...data, nodes: data.nodes.filter(n => n.choice_group === 'ult'), presets: [] })).toEqual([])
   })
 })
 
@@ -221,17 +250,17 @@ describe('newReforgeId', () => {
   })
 })
 
-describe('eligibleExAnchors', () => {
+describe('listExAnchors', () => {
   const ex = (classes: string[]) => ({ name: 'EX', description: 'd', exclusive_classes: classes })
   const chars = [
-    { id: '1', name: 'Coquelic', reforge: { ...data, ex_anchor: ex(['Endura', 'Catalyst']) } },
+    { id: '1', name: 'Coquelic', reforge: { ...data, ex_anchor: ex(['guard', 'inclusion']) } },
     { id: '2', name: 'NOX', reforge: { ...data, ex_anchor: ex([]) } },
     { id: '3', name: 'Plain', reforge: data },
     { id: '4', name: 'None', reforge: null },
   ]
 
-  test('lists anchors open to every class or matching the job class', () => {
-    expect(eligibleExAnchors(chars, 'Endura').map(c => c.character_id)).toEqual(['1', '2'])
-    expect(eligibleExAnchors(chars, 'Striker').map(c => c.character_id)).toEqual(['2'])
+  test('lists every EX anchor, even for other classes, and marks which match', () => {
+    expect(listExAnchors(chars, 'guard').map(o => [o.character_id, o.matches_class])).toEqual([['1', true], ['2', true]])
+    expect(listExAnchors(chars, 'fury').map(o => [o.character_id, o.matches_class])).toEqual([['1', false], ['2', true]])
   })
 })

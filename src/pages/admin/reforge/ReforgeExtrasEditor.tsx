@@ -6,8 +6,9 @@ import { Textarea } from '../../../components/ui/Textarea'
 import { ImageUpload } from '../../../components/ui/ImageUpload'
 import { Card } from '../../../components/ui/Card'
 import { JOB_CLASS_LABEL } from '../../../lib/constants'
-import { newReforgeId } from '../../../lib/reforge'
-import type { ReforgeData, ReforgeEffect, ReforgeExAnchor, ReforgePreset } from '../../../types/models'
+import { MAX_MATERIALS_PER_STAGE, newReforgeId, slotDef } from '../../../lib/reforge'
+import type { ReforgeData, ReforgeExAnchor, ReforgeMaterial, ReforgePreset, ReforgeStageInfo } from '../../../types/models'
+import { ROMAN } from '../../../components/reforge/reforgeStyle'
 import { ReforgeStatsEditor } from './ReforgeStatsEditor'
 
 type Change = (next: ReforgeData) => void
@@ -26,46 +27,78 @@ function Section({ title, action, children }: { title: string; action?: ReactNod
   )
 }
 
-// ---- Reforge Effect (Intensify / Leap / COST) ------------------------------
+// ---- ข้อมูลราย Stage: วง Intensify + วัสดุปลด ------------------------------
 
-export function EffectsEditor({ data, onChange }: { data: ReforgeData; onChange: Change }) {
-  const update = (id: string, patch: Partial<ReforgeEffect>) =>
-    onChange({ ...data, effects: data.effects.map(e => (e.id === id ? { ...e, ...patch } : e)) })
-  const add = () =>
-    onChange({ ...data, effects: [...data.effects, { id: newReforgeId('e'), stage: 1, type: 'intensify', stats: [] }] })
+export function StagesEditor({ data, onChange }: { data: ReforgeData; onChange: Change }) {
+  const update = (stage: number, patch: Partial<ReforgeStageInfo>) =>
+    onChange({ ...data, stages: data.stages.map(s => (s.stage === stage ? { ...s, ...patch } : s)) })
+
+  const updateMaterial = (s: ReforgeStageInfo, i: number, patch: Partial<ReforgeMaterial>) =>
+    update(s.stage, { materials: s.materials.map((m, j) => (j === i ? { ...m, ...patch } : m)) })
 
   return (
-    <Section title="Reforge Effect" action={<Button size="sm" variant="secondary" onClick={add}><Plus size={13} /> เพิ่ม</Button>}>
-      {data.effects.length === 0 && <p className="text-sm text-ptn-disabled">ยังไม่มี — วงแดงรางวัลของแต่ละ Stage</p>}
-      <div className="space-y-3">
-        {data.effects.map(e => (
-          <div key={e.id} className="rounded border border-ptn-border p-3">
-            <div className="mb-2 flex items-center gap-2">
-              <select className={smallInput} value={e.type} onChange={ev => update(e.id, { type: ev.target.value as ReforgeEffect['type'] })} aria-label="ประเภท">
-                <option value="intensify">Intensify</option>
-                <option value="leap">Leap</option>
-                <option value="cost">COST</option>
-              </select>
-              <label className="flex items-center gap-1 text-xs text-ptn-muted">
-                Stage
-                <input
-                  type="number"
-                  min="1"
-                  className={`${smallInput} w-16`}
-                  value={e.stage}
-                  onChange={ev => update(e.id, { stage: parseInt(ev.target.value) || 1 })}
-                />
-              </label>
-              <button
-                type="button"
-                className="ml-auto p-1 text-ptn-muted hover:text-red-400"
-                onClick={() => onChange({ ...data, effects: data.effects.filter(x => x.id !== e.id) })}
-                aria-label="ลบ Reforge Effect"
-              >
-                <Trash2 size={14} />
-              </button>
+    <Section title="ข้อมูลราย Stage">
+      <p className="mb-3 text-xs text-ptn-disabled">
+        วง COST (Leap) กับเพดาน COST เป็นค่าคงที่ของระบบ ไม่ต้องกรอก — กรอกแค่สเตตัสวง Intensify และวัสดุปลด (ไม่เกิน {MAX_MATERIALS_PER_STAGE} ชิ้น)
+      </p>
+      <div className="grid gap-3 md:grid-cols-2">
+        {data.stages.map(s => (
+          <div key={s.stage} className="space-y-3 rounded border border-ptn-border p-3">
+            <p className="font-heading text-sm font-bold text-ptn-text">Stage {ROMAN[s.stage - 1]}</p>
+
+            <div>
+              <p className="mb-1 text-xs text-ptn-muted">วง Intensify</p>
+              <ReforgeStatsEditor stats={s.intensify} onChange={intensify => update(s.stage, { intensify })} />
             </div>
-            <ReforgeStatsEditor stats={e.stats} onChange={stats => update(e.id, { stats })} />
+
+            <div className="space-y-2">
+              <p className="text-xs text-ptn-muted">วัสดุที่ใช้ปลด</p>
+              {s.materials.map((m, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="w-14 shrink-0">
+                    <ImageUpload
+                      bucket="characters"
+                      currentUrl={m.icon_url || null}
+                      aspectRatio="square"
+                      onUpload={url => updateMaterial(s, i, { icon_url: url })}
+                    />
+                  </div>
+                  <input
+                    className={`${smallInput} min-w-0 flex-1`}
+                    value={m.name}
+                    onChange={e => updateMaterial(s, i, { name: e.target.value })}
+                    placeholder="ชื่อวัสดุ"
+                    aria-label="ชื่อวัสดุ"
+                  />
+                  <input
+                    className={`${smallInput} w-16`}
+                    type="number"
+                    min="1"
+                    value={m.qty}
+                    onChange={e => updateMaterial(s, i, { qty: parseInt(e.target.value) || 0 })}
+                    aria-label="จำนวน"
+                  />
+                  <button
+                    type="button"
+                    className="p-1 text-ptn-muted hover:text-red-400"
+                    onClick={() => update(s.stage, { materials: s.materials.filter((_, j) => j !== i) })}
+                    aria-label="ลบวัสดุ"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              {s.materials.length < MAX_MATERIALS_PER_STAGE && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => update(s.stage, { materials: [...s.materials, { name: '', qty: 1 }] })}
+                >
+                  <Plus size={13} /> เพิ่มวัสดุ
+                </Button>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -104,7 +137,7 @@ export function ExAnchorEditor({ data, onChange }: { data: ReforgeData; onChange
           <Textarea label="คำอธิบาย (อังกฤษ) *" rows={2} value={ex.description} onChange={e => set({ description: e.target.value })} />
           <Textarea label="คำอธิบาย (ไทย)" rows={2} value={ex.description_th ?? ''} onChange={e => set({ description_th: e.target.value || undefined })} />
           <div>
-            <p className="mb-1.5 text-sm font-medium text-ptn-muted">ใส่ได้เฉพาะคลาส (ไม่เลือก = ทุกคลาส)</p>
+            <p className="mb-1.5 text-sm font-medium text-ptn-muted">Exclusive to (แสดงเป็นข้อมูลเท่านั้น — ในเกมใส่ได้ทุกคลาส)</p>
             <div className="flex flex-wrap gap-2">
               {Object.entries(JOB_CLASS_LABEL).map(([key, label]) => (
                 <label key={key} className="flex items-center gap-1.5 text-sm text-ptn-text">
@@ -157,7 +190,7 @@ export function PresetsEditor({ data, onChange }: { data: ReforgeData; onChange:
                       node_ids: p.node_ids.includes(n.id) ? p.node_ids.filter(id => id !== n.id) : [...p.node_ids, n.id],
                     })}
                   />
-                  S{n.stage} · {n.name} <span className="text-amber-400">({n.cost})</span>
+                  S{slotDef(n.slot).stage} · {n.name} <span className="text-amber-400">({n.cost})</span>
                 </label>
               ))}
             </div>

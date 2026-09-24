@@ -41,7 +41,7 @@ export function GuideReforgePicker({ data, exOptions, nodes, ex, onChange }: {
             <RotateCcw size={13} /> ไม่แนบ build
           </Button>
         </div>
-        <CostMeter used={totalCost(data, nodes)} base={data.cost_base} bonus={data.cost_bonus} />
+        <CostMeter used={totalCost(data, nodes)} />
       </div>
 
       <ReforgeTree data={data} activeIds={nodes} selection={selection} onSelect={onSelect} onToggle={() => {}} />
