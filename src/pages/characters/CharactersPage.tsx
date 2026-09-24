@@ -91,7 +91,7 @@ const mk = (
 ): C => ({
   id, name, slug, rarity, faction, job_class,
   portrait_url: img, portrait_pos: null, portrait_zoom: null, splash_url: null,
-  overview, stats: null, skills: null, shackles: null,
+  overview, stats: null, skills: null, shackles: null, reforge: null,
   tags: [mbcc], ability_tags: null, trivia: null,
   crimebrand_sets: null, exclusive_crimebrand: null,
   char_details: null, overview_cards: null, materials: null,

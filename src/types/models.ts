@@ -66,6 +66,67 @@ export interface ShackleBreak {
   icon_url?: string
 }
 
+// ---- Reforge schema (characters.reforge jsonb) ----
+
+// ค่าที่นับรวมได้ เช่น Attack +4.5% หรือ HP +250 (label เดียวกัน + unit เดียวกัน = บวกรวมกัน)
+export interface ReforgeStat {
+  label: string
+  value: number
+  unit: 'percent' | 'flat'
+}
+
+export type ReforgeNodeCategory = 'attribute' | 'special'
+
+export interface ReforgeNode {
+  id: string
+  name: string
+  name_th?: string
+  category: ReforgeNodeCategory
+  cost: number
+  icon_url?: string
+  description?: string
+  description_th?: string
+  stats?: ReforgeStat[]
+  stage: number            // 1-based
+  row: 'top' | 'bottom'
+  col: number              // ตำแหน่งซ้าย→ขวาภายใน stage
+  choice_group?: string    // โหนดกลุ่มเดียวกันเปิดได้ทีละ 1
+  linked_to?: string       // เส้นเชื่อมไปโหนดนี้ — ตกแต่งอย่างเดียว ไม่บังคับลำดับ
+}
+
+// Intensify / Leap / COST — ปลดครบเสมอในหน้าเว็บ
+export interface ReforgeEffect {
+  id: string
+  stage: number
+  type: 'intensify' | 'leap' | 'cost'
+  stats: ReforgeStat[]
+}
+
+// Overlimit Anchor (EX) ของตัวละครนี้ — ตัวละครอื่นที่คลาสตรงยืมไปใช้ได้
+export interface ReforgeExAnchor {
+  name: string
+  name_th?: string
+  description: string
+  description_th?: string
+  icon_url?: string
+  exclusive_classes: string[]   // ว่าง = ทุกคลาส
+}
+
+export interface ReforgePreset {
+  id: string
+  name: string
+  node_ids: string[]
+}
+
+export interface ReforgeData {
+  cost_base: number    // 21
+  cost_bonus: number   // +5
+  nodes: ReforgeNode[]
+  effects: ReforgeEffect[]
+  ex_anchor?: ReforgeExAnchor
+  presets: ReforgePreset[]
+}
+
 // Tier list tiers schema
 export interface TierRow {
   label: string

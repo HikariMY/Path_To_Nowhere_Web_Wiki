@@ -71,6 +71,7 @@ create table public.characters (
   stats         jsonb,          -- CharacterStats: health/attack/defense/magic_resistance/attack_speed/block
   skills        jsonb,          -- CharacterSkill[]
   shackles      jsonb,          -- ShackleBreak[]
+  reforge       jsonb,          -- ReforgeData (null = ไม่มี Reforge) ดู supabase_migration_reforge.sql
   tags          text[],
   ability_tags  text[],         -- คีย์อ้างอิงตาราง game_info (category = 'tag')
   trivia        jsonb default '[]'::jsonb,   -- string[] รองรับ markdown

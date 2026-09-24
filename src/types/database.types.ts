@@ -66,6 +66,7 @@ export type CharacterRow = {
   stats: Json
   skills: Json
   shackles: Json
+  reforge: Json | null
   tags: string[] | null
   ability_tags: string[] | null
   trivia: Json
