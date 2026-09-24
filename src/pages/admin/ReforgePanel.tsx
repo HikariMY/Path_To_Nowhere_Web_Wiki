@@ -138,12 +138,21 @@ export function ReforgePanel({ characterId, characterName }: { characterId: stri
       const list = (raw as Record<string, unknown>)[key]
       return Array.isArray(list) ? list.length : 0
     }
+    // ข้อมูลราย Stage: นับสเตตัส + วัสดุของ Stage 1–4 ใน JSON เทียบกับที่อ่านได้
+    const rawStages = (raw as Record<string, unknown>).stages
+    const rawStageItems = (Array.isArray(rawStages) ? rawStages : []).reduce<number>((sum, s) => {
+      if (typeof s !== 'object' || s === null || !REFORGE_STAGES.includes((s as { stage?: unknown }).stage as 1)) return sum
+      const { intensify, materials } = s as { intensify?: unknown; materials?: unknown }
+      return sum + (Array.isArray(intensify) ? intensify.length : 0) + (Array.isArray(materials) ? materials.length : 0)
+    }, 0)
+    const parsedStageItems = parsed.stages.reduce((sum, s) => sum + s.intensify.length + s.materials.length, 0)
     const dropped = (count('nodes') - parsed.nodes.length)
       + (count('presets') - parsed.presets.length)
+      + (rawStageItems - parsedStageItems)
     edit(parsed)
     setJsonOpen(false)
     if (dropped > 0) {
-      toast(`นำเข้าแล้ว แต่ข้ามไป ${dropped} รายการที่ข้อมูลไม่ครบ (เช่น slot ไม่ถูกต้อง หรือ cost ไม่ใช่ตัวเลข) — ตรวจก่อนบันทึก`, 'error')
+      toast(`นำเข้าแล้ว แต่ข้ามไป ${dropped} รายการที่ข้อมูลไม่ครบ (เช่น slot ไม่ถูกต้อง หรือ cost/qty/value ไม่ใช่ตัวเลข) — ตรวจก่อนบันทึก`, 'error')
     } else {
       toast('นำเข้าร่างแล้ว — อย่าลืมกดบันทึก', 'info')
     }

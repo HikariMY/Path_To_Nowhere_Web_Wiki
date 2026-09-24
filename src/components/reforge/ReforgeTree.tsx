@@ -106,7 +106,8 @@ function StageRow({ data, stage, row, active, selection, onSelect, onToggle, exS
   const [left, right] = [slots.find(s => s.side === 'a'), slots.find(s => s.side === 'b')]
   const leftNodes = left ? nodesIn(left) : []
   const rightNodes = right ? nodesIn(right) : []
-  const hasRight = rightNodes.length > 0 || !!exSlot
+  // ช่องขวาเว้นที่ไว้เสมอเหมือนช่องซ้าย — ต้นไม้ที่ยังกรอกไม่ครบจะได้ไม่เบี้ยว
+  const hasRight = !!right || !!exSlot
   const linked = leftNodes.length > 0 && rightNodes.length > 0
 
   const cell = (nodes: ReforgeNode[]) => (
@@ -119,7 +120,7 @@ function StageRow({ data, stage, row, active, selection, onSelect, onToggle, exS
       {hasRight && (
         <span aria-hidden className={cn('h-[2px] w-6 sm:w-8', linked ? 'bg-rose-300/70' : 'bg-transparent')} />
       )}
-      {right && rightNodes.length > 0 && cell(rightNodes)}
+      {right && cell(rightNodes)}
       {exSlot}
 
       {orbs.map(orb => {
