@@ -12,7 +12,7 @@ const RARITIES = ['S', 'A', 'B', 'C'] as const
  * รายการตัวละครที่ยังไม่จัดอันดับ — ค้นหา/กรองได้, ติดขอบล่างจอ
  * กดการ์ดเพื่อเลือก (มือถือ) หรือลากไปวาง (จอกว้าง); ตอนเลือกตัวละครในแถวอยู่ กดพื้นที่นี้เพื่อเอาออก
  */
-export function CharacterPool({ characters, selected, onSelect, onDragStart, onDragEnd, onDropHere, total }: {
+export function CharacterPool({ characters, selected, onSelect, onDragStart, onDragEnd, onDropHere, total, selectedInTier = false }: {
   characters: Character[]
   selected: string | null
   onSelect: (id: string) => void
@@ -20,6 +20,8 @@ export function CharacterPool({ characters, selected, onSelect, onDragStart, onD
   onDragEnd: () => void
   onDropHere: () => void
   total: number
+  /** ตัวที่เลือกอยู่ในแถวแล้ว — แสดงปุ่มเอาออก (ใช้ได้ทั้งแตะและคีย์บอร์ด) */
+  selectedInTier?: boolean
 }) {
   const [query, setQuery] = useState('')
   const [rarity, setRarity] = useState('')
@@ -41,6 +43,15 @@ export function CharacterPool({ characters, selected, onSelect, onDragStart, onD
           <GripVertical size={14} className="text-ptn-muted" />
           ยังไม่จัดอันดับ ({filtering ? `${shown.length}/` : ''}{characters.length} จาก {total})
         </h2>
+        {selectedInTier && (
+          <button
+            type="button"
+            onClick={onDropHere}
+            className="rounded border border-red-500/40 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10"
+          >
+            เอาออกจากแถว
+          </button>
+        )}
         <label className="relative ml-auto min-w-[10rem] flex-1 sm:max-w-xs">
           <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ptn-muted" />
           <input
@@ -79,7 +90,7 @@ export function CharacterPool({ characters, selected, onSelect, onDragStart, onD
       </div>
 
       <div
-        className="flex max-h-[32vh] min-h-[88px] flex-wrap content-start gap-2 overflow-y-auto"
+        className="flex max-h-[22vh] min-h-[88px] sm:max-h-[32vh] flex-wrap content-start gap-2 overflow-y-auto"
         onClick={e => { if (e.target === e.currentTarget && selected) onDropHere() }}
       >
         {shown.map(c => (
