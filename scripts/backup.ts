@@ -8,7 +8,7 @@
 // ============================================================
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { BACKUP_BUCKET, BACKUP_TABLES, backupFileName, filesToPrune } from './backupPlan.ts'
+import { BACKUP_BUCKET, BACKUP_TABLES, backupFileName, filesToPrune, orderColumns } from './backupPlan.ts'
 
 const PAGE_SIZE = 1000
 
@@ -23,11 +23,11 @@ async function dumpTable(client: SupabaseClient, table: string): Promise<unknown
   // เลื่อนตามจำนวนแถวที่ได้จริง และหยุดเมื่อได้หน้าว่าง — ถ้า Max Rows ของ Supabase ถูกตั้งต่ำกว่า
   // PAGE_SIZE หน้าจะสั้นกว่าที่ขอ การเลื่อนทีละ PAGE_SIZE จะข้ามแถวไปเงียบ ๆ
   while (true) {
-    const { data, error } = await client
-      .from(table)
-      .select('*')
-      .order('id')
-      .range(rows.length, rows.length + PAGE_SIZE - 1)
+    const query = orderColumns(table).reduce(
+      (q, column) => q.order(column),
+      client.from(table).select('*'),
+    )
+    const { data, error } = await query.range(rows.length, rows.length + PAGE_SIZE - 1)
     if (error) throw new Error(`อ่านตาราง ${table} ไม่สำเร็จ: ${error.message}`)
     if (data.length === 0) return rows
     rows = rows.concat(data)

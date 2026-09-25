@@ -1,5 +1,16 @@
 import { describe, expect, test } from 'vitest'
-import { BACKUP_TABLES, KEEP_DAYS, backupFileName, filesToPrune } from './backupPlan.ts'
+import { BACKUP_TABLES, KEEP_DAYS, backupFileName, filesToPrune, orderColumns } from './backupPlan.ts'
+
+describe('orderColumns', () => {
+  test('pages game_info by its natural key because the live table has no id column', () => {
+    expect(orderColumns('game_info')).toEqual(['category', 'key'])
+  })
+
+  test('pages every other table by id', () => {
+    expect(orderColumns('characters')).toEqual(['id'])
+    expect(orderColumns('profiles')).toEqual(['id'])
+  })
+})
 
 describe('backupFileName', () => {
   test('names the file after the Thai calendar date', () => {

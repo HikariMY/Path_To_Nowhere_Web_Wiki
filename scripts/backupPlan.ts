@@ -20,6 +20,17 @@ export const BACKUP_TABLES = [
   'profiles',
 ] as const
 
+// คอลัมน์ที่ใช้เรียงตอนดึงทีละหน้า ต้องไม่ซ้ำกันทั้งตาราง
+// game_info บนฐานข้อมูลจริงไม่มีคอลัมน์ id (สร้างก่อนสคริปต์ใน repo) — แถวไม่ซ้ำกันด้วย (category, key)
+const ORDER_OVERRIDES: Partial<Record<string, readonly string[]>> = {
+  game_info: ['category', 'key'],
+}
+
+/** คอลัมน์เรียงลำดับของตาราง — ค่าเริ่มต้นคือ id */
+export function orderColumns(table: string): readonly string[] {
+  return ORDER_OVERRIDES[table] ?? ['id']
+}
+
 export const BACKUP_BUCKET = 'backups'
 
 /** เก็บ backup ย้อนหลังกี่วัน */
