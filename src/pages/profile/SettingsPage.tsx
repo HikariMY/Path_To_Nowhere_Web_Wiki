@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { ImageUpload } from '../../components/ui/ImageUpload'
 import { useToast } from '../../components/ui/Toast'
+import { LinkedAccountsCard } from '../../components/auth/LinkedAccountsCard'
 
 export function SettingsPage() {
   const { profile, user } = useAuth()
@@ -132,12 +133,17 @@ export function SettingsPage() {
         </Button>
       </Card>
 
+      <LinkedAccountsCard />
+
       {/* Password Settings */}
       <Card className="p-6">
-        <h2 className="font-heading text-lg font-semibold text-ptn-text mb-4 flex items-center gap-2">
+        <h2 className="font-heading text-lg font-semibold text-ptn-text mb-1 flex items-center gap-2">
           <Lock size={18} className="text-ptn-red" />
           เปลี่ยนรหัสผ่าน
         </h2>
+        <p className="text-xs text-ptn-muted mb-4">
+          สมัครผ่าน Discord/Google? ตั้งรหัสผ่านที่นี่เพื่อล็อกอินด้วยอีเมล {user.email} ได้ด้วย
+        </p>
 
         <div className="space-y-4 mb-5">
           <Input

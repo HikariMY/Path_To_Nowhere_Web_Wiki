@@ -5,13 +5,16 @@ import { useAuth } from '../../contexts/AuthContext'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { useToast } from '../../components/ui/Toast'
+import { SocialLoginButtons } from '../../components/auth/SocialLoginButtons'
+import { safeNextPath } from '../../lib/authRedirect'
 
 export function LoginPage() {
   const { signIn } = useAuth()
   const { toast } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/'
+  const fromLocation = (location.state as { from?: { pathname: string; search?: string } } | null)?.from
+  const from = fromLocation ? fromLocation.pathname + (fromLocation.search ?? '') : '/'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,7 +36,7 @@ export function LoginPage() {
       toast('อีเมลหรือรหัสผ่านไม่ถูกต้อง', 'error')
     } else {
       toast('เข้าสู่ระบบสำเร็จ!', 'success')
-      navigate(from, { replace: true })
+      navigate(safeNextPath(from), { replace: true })
     }
   }
 
@@ -76,6 +79,7 @@ export function LoginPage() {
               เข้าสู่ระบบ
             </Button>
           </form>
+          <SocialLoginButtons next={from} />
         </div>
 
         <p className="mt-4 text-center text-sm text-ptn-muted">

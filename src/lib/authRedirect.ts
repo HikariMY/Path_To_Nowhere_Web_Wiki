@@ -16,6 +16,22 @@ export function safeNextPath(next: string | null | undefined): string {
   return next
 }
 
+/** URL ที่แพลตฟอร์มส่งกลับมาหลังล็อกอิน — ต้องอยู่ในรายการ Redirect URLs ของ Supabase */
+export function authCallbackUrl(origin: string, next?: string | null, mode?: 'link'): string {
+  const url = `${origin}/auth/callback?next=${encodeURIComponent(safeNextPath(next))}`
+  return mode ? `${url}&mode=${mode}` : url
+}
+
+/** ข้อความ error ที่ Supabase/แพลตฟอร์มส่งกลับมา (อยู่ได้ทั้งใน query และ hash) — ไม่มีคืน null */
+export function callbackError(search: string, hash: string): string | null {
+  for (const raw of [search, hash]) {
+    const params = new URLSearchParams(raw.replace(/^[?#]/, ''))
+    const code = params.get('error')
+    if (code) return params.get('error_description') || code
+  }
+  return null
+}
+
 /** ยกเลิกการเชื่อมได้เมื่อยังเหลือวิธีล็อกอินอื่นอย่างน้อย 1 ทาง — ไม่งั้นผู้ใช้จะเข้าบัญชีไม่ได้อีก */
 export function canUnlinkIdentity(identities: readonly { provider: string }[]): boolean {
   return identities.length > 1
