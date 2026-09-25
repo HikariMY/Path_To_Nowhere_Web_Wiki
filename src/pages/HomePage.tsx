@@ -287,6 +287,27 @@ export function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* About — Google ใช้หน้าแรกตรวจว่าชื่อแอปและจุดประสงค์ตรงกับหน้าขอสิทธิ์ล็อกอิน */}
+      <section className="border-t border-ptn-border/20">
+        <div className="mx-auto max-w-7xl px-4 py-10">
+          <h2 className="font-heading text-xl font-bold text-ptn-text mb-3">เกี่ยวกับ Project Duck</h2>
+          <div className="max-w-3xl space-y-2 text-sm leading-relaxed text-ptn-muted">
+            <p>
+              Project Duck คือวิกิและเว็บไซต์ชุมชนภาษาไทยสำหรับแฟนเกม Path to Nowhere
+              รวบรวมข้อมูลตัวละคร สกิล Crimebrand และอีเวนต์ในเกม พร้อมเทียร์ลิสต์และฟอรัมให้ผู้เล่นพูดคุยแลกเปลี่ยนกัน
+              การเข้าสู่ระบบด้วยอีเมล Discord หรือ Google ใช้เพื่อระบุตัวตนเวลาโพสต์และแสดงโปรไฟล์เท่านั้น
+            </p>
+            <p lang="en">
+              Project Duck is a Thai fan-made wiki and community website for Path to Nowhere.
+              Signing in is only used to identify you when you post and to show your profile.
+            </p>
+            <p>
+              <Link to="/privacy" className="text-ptn-cyan hover:underline">นโยบายความเป็นส่วนตัว (Privacy Policy)</Link>
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

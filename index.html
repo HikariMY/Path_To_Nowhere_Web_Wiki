@@ -4,14 +4,39 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/web-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Project Duck - Community Website สำหรับเกม Path to Nowhere" />
+    <meta name="description" content="Project Duck คือวิกิและเว็บไซต์ชุมชนภาษาไทยสำหรับแฟนเกม Path to Nowhere — ข้อมูลตัวละคร สกิล Crimebrand อีเวนต์ เทียร์ลิสต์ และฟอรัม" />
+    <meta property="og:site_name" content="Project Duck" />
+    <meta property="og:title" content="Project Duck" />
+    <meta property="og:description" content="วิกิและเว็บไซต์ชุมชนภาษาไทยสำหรับแฟนเกม Path to Nowhere" />
+    <meta property="og:image" content="/web-logo.png" />
     <title>Project Duck - Community Website</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- เนื้อหาตั้งต้นสำหรับคนที่ปิด JavaScript และบอท (เช่นตัวตรวจ OAuth branding ของ Google) — React แทนที่ทั้งก้อนตอนโหลดเสร็จ -->
+      <main style="max-width:42rem;margin:0 auto;padding:3rem 1rem;font-family:Inter,system-ui,sans-serif;line-height:1.6;color:#e5e7eb;background:#0f0f14">
+        <h1>Project Duck</h1>
+        <p>
+          Project Duck คือวิกิและเว็บไซต์ชุมชนภาษาไทยสำหรับแฟนเกม Path to Nowhere
+          รวบรวมข้อมูลตัวละคร สกิล Crimebrand และอีเวนต์ในเกม พร้อมเทียร์ลิสต์และฟอรัมให้ผู้เล่นพูดคุยแลกเปลี่ยนกัน
+        </p>
+        <p>
+          Project Duck is a Thai fan-made wiki and community website for the game Path to Nowhere.
+          It collects character, skill, Crimebrand and event information, and lets players share tier lists and forum posts.
+          Signing in with an email, Discord or Google account is only used to identify you when you post and to show your profile.
+        </p>
+        <p>
+          <a href="/characters">ตัวละคร</a> ·
+          <a href="/tier-lists">เทียร์ลิสต์</a> ·
+          <a href="/forum">ฟอรัม</a> ·
+          <a href="/privacy">นโยบายความเป็นส่วนตัว (Privacy Policy)</a>
+        </p>
+        <p><small>Project Duck เป็นเว็บไซต์โดยแฟน ไม่เกี่ยวข้องกับ AISNO — a fan project, not affiliated with AISNO.</small></p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
