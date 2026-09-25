@@ -118,6 +118,11 @@ export function Navbar() {
                   </>
                 )}
               </div>
+            ) : user ? (
+              // ล็อกอินอยู่แต่ไม่มีแถวโปรไฟล์ (หรือยังโหลดไม่เสร็จ) — อย่าโชว์ปุ่มเข้าสู่ระบบให้เข้าใจผิด
+              <Button variant="ghost" size="sm" onClick={handleSignOut} title={user.email ?? undefined}>
+                <LogOut size={14} /> ออกจากระบบ
+              </Button>
             ) : (
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
