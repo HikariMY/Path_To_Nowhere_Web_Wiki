@@ -18,7 +18,20 @@ export const BACKUP_TABLES = [
   'forum_posts',
   'forum_replies',
   'profiles',
+  'favorite_characters',
+  'reports',
 ] as const
+
+/** ตารางใหม่ที่อาจยังไม่ได้รัน migration — ถ้าหาไม่เจอให้ข้ามได้ (ตารางหลักหาไม่เจอต้องล้มดัง ๆ) */
+const OPTIONAL_TABLES: ReadonlySet<string> = new Set(['favorite_characters', 'reports'])
+
+/**
+ * ข้ามตารางนี้ได้ไหม — เฉพาะตารางใน OPTIONAL_TABLES และเฉพาะ error "ไม่มีตาราง"
+ * PGRST205 = PostgREST หาตารางไม่เจอ, 42P01 = Postgres undefined_table
+ */
+export function canSkipMissingTable(table: string, error: { code?: string }): boolean {
+  return OPTIONAL_TABLES.has(table) && (error.code === 'PGRST205' || error.code === '42P01')
+}
 
 // คอลัมน์ที่ใช้เรียงตอนดึงทีละหน้า ต้องไม่ซ้ำกันทั้งตาราง
 // game_info บนฐานข้อมูลจริงไม่มีคอลัมน์ id (สร้างก่อนสคริปต์ใน repo) — แถวไม่ซ้ำกันด้วย (category, key)

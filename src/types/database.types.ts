@@ -280,6 +280,13 @@ export type ReportRow = {
   created_at: string
 }
 
+export type FavoriteCharacterRow = {
+  id: string
+  user_id: string
+  character_id: string
+  created_at: string
+}
+
 export type GameInfoRow = {
   id: string
   category: 'tag' | 'alignment' | 'tendency'
@@ -338,6 +345,11 @@ export interface Database {
       game_info: TableOf<GameInfoRow>
 
       // reports.resolved_by ก็เป็น FK ไป profiles แต่ไม่ประกาศไว้ — กัน `reporter:profiles(...)` กำกวม
+      favorite_characters: TableOf<FavoriteCharacterRow, [
+        FK<'favorite_characters_user_id_fkey', 'user_id', 'profiles'>,
+        FK<'favorite_characters_character_id_fkey', 'character_id', 'characters'>,
+      ]>
+
       reports: TableOf<ReportRow, [
         FK<'reports_reporter_id_fkey', 'reporter_id', 'profiles'>,
       ]>

@@ -1,5 +1,22 @@
 import { describe, expect, test } from 'vitest'
-import { BACKUP_TABLES, KEEP_DAYS, backupFileName, filesToPrune, orderColumns } from './backupPlan.ts'
+import { BACKUP_TABLES, KEEP_DAYS, backupFileName, canSkipMissingTable, filesToPrune, orderColumns } from './backupPlan.ts'
+
+describe('canSkipMissingTable', () => {
+  test('skips a newer table whose migration has not been run yet', () => {
+    expect(canSkipMissingTable('favorite_characters', { code: 'PGRST205' })).toBe(true)
+    expect(canSkipMissingTable('reports', { code: '42P01' })).toBe(true)
+  })
+
+  test('never skips a core table — a missing core table must fail the backup loudly', () => {
+    expect(canSkipMissingTable('characters', { code: 'PGRST205' })).toBe(false)
+    expect(canSkipMissingTable('profiles', { code: '42P01' })).toBe(false)
+  })
+
+  test('never skips other errors, even on optional tables', () => {
+    expect(canSkipMissingTable('favorite_characters', { code: '42703' })).toBe(false)
+    expect(canSkipMissingTable('reports', {})).toBe(false)
+  })
+})
 
 describe('orderColumns', () => {
   test('pages game_info by its natural key because the live table has no id column', () => {
@@ -36,7 +53,7 @@ describe('filesToPrune', () => {
 
 describe('BACKUP_TABLES', () => {
   test('covers the content tables and leaves out admin logs', () => {
-    for (const table of ['characters', 'crimebrands', 'events', 'tier_lists', 'profiles']) {
+    for (const table of ['characters', 'crimebrands', 'events', 'tier_lists', 'profiles', 'favorite_characters', 'reports']) {
       expect(BACKUP_TABLES).toContain(table)
     }
     expect(BACKUP_TABLES).not.toContain('admin_logs')

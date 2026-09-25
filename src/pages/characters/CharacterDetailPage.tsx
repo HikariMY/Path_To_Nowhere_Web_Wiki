@@ -12,6 +12,8 @@ import { RARITY_COLORS, JOB_CLASS_LABEL, ALIGNMENT_LABEL, ALIGNMENT_ICON, TENDEN
 import { formatDate } from '../../lib/utils'
 import { rangeCellSize, skillRanges } from '../../lib/skillRange'
 import { useAbilityTags } from '../../hooks/useAbilityTags'
+import { useFavorites } from '../../hooks/useFavorites'
+import { FavoriteButton } from '../../components/characters/FavoriteButton'
 import type { TagGroup } from '../../lib/abilityTags'
 import { Modal } from '../../components/ui/Modal'
 import { CharacterGuidesTab } from './CharacterGuidesTab'
@@ -534,6 +536,7 @@ const CB_PIECE_LABEL = ['I', 'II', 'III']
 export function CharacterDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const { groups: abilityTagGroups, descriptions: tagDescriptions } = useAbilityTags()
+  const favorites = useFavorites()
   const [character, setCharacter] = useState<Character | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchParams] = useSearchParams()
@@ -683,6 +686,12 @@ export function CharacterDetailPage() {
                   >
                     {character.name}
                   </h1>
+                  <FavoriteButton
+                    active={favorites.isFavorite(character.id)}
+                    onToggle={() => favorites.toggle(character.id)}
+                    size={20}
+                    className="text-ptn-muted hover:text-rose-400"
+                  />
                   {character.is_limited && (
                     <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded border border-ptn-gold/50 text-ptn-gold bg-ptn-gold/10 shrink-0">
                       <Star size={10} className="fill-ptn-gold" /> Limited
