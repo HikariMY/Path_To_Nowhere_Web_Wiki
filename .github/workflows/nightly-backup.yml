@@ -1,0 +1,38 @@
+# Backup ข้อมูลเว็บทุกคืน 02:00 เวลาไทย ไปที่ Supabase Storage bucket "backups" (ส่วนตัว)
+# ต้องตั้ง Secrets ก่อน: GitHub → Settings → Secrets and variables → Actions
+#   SUPABASE_URL               = https://<project-ref>.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY  = Supabase → Project Settings → API Keys → service_role (ห้ามเผยแพร่)
+# กดรันเองได้ที่แท็บ Actions → Nightly backup → Run workflow
+name: Nightly backup
+
+on:
+  schedule:
+    - cron: '0 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Back up tables to Supabase Storage
+        run: node scripts/backup.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
