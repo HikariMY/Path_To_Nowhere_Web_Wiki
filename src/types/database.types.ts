@@ -265,7 +265,11 @@ export type CharacterGuideVoteRow = {
 
 export type ReportRow = {
   id: string
-  reporter_id: string
+  /** null = AI เป็นคนติดธง (source = 'ai') */
+  reporter_id: string | null
+  source: 'user' | 'ai'
+  /** คะแนน Noul จาก TypeSafe ต่อหัวข้อ (เฉพาะ source = 'ai') */
+  ai_scores: Record<string, number> | null
   target_type: ReportTargetType
   target_id: string
   reason: ReportReason
