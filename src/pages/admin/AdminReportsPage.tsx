@@ -14,7 +14,8 @@ import {
 } from '../../lib/moderation'
 import type { ReportRow } from '../../types/database.types'
 
-type OpenReport = Pick<ReportRow, 'id' | 'target_type' | 'target_id' | 'reason' | 'detail' | 'created_at'> & {
+type OpenReport = Pick<ReportRow,
+  'id' | 'target_type' | 'target_id' | 'reason' | 'detail' | 'created_at' | 'source' | 'ai_scores'> & {
   reporter: { username: string } | null
 }
 
@@ -64,7 +65,7 @@ async function fetchPreviews(groups: readonly ReportGroup[]): Promise<Map<string
 async function loadOpenReports(): Promise<{ groups: ReportGroup<OpenReport>[]; previews: Map<string, TargetPreview> }> {
   const { data, error } = await supabase
     .from('reports')
-    .select('id, target_type, target_id, reason, detail, created_at, reporter:profiles(username)')
+    .select('id, target_type, target_id, reason, detail, created_at, source, ai_scores, reporter:profiles(username)')
     .eq('status', 'open')
     .order('created_at', { ascending: false })
     .limit(MAX_REPORTS)
@@ -138,6 +139,7 @@ export function AdminReportsPage() {
         <div className="space-y-3">
           {state.groups.map(group => {
             const preview = state.previews.get(group.key)
+            const aiReport = group.reports.find(r => r.source === 'ai')
             return (
               <Card key={group.key} className="p-4">
                 <div className="flex flex-wrap items-start gap-3">
@@ -145,6 +147,18 @@ export function AdminReportsPage() {
                     <div className="mb-1 flex flex-wrap items-center gap-2 text-xs">
                       <span className="rounded bg-ptn-elevated px-1.5 py-0.5 text-ptn-muted">{REPORT_TARGET_LABEL[group.target_type]}</span>
                       <span className="font-medium text-ptn-red">ถูกรายงาน {group.reports.length} ครั้ง</span>
+                      {aiReport && (
+                        <span
+                          className="rounded bg-ptn-purple/15 px-1.5 py-0.5 text-ptn-purple"
+                          title="TypeSafe ประเมินอัตโนมัติ — ภาษาไทยยังคลาดเคลื่อนได้ ตรวจด้วยตาก่อนตัดสิน"
+                        >
+                          AI ตรวจพบ
+                          {aiReport.ai_scores && ` · ${Object.entries(aiReport.ai_scores)
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([k, v]) => `${k} ${Math.round(v * 100)}%`)
+                            .join(', ')}`}
+                        </span>
+                      )}
                       <span className="text-ptn-disabled">ล่าสุด {formatRelativeTime(group.latest)}</span>
                     </div>
                     {preview ? (
@@ -160,7 +174,7 @@ export function AdminReportsPage() {
                       ))}
                     </div>
                     <ul className="mt-2 space-y-0.5 text-xs text-ptn-muted">
-                      {group.reports.filter(r => r.detail).map(r => (
+                      {group.reports.filter(r => r.detail && r.source === 'user').map(r => (
                         <li key={r.id} className="break-words">
                           <span className="text-ptn-text">{r.reporter?.username ?? 'ไม่ทราบ'}:</span> {r.detail}
                         </li>
