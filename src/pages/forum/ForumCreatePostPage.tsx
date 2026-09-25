@@ -12,6 +12,7 @@ import { Card } from '../../components/ui/Card'
 import { MultiImageUpload } from '../../components/ui/MultiImageUpload'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/ui/Toast'
+import { describeWriteError } from '../../lib/moderation'
 
 export function ForumCreatePostPage() {
   const { categorySlug } = useParams<{ categorySlug?: string }>()
@@ -68,7 +69,7 @@ export function ForumCreatePostPage() {
 
     setSubmitting(false)
     if (error || !newPost) {
-      toast('เกิดข้อผิดพลาด: ' + (error?.message || 'ไม่ทราบสาเหตุ'), 'error')
+      toast(describeWriteError(error, 'ตั้งกระทู้ไม่สำเร็จ'), 'error')
     } else {
       toast('ตั้งกระทู้สำเร็จ!', 'success')
       const cat = newPost.category

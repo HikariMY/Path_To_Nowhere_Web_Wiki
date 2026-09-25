@@ -11,6 +11,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/ui/Toast'
 import { formatRelativeTime } from '../../lib/utils'
 import { TierCharCard, TierLabel } from '../../components/tier-lists/TierParts'
+import { ReportButton } from '../../components/moderation/ReportButton'
 
 export function TierListDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -151,6 +152,7 @@ export function TierListDetailPage() {
                 </Button>
               </div>
             )}
+            <ReportButton targetType="tier_list" targetId={tierList.id} authorId={tierList.author_id} />
           </div>
         </div>
       </Card>

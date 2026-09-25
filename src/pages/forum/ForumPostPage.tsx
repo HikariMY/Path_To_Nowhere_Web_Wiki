@@ -13,6 +13,8 @@ import { MultiImageUpload } from '../../components/ui/MultiImageUpload'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/ui/Toast'
 import { formatRelativeTime, formatDate } from '../../lib/utils'
+import { describeWriteError } from '../../lib/moderation'
+import { ReportButton } from '../../components/moderation/ReportButton'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -97,7 +99,7 @@ export function ForumPostPage() {
       setPost(prev => prev ? { ...prev, reply_count: prev.reply_count + 1 } : prev)
       toast('ตอบกลับสำเร็จ', 'success')
     } else {
-      toast('เกิดข้อผิดพลาด', 'error')
+      toast(describeWriteError(error, 'ตอบกลับไม่สำเร็จ'), 'error')
     }
     setSubmitting(false)
   }
@@ -151,6 +153,7 @@ export function ForumPostPage() {
               <span className="flex items-center gap-1"><Eye size={11} />{post.views} ครั้ง</span>
             </div>
           </div>
+          <ReportButton targetType="forum_post" targetId={post.id} authorId={post.author_id} className="shrink-0" />
           {(user?.id === post.author_id || isModerator) && (
             <button
               onClick={handleDeletePost}
@@ -204,6 +207,7 @@ export function ForumPostPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-ptn-muted">{formatRelativeTime(reply.created_at)}</span>
+                        <ReportButton targetType="forum_reply" targetId={reply.id} authorId={reply.author_id} />
                         {(user?.id === reply.author_id || isModerator) && (
                           <button
                             onClick={() => handleDeleteReply(reply.id)}

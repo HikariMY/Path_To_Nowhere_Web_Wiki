@@ -4,6 +4,7 @@ import {
   FileText, Shield, ChevronRight, Megaphone, BookOpen, Gem, ArrowLeft, BarChart3, Pin,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { Flag } from 'lucide-react'
 
 const adminNav = [
   { to: '/admin',               label: 'แดชบอร์ด',       icon: LayoutDashboard, exact: true },
@@ -15,6 +16,7 @@ const adminNav = [
   { to: '/admin/announcements', label: 'ข่าวสาร/ประกาศ',  icon: Megaphone,       exact: false },
   { to: '/admin/forum',         label: 'จัดการฟอรัม',     icon: MessageSquare,   exact: false },
   { to: '/admin/posts',         label: 'จัดการโพสต์',      icon: Pin,             exact: false },
+  { to: '/admin/reports',       label: 'รายงานจากผู้ใช้',   icon: Flag,            exact: false },
   { to: '/admin/tier-lists',    label: 'จัดการ Tier Lists', icon: BarChart3,       exact: false },
   { to: '/admin/logs',          label: 'บันทึกกิจกรรม',   icon: FileText,        exact: false },
 ]

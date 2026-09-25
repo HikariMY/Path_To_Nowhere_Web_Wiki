@@ -14,6 +14,7 @@ import { GuideReforgeBuild } from './GuideReforgeBuild'
 import { Card } from '../ui/Card'
 import { Avatar } from '../ui/Avatar'
 import { cn, daysSince, formatRelativeTime } from '../../lib/utils'
+import { ReportButton } from '../moderation/ReportButton'
 
 /** ไกด์ที่เก่ากว่านี้ (วัน) จะขึ้นป้ายเตือนว่าอาจล้าสมัย */
 const STALE_AFTER_DAYS = 120
@@ -241,6 +242,7 @@ export function GuideView({
             </button>
           </div>
         )}
+        <ReportButton targetType="character_guide" targetId={guide.id} authorId={guide.author_id} className="shrink-0" />
       </div>
 
       {stale && (
