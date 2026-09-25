@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Plus, Trash2, GripVertical, Save } from 'lucide-react'
+import { ArrowDown, ArrowUp, Palette, Plus, Save, Trash2, X } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Character, TierRow } from '../../types'
 import { Input } from '../../components/ui/Input'
@@ -9,8 +9,15 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/ui/Toast'
-import { RARITY_COLORS, TIER_COLORS } from '../../lib/constants'
+import { TIER_COLORS } from '../../lib/constants'
+import { cn } from '../../lib/utils'
 import { PageLoader } from '../../components/ui/Spinner'
+import {
+  MAX_TIERS, MIN_TIERS, TIER_LABEL_MAX, TIER_PALETTE,
+  addTier, moveTier, normalizeTiersForSave, placeCharacter, recolorTier, removeTier, renameTier, unassignedIds,
+} from '../../lib/tierList'
+import { TierCharCard } from '../../components/tier-lists/TierParts'
+import { CharacterPool } from '../../components/tier-lists/CharacterPool'
 
 export function TierListCreatePage() {
   const { id } = useParams<{ id?: string }>()
@@ -27,16 +34,17 @@ export function TierListCreatePage() {
     TIER_COLORS.map(t => ({ label: t.label, color: t.color, character_ids: [] }))
   )
   const [characters, setCharacters] = useState<Character[]>([])
-  const [unassigned, setUnassigned] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [initLoading, setInitLoading] = useState(true)
+  // ลาก (จอกว้าง) กับแตะเลือก (มือถือ) ใช้ตัวละครคนละตัวแปร — แตะแล้วค่อยแตะแถวที่จะวาง
   const [dragging, setDragging] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string | null>(null)
+  const [paletteFor, setPaletteFor] = useState<number | null>(null)
 
   useEffect(() => {
     const init = async () => {
       const { data: chars } = await supabase.from('characters').select('*').order('rarity').order('name')
-      const allChars = chars || []
-      setCharacters(allChars)
+      setCharacters(chars || [])
 
       if (isEdit) {
         const { data: existing } = await supabase.from('tier_lists').select('*').eq('id', id).single()
@@ -45,13 +53,8 @@ export function TierListCreatePage() {
           setDescription(existing.description || '')
           setPatchVersion(existing.patch_version || '')
           setIsOfficial(existing.is_official)
-          const existingTiers = existing.tiers as TierRow[]
-          setTiers(existingTiers)
-          const assignedIds = existingTiers.flatMap(t => t.character_ids)
-          setUnassigned(allChars.map(c => c.id).filter(cid => !assignedIds.includes(cid)))
+          setTiers(existing.tiers as TierRow[])
         }
-      } else {
-        setUnassigned(allChars.map(c => c.id))
       }
       setInitLoading(false)
     }
@@ -59,33 +62,20 @@ export function TierListCreatePage() {
   }, [id, isEdit])
 
   const charMap = Object.fromEntries(characters.map(c => [c.id, c]))
+  const unassigned = unassignedIds(characters.map(c => c.id), tiers)
+    .map(cid => charMap[cid])
+    .filter((c): c is Character => !!c)
 
-  const moveToTier = (charId: string, tierIndex: number) => {
-    setTiers(prev => {
-      const updated = prev.map(t => ({
-        ...t,
-        character_ids: t.character_ids.filter(id => id !== charId),
-      }))
-      if (tierIndex >= 0) {
-        updated[tierIndex] = {
-          ...updated[tierIndex],
-          character_ids: [...updated[tierIndex].character_ids, charId],
-        }
-      }
-      return updated
-    })
-    setUnassigned(prev => tierIndex >= 0
-      ? prev.filter(id => id !== charId)
-      : [...prev.filter(id => id !== charId), charId]
-    )
+  const place = (charId: string, tierIndex: number) => {
+    setTiers(prev => placeCharacter(prev, charId, tierIndex))
+    setSelected(null)
   }
 
-  const removeFromTier = (charId: string) => {
-    setTiers(prev => prev.map(t => ({
-      ...t,
-      character_ids: t.character_ids.filter(id => id !== charId),
-    })))
-    setUnassigned(prev => [...prev, charId])
+  const toggleSelect = (charId: string) => setSelected(prev => (prev === charId ? null : charId))
+
+  const dropOnTier = (tierIndex: number) => {
+    const charId = dragging ?? selected
+    if (charId) place(charId, tierIndex)
   }
 
   const handleSave = async () => {
@@ -98,7 +88,7 @@ export function TierListCreatePage() {
       description: description.trim() || null,
       patch_version: patchVersion.trim() || null,
       is_official: isAdmin && isOfficial,
-      tiers,
+      tiers: normalizeTiersForSave(tiers),
       updated_at: new Date().toISOString(),
     }
 
@@ -123,8 +113,10 @@ export function TierListCreatePage() {
 
   if (initLoading) return <PageLoader />
 
+  const selectedChar = selected ? charMap[selected] : null
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 pt-8">
       <h1 className="font-heading text-2xl font-bold text-ptn-text mb-6">
         {isEdit ? 'แก้ไขเทียร์ลิสต์' : 'สร้างเทียร์ลิสต์ใหม่'}
       </h1>
@@ -152,113 +144,123 @@ export function TierListCreatePage() {
         </div>
       </Card>
 
+      <p className="mb-2 text-xs text-ptn-disabled">
+        ลากตัวละครไปวางในแถว หรือแตะตัวละครแล้วแตะแถวที่ต้องการ · แก้ชื่อระดับได้ที่ช่องซ้ายสุด (ไม่เกิน {TIER_LABEL_MAX} ตัวอักษร)
+      </p>
+
       {/* Tier Editor */}
-      <div className="space-y-2 mb-6">
+      <div className="space-y-2">
         {tiers.map((tier, tierIndex) => (
           <div key={tierIndex} className="flex items-stretch rounded-lg border border-ptn-border overflow-hidden">
+            {/* ชื่อระดับ + ปุ่มจัดการแถว */}
             <div
-              className="flex w-12 sm:w-16 items-center justify-center shrink-0 font-heading font-bold text-xl"
-              style={{ background: `${tier.color}20`, color: tier.color, borderRight: `2px solid ${tier.color}40` }}
+              className="relative flex w-24 shrink-0 flex-col items-center justify-center gap-1.5 px-1.5 py-2 sm:w-28"
+              style={{ background: `${tier.color}20`, borderRight: `2px solid ${tier.color}40` }}
             >
-              {tier.label}
+              <input
+                value={tier.label}
+                onChange={e => setTiers(prev => renameTier(prev, tierIndex, e.target.value))}
+                aria-label={`ชื่อระดับแถวที่ ${tierIndex + 1}`}
+                className="w-full rounded bg-black/20 px-1 py-1 text-center font-heading text-base font-bold outline-none focus:bg-black/40 focus:ring-1 focus:ring-white/30"
+                style={{ color: tier.color }}
+              />
+              <div className="flex items-center gap-0.5 text-ptn-muted">
+                <button type="button" onClick={() => setPaletteFor(p => (p === tierIndex ? null : tierIndex))} aria-label="เปลี่ยนสี" className="rounded p-1 hover:bg-black/30 hover:text-ptn-text">
+                  <Palette size={13} />
+                </button>
+                <button type="button" onClick={() => setTiers(prev => moveTier(prev, tierIndex, -1))} disabled={tierIndex === 0} aria-label="เลื่อนขึ้น" className="rounded p-1 hover:bg-black/30 hover:text-ptn-text disabled:opacity-30">
+                  <ArrowUp size={13} />
+                </button>
+                <button type="button" onClick={() => setTiers(prev => moveTier(prev, tierIndex, 1))} disabled={tierIndex === tiers.length - 1} aria-label="เลื่อนลง" className="rounded p-1 hover:bg-black/30 hover:text-ptn-text disabled:opacity-30">
+                  <ArrowDown size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (tier.character_ids.length > 0 && !confirm(`ลบแถว "${tier.label}"? ตัวละคร ${tier.character_ids.length} ตัวในแถวนี้จะกลับไปรายการที่ยังไม่จัดอันดับ`)) return
+                    setTiers(prev => removeTier(prev, tierIndex))
+                    setPaletteFor(null)
+                  }}
+                  disabled={tiers.length <= MIN_TIERS}
+                  aria-label="ลบแถว"
+                  className="rounded p-1 hover:bg-black/30 hover:text-red-400 disabled:opacity-30"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+              {paletteFor === tierIndex && (
+                <div className="absolute left-full top-1 z-30 ml-1 grid grid-cols-5 gap-1 rounded border border-ptn-border bg-ptn-surface p-1.5 shadow-ptn-card">
+                  {TIER_PALETTE.map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => { setTiers(prev => recolorTier(prev, tierIndex, c)); setPaletteFor(null) }}
+                      aria-label={`สี ${c}`}
+                      className={cn('h-6 w-6 rounded-full border-2', tier.color === c ? 'border-white' : 'border-transparent')}
+                      style={{ background: c }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
+
+            {/* ตัวละครในแถว — แตะพื้นที่ว่างเพื่อวางตัวที่เลือกอยู่ */}
             <div
-              className="flex flex-wrap gap-2 p-3 flex-1 bg-ptn-surface min-h-[80px]"
+              className={cn(
+                'flex min-h-[104px] flex-1 flex-wrap content-start gap-2 bg-ptn-surface p-3',
+                (selected || dragging) && 'cursor-copy hover:bg-ptn-elevated/60',
+              )}
               onDragOver={e => e.preventDefault()}
-              onDrop={e => {
-                e.preventDefault()
-                if (dragging) moveToTier(dragging, tierIndex)
-              }}
+              onDrop={e => { e.preventDefault(); dropOnTier(tierIndex) }}
+              onClick={e => { if (e.target === e.currentTarget && selected) dropOnTier(tierIndex) }}
             >
               {tier.character_ids.map(cid => {
                 const char = charMap[cid]
                 if (!char) return null
                 return (
-                  <div
-                    key={cid}
-                    draggable
-                    onDragStart={() => setDragging(cid)}
-                    onDragEnd={() => setDragging(null)}
-                    className="group relative flex flex-col items-center gap-0.5 cursor-grab active:cursor-grabbing"
-                  >
-                    <div
-                      className="w-12 h-14 rounded overflow-hidden border flex items-center justify-center bg-ptn-elevated relative"
-                      style={{ borderColor: `${RARITY_COLORS[char.rarity]}60` }}
-                    >
-                      {char.portrait_url ? (
-                        <img src={char.portrait_url} alt={char.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="font-heading font-bold text-lg" style={{ color: RARITY_COLORS[char.rarity] }}>
-                          {char.name[0]}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-ptn-muted max-w-[50px] truncate">{char.name}</span>
+                  <div key={cid} className="group relative">
                     <button
-                      onClick={() => removeFromTier(cid)}
-                      className="absolute -top-1 -right-1 bg-red-600 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      type="button"
+                      draggable
+                      onDragStart={() => setDragging(cid)}
+                      onDragEnd={() => setDragging(null)}
+                      onClick={() => toggleSelect(cid)}
+                      aria-pressed={selected === cid}
+                      className="cursor-grab rounded active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-ptn-cyan"
                     >
-                      <Trash2 size={8} className="text-white" />
+                      <TierCharCard char={char} selected={selected === cid} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => place(cid, -1)}
+                      aria-label={`เอา ${char.name} ออกจากแถว`}
+                      className={cn(
+                        'absolute -right-1.5 -top-1.5 rounded-full bg-red-600 p-1 text-white transition-opacity',
+                        selected === cid ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100',
+                      )}
+                    >
+                      <X size={10} />
                     </button>
                   </div>
                 )
               })}
               {tier.character_ids.length === 0 && (
-                <p className="text-xs text-ptn-disabled self-center">ลากตัวละครมาวางที่นี่</p>
+                <p className="pointer-events-none self-center text-xs text-ptn-disabled">
+                  {selected ? 'แตะที่นี่เพื่อวาง' : 'ลากหรือแตะตัวละครมาวางที่นี่'}
+                </p>
               )}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Unassigned pool */}
-      <Card className="p-4 mb-6">
-        <h2 className="font-heading font-semibold text-ptn-text mb-3 flex items-center gap-2">
-          <GripVertical size={15} className="text-ptn-muted" />
-          ตัวละครที่ยังไม่ได้จัดอันดับ ({unassigned.length})
-        </h2>
-        <div
-          className="flex flex-wrap gap-2 min-h-[80px]"
-          onDragOver={e => e.preventDefault()}
-          onDrop={e => {
-            e.preventDefault()
-            if (dragging) removeFromTier(dragging)
-          }}
-        >
-          {unassigned.map(cid => {
-            const char = charMap[cid]
-            if (!char) return null
-            return (
-              <div
-                key={cid}
-                draggable
-                onDragStart={() => setDragging(cid)}
-                onDragEnd={() => setDragging(null)}
-                className="flex flex-col items-center gap-0.5 cursor-grab active:cursor-grabbing"
-              >
-                <div
-                  className="w-11 h-13 rounded overflow-hidden border flex items-center justify-center bg-ptn-elevated"
-                  style={{ borderColor: `${RARITY_COLORS[char.rarity]}40` }}
-                >
-                  {char.portrait_url ? (
-                    <img src={char.portrait_url} alt={char.name} className="w-11 h-13 object-cover" />
-                  ) : (
-                    <span className="font-heading font-bold" style={{ color: RARITY_COLORS[char.rarity] }}>
-                      {char.name[0]}
-                    </span>
-                  )}
-                </div>
-                <span className="text-[10px] text-ptn-muted max-w-[44px] truncate">{char.name}</span>
-              </div>
-            )
-          })}
-          {unassigned.length === 0 && (
-            <p className="text-xs text-ptn-disabled self-center">ตัวละครทั้งหมดถูกจัดอันดับแล้ว</p>
-          )}
-        </div>
-      </Card>
+      {tiers.length < MAX_TIERS && (
+        <Button variant="ghost" size="sm" className="mt-2" onClick={() => setTiers(prev => addTier(prev))}>
+          <Plus size={14} /> เพิ่มแถวระดับ
+        </Button>
+      )}
 
-      <div className="flex gap-3">
+      <div className="mt-6 flex gap-3">
         <Button onClick={handleSave} loading={loading} size="lg">
           <Save size={16} /> บันทึก
         </Button>
@@ -266,6 +268,26 @@ export function TierListCreatePage() {
           ยกเลิก
         </Button>
       </div>
+
+      {/* แถบบอกตัวที่เลือกอยู่ (แตะเพื่อวาง) — ลอยใต้แถบเมนูด้านบน */}
+      {selectedChar && (
+        <div className="fixed left-1/2 top-[calc(env(safe-area-inset-top,0px)+4.5rem)] z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-ptn-cyan/40 bg-ptn-surface px-3 py-1.5 text-xs text-ptn-text shadow-ptn-card">
+          เลือก <span className="font-bold text-ptn-cyan">{selectedChar.name}</span> อยู่ — แตะแถวที่จะวาง
+          <button type="button" onClick={() => setSelected(null)} className="text-ptn-muted hover:text-ptn-text" aria-label="ยกเลิกการเลือก">
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
+      <CharacterPool
+        characters={unassigned}
+        total={characters.length}
+        selected={selected}
+        onSelect={toggleSelect}
+        onDragStart={setDragging}
+        onDragEnd={() => setDragging(null)}
+        onDropHere={() => { const cid = dragging ?? selected; if (cid) place(cid, -1) }}
+      />
     </div>
   )
 }

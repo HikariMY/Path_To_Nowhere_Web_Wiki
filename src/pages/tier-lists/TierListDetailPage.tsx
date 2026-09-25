@@ -10,7 +10,7 @@ import { PageLoader } from '../../components/ui/Spinner'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/ui/Toast'
 import { formatRelativeTime } from '../../lib/utils'
-import { RARITY_COLORS } from '../../lib/constants'
+import { TierCharCard, TierLabel } from '../../components/tier-lists/TierParts'
 
 export function TierListDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -160,41 +160,20 @@ export function TierListDetailPage() {
         {tiers.map((tier, i) => (
           <div key={i} className="flex items-stretch rounded-lg border border-ptn-border overflow-hidden">
             {/* Label */}
-            <div
-              className="flex w-12 sm:w-16 items-center justify-center shrink-0 font-heading font-bold text-xl"
-              style={{ background: `${tier.color}20`, color: tier.color, borderRight: `2px solid ${tier.color}40` }}
-            >
-              {tier.label}
-            </div>
+            <TierLabel label={tier.label} color={tier.color} />
             {/* Characters */}
-            <div className="flex flex-wrap gap-2 p-3 flex-1 bg-ptn-surface min-h-[72px]">
+            <div className="flex flex-wrap gap-2 p-3 flex-1 bg-ptn-surface min-h-[104px]">
               {tier.character_ids.length === 0 && (
                 <span className="text-xs text-ptn-disabled self-center">ว่าง</span>
               )}
               {tier.character_ids.map(cid => {
                 const char = charMap[cid]
                 if (!char) return (
-                  <div key={cid} className="w-14 h-16 rounded bg-ptn-elevated border border-ptn-border flex items-center justify-center text-xs text-ptn-disabled">?</div>
+                  <div key={cid} className="w-14 h-[68px] sm:w-16 sm:h-20 rounded bg-ptn-elevated border border-ptn-border flex items-center justify-center text-xs text-ptn-disabled">?</div>
                 )
                 return (
-                  <Link key={cid} to={`/characters/${char.slug}`}>
-                    <div className="group flex flex-col items-center gap-1">
-                      <div
-                        className="w-12 h-14 rounded overflow-hidden border flex items-center justify-center bg-ptn-elevated relative"
-                        style={{ borderColor: `${RARITY_COLORS[char.rarity]}60` }}
-                      >
-                        {char.portrait_url ? (
-                          <img src={char.portrait_url} alt={char.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="font-heading font-bold text-lg" style={{ color: RARITY_COLORS[char.rarity] }}>
-                            {char.name[0]}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-ptn-muted group-hover:text-ptn-text transition-colors max-w-[50px] truncate">
-                        {char.name}
-                      </span>
-                    </div>
+                  <Link key={cid} to={`/characters/${char.slug}`} className="rounded hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ptn-cyan">
+                    <TierCharCard char={char} />
                   </Link>
                 )
               })}
