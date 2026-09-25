@@ -280,6 +280,15 @@ export type ReportRow = {
   created_at: string
 }
 
+export type GuideCommentRow = {
+  id: string
+  guide_id: string
+  author_id: string
+  content: string
+  created_at: string
+  updated_at: string
+}
+
 export type TeamRow = {
   id: string
   author_id: string
@@ -357,6 +366,11 @@ export interface Database {
       game_info: TableOf<GameInfoRow>
 
       // reports.resolved_by ก็เป็น FK ไป profiles แต่ไม่ประกาศไว้ — กัน `reporter:profiles(...)` กำกวม
+      guide_comments: TableOf<GuideCommentRow, [
+        FK<'guide_comments_author_id_fkey', 'author_id', 'profiles'>,
+        FK<'guide_comments_guide_id_fkey', 'guide_id', 'character_guides'>,
+      ]>
+
       teams: TableOf<TeamRow, [
         FK<'teams_author_id_fkey', 'author_id', 'profiles'>,
       ]>

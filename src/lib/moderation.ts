@@ -2,7 +2,7 @@
 // Rate limit + ระบบรายงานเนื้อหา — logic ล้วน (คู่กับ supabase_migration_moderation.sql)
 // ============================================================
 
-export type ReportTargetType = 'forum_post' | 'forum_reply' | 'tier_list' | 'character_guide'
+export type ReportTargetType = 'forum_post' | 'forum_reply' | 'tier_list' | 'character_guide' | 'guide_comment'
 export type ReportReason = 'spam' | 'harassment' | 'wrong_info' | 'inappropriate' | 'other'
 export type ReportStatus = 'open' | 'resolved' | 'dismissed'
 
@@ -20,6 +20,7 @@ export const REPORT_TARGET_LABEL: Record<ReportTargetType, string> = {
   forum_reply:     'คำตอบ',
   tier_list:       'เทียร์ลิสต์',
   character_guide: 'ไกด์',
+  guide_comment:   'คอมเมนต์',
 }
 
 export const REPORT_DETAIL_MAX = 500
@@ -81,6 +82,7 @@ export function reportTargetHref(type: ReportTargetType, info: ReportTargetLinkI
     case 'tier_list':
       return `/tier-lists/${info.id}`
     case 'character_guide':
+    case 'guide_comment':
       return info.characterSlug ? `/characters/${info.characterSlug}?tab=guides` : null
   }
 }
@@ -92,6 +94,7 @@ interface WriteError {
 
 const RATE_LIMIT = /^RATE_LIMIT:(\d+)$/
 const UNIQUE_VIOLATION = '23505'
+const FOREIGN_KEY_VIOLATION = '23503'
 
 /** วินาทีที่ต้องรอ ถ้าเป็น error จาก trigger rate limit — ไม่ใช่คืน null */
 export function rateLimitWaitSeconds(error: WriteError | null | undefined): number | null {
@@ -103,12 +106,13 @@ export function rateLimitWaitSeconds(error: WriteError | null | undefined): numb
  * ข้อความภาษาไทยสำหรับ error ตอนบันทึกเนื้อหา
  * - โดน rate limit → บอกเวลาที่ต้องรอ
  * - ซ้ำกับของเดิม (unique) → ใช้ข้อความ duplicate ที่ส่งมา (ถ้ามี)
+ * - ของที่อ้างถึงถูกลบไปแล้ว (foreign key) → ใช้ข้อความ missingParent ที่ส่งมา (ถ้ามี)
  * - อื่น ๆ → fallback ตามด้วยข้อความ error ดิบ
  */
 export function describeWriteError(
   error: WriteError | null | undefined,
   fallback: string,
-  { duplicate }: { duplicate?: string } = {},
+  { duplicate, missingParent }: { duplicate?: string; missingParent?: string } = {},
 ): string {
   const wait = rateLimitWaitSeconds(error)
   if (wait !== null) {
@@ -116,5 +120,6 @@ export function describeWriteError(
     return `โพสต์ถี่เกินไป ลองใหม่ในอีก ${when}`
   }
   if (duplicate && error?.code === UNIQUE_VIOLATION) return duplicate
+  if (missingParent && error?.code === FOREIGN_KEY_VIOLATION) return missingParent
   return error?.message ? `${fallback}: ${error.message}` : fallback
 }

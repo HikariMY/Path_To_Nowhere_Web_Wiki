@@ -47,12 +47,14 @@ describe('reportTargetHref', () => {
     expect(reportTargetHref('forum_reply', { id: 'r1', categorySlug: 'general', postId: 'p1' })).toBe('/forum/general/p1')
     expect(reportTargetHref('tier_list', { id: 't1' })).toBe('/tier-lists/t1')
     expect(reportTargetHref('character_guide', { id: 'g1', characterSlug: 'bianca' })).toBe('/characters/bianca?tab=guides')
+    expect(reportTargetHref('guide_comment', { id: 'c1', characterSlug: 'bianca' })).toBe('/characters/bianca?tab=guides')
   })
 
   test('returns null when the content (or what it hangs off) is gone', () => {
     expect(reportTargetHref('forum_post', { id: 'p1' })).toBeNull()
     expect(reportTargetHref('forum_reply', { id: 'r1', categorySlug: 'general' })).toBeNull()
     expect(reportTargetHref('character_guide', { id: 'g1' })).toBeNull()
+    expect(reportTargetHref('guide_comment', { id: 'c1' })).toBeNull()
   })
 })
 
@@ -77,6 +79,12 @@ describe('describeWriteError', () => {
     const dup = { code: '23505', message: 'duplicate key' }
     expect(describeWriteError(dup, 'fallback', { duplicate: 'คุณรายงานเนื้อหานี้ไปแล้ว' })).toBe('คุณรายงานเนื้อหานี้ไปแล้ว')
     expect(describeWriteError(dup, 'fallback')).toBe('fallback: duplicate key')
+  })
+
+  test('uses the caller-supplied text when the parent row is gone (foreign key)', () => {
+    const fk = { code: '23503', message: 'violates foreign key constraint' }
+    expect(describeWriteError(fk, 'fallback', { missingParent: 'ไกด์นี้ถูกลบไปแล้ว' })).toBe('ไกด์นี้ถูกลบไปแล้ว')
+    expect(describeWriteError(fk, 'fallback')).toBe('fallback: violates foreign key constraint')
   })
 
   test('falls back to the given message plus the raw error text', () => {

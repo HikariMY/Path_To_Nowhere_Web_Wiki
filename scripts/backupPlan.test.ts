@@ -6,6 +6,7 @@ describe('canSkipMissingTable', () => {
     expect(canSkipMissingTable('favorite_characters', { code: 'PGRST205' })).toBe(true)
     expect(canSkipMissingTable('reports', { code: '42P01' })).toBe(true)
     expect(canSkipMissingTable('teams', { code: 'PGRST205' })).toBe(true)
+    expect(canSkipMissingTable('guide_comments', { code: '42P01' })).toBe(true)
   })
 
   test('never skips a core table — a missing core table must fail the backup loudly', () => {
