@@ -291,7 +291,9 @@ export function CharacterInfoPanel({ characterId, onSaved, onDeleted }: {
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.is_new} onChange={e => setForm(prev => ({...prev, is_new: e.target.checked}))} className="accent-blue-500" />
-                <span className="text-sm text-ptn-text">แสดงป้าย NEW</span>
+                <span className="text-sm text-ptn-text" title="ป้าย NEW ขึ้นเอง 14 วันนับจากวันที่ออก — ติ๊กเพื่อบังคับโชว์นอกช่วงนั้น">
+                  บังคับโชว์ป้าย NEW
+                </span>
               </label>
             </div>
           </div>

@@ -9,6 +9,7 @@ import { PageLoader } from '../../components/ui/Spinner'
 import { JOB_CLASS_LABEL, ALIGNMENT_LABEL, ALIGNMENT_ICON } from '../../lib/constants'
 import { cn } from '../../lib/utils'
 import { parseReforge } from '../../lib/reforge'
+import { isNewCharacter } from '../../lib/newBadge'
 import { useAbilityTags } from '../../hooks/useAbilityTags'
 
 // ── Tendency icons from /TenIcon/ ────────────────────────────────────────
@@ -259,8 +260,6 @@ const RARITY_COLOR: Record<string, string> = {
   S: '#FFD700', A: '#C084FC', B: '#60A5FA', C: '#6EE7B7',
 }
 
-// ป้าย NEW ควบคุมเองต่อตัวละคร (ตั้งค่าในแอดมิน)
-const isNew = (char: Character) => char.is_new === true
 
 export function CharactersPage() {
   const { groups: abilityTagGroups } = useAbilityTags()
@@ -481,7 +480,7 @@ function CharacterCard({ character, hasReforge }: { character: Character; hasRef
   const mbccId = (character.tags as string[])?.[0] || ''
   const isCN = COLLAB_SLUGS.has(character.slug)
   const unreleased = character.is_unreleased || !character.portrait_url
-  const charIsNew = isNew(character)
+  const charIsNew = isNewCharacter(character)
   const tendencyIcon = TENDENCY_ICON_PATH[character.job_class]
   const hasCoreDMG = ((character.ability_tags as string[] | null) || []).includes('Core DMG')
   const isLimited = character.is_limited && !isCN
