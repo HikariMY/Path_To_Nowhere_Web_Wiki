@@ -117,9 +117,18 @@ export function TierListCreatePage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 pt-8">
-      <h1 className="font-heading text-2xl font-bold text-ptn-text mb-6">
-        {isEdit ? 'แก้ไขเทียร์ลิสต์' : 'สร้างเทียร์ลิสต์ใหม่'}
-      </h1>
+      {/* ปุ่มบันทึกอยู่บนสุด — แผงตัวละครที่ติดขอบล่างจอจะได้ไม่บังปุ่ม */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-heading text-2xl font-bold text-ptn-text">
+          {isEdit ? 'แก้ไขเทียร์ลิสต์' : 'สร้างเทียร์ลิสต์ใหม่'}
+        </h1>
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => navigate('/tier-lists')}>ยกเลิก</Button>
+          <Button onClick={handleSave} loading={loading}>
+            <Save size={16} /> บันทึก
+          </Button>
+        </div>
+      </div>
 
       {/* Meta */}
       <Card className="p-4 mb-6 grid sm:grid-cols-3 gap-4">
@@ -168,16 +177,17 @@ export function TierListCreatePage() {
                 <button type="button" onClick={() => setPaletteFor(p => (p === tierIndex ? null : tierIndex))} aria-label="เปลี่ยนสี" className="rounded p-1 hover:bg-black/30 hover:text-ptn-text">
                   <Palette size={13} />
                 </button>
-                <button type="button" onClick={() => setTiers(prev => moveTier(prev, tierIndex, -1))} disabled={tierIndex === 0} aria-label="เลื่อนขึ้น" className="rounded p-1 hover:bg-black/30 hover:text-ptn-text disabled:opacity-30">
+                <button type="button" onClick={() => { setTiers(prev => moveTier(prev, tierIndex, -1)); setPaletteFor(null) }} disabled={tierIndex === 0} aria-label="เลื่อนขึ้น" className="rounded p-1 hover:bg-black/30 hover:text-ptn-text disabled:opacity-30">
                   <ArrowUp size={13} />
                 </button>
-                <button type="button" onClick={() => setTiers(prev => moveTier(prev, tierIndex, 1))} disabled={tierIndex === tiers.length - 1} aria-label="เลื่อนลง" className="rounded p-1 hover:bg-black/30 hover:text-ptn-text disabled:opacity-30">
+                <button type="button" onClick={() => { setTiers(prev => moveTier(prev, tierIndex, 1)); setPaletteFor(null) }} disabled={tierIndex === tiers.length - 1} aria-label="เลื่อนลง" className="rounded p-1 hover:bg-black/30 hover:text-ptn-text disabled:opacity-30">
                   <ArrowDown size={13} />
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    if (tier.character_ids.length > 0 && !confirm(`ลบแถว "${tier.label}"? ตัวละคร ${tier.character_ids.length} ตัวในแถวนี้จะกลับไปรายการที่ยังไม่จัดอันดับ`)) return
+                    const count = tier.character_ids.filter(cid => charMap[cid]).length
+                    if (count > 0 && !confirm(`ลบแถว "${tier.label}"? ตัวละคร ${count} ตัวในแถวนี้จะกลับไปรายการที่ยังไม่จัดอันดับ`)) return
                     setTiers(prev => removeTier(prev, tierIndex))
                     setPaletteFor(null)
                   }}
@@ -189,18 +199,24 @@ export function TierListCreatePage() {
                 </button>
               </div>
               {paletteFor === tierIndex && (
-                <div className="absolute left-full top-1 z-30 ml-1 grid grid-cols-5 gap-1 rounded border border-ptn-border bg-ptn-surface p-1.5 shadow-ptn-card">
+                <>
+                <button type="button" aria-label="ปิดจานสี" className="fixed inset-0 z-20 cursor-default" onClick={() => setPaletteFor(null)} />
+                <div
+                  className="absolute left-full top-1 z-30 ml-1 grid w-[9.75rem] grid-cols-5 gap-1 rounded border border-ptn-border bg-ptn-surface p-1.5 shadow-ptn-card"
+                  onKeyDown={e => { if (e.key === 'Escape') setPaletteFor(null) }}
+                >
                   {TIER_PALETTE.map(c => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => { setTiers(prev => recolorTier(prev, tierIndex, c)); setPaletteFor(null) }}
                       aria-label={`สี ${c}`}
-                      className={cn('h-6 w-6 rounded-full border-2', tier.color === c ? 'border-white' : 'border-transparent')}
+                      className={cn('h-6 w-6 shrink-0 rounded-full border-2', tier.color === c ? 'border-white' : 'border-transparent')}
                       style={{ background: c }}
                     />
                   ))}
                 </div>
+                </>
               )}
             </div>
 
@@ -235,19 +251,26 @@ export function TierListCreatePage() {
                       onClick={() => place(cid, -1)}
                       aria-label={`เอา ${char.name} ออกจากแถว`}
                       className={cn(
-                        'absolute -right-1.5 -top-1.5 rounded-full bg-red-600 p-1 text-white transition-opacity',
+                        'absolute -right-2 -top-2 rounded-full bg-red-600 p-1.5 text-white transition-opacity',
                         selected === cid ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100',
                       )}
                     >
-                      <X size={10} />
+                      <X size={12} />
                     </button>
                   </div>
                 )
               })}
-              {tier.character_ids.length === 0 && (
-                <p className="pointer-events-none self-center text-xs text-ptn-disabled">
-                  {selected ? 'แตะที่นี่เพื่อวาง' : 'ลากหรือแตะตัวละครมาวางที่นี่'}
-                </p>
+              {selectedChar && !tier.character_ids.includes(selectedChar.id) && (
+                <button
+                  type="button"
+                  onClick={() => dropOnTier(tierIndex)}
+                  className="flex h-[68px] min-w-[3.5rem] items-center justify-center gap-1 self-start rounded border border-dashed border-ptn-cyan/50 px-2 text-xs text-ptn-cyan hover:bg-ptn-cyan/10 sm:h-20"
+                >
+                  <Plus size={12} /> วางที่นี่
+                </button>
+              )}
+              {tier.character_ids.length === 0 && !selectedChar && (
+                <p className="pointer-events-none self-center text-xs text-ptn-disabled">ลากหรือแตะตัวละครมาวางที่นี่</p>
               )}
             </div>
           </div>
@@ -259,15 +282,6 @@ export function TierListCreatePage() {
           <Plus size={14} /> เพิ่มแถวระดับ
         </Button>
       )}
-
-      <div className="mt-6 flex gap-3">
-        <Button onClick={handleSave} loading={loading} size="lg">
-          <Save size={16} /> บันทึก
-        </Button>
-        <Button variant="ghost" onClick={() => navigate('/tier-lists')}>
-          ยกเลิก
-        </Button>
-      </div>
 
       {/* แถบบอกตัวที่เลือกอยู่ (แตะเพื่อวาง) — ลอยใต้แถบเมนูด้านบน */}
       {selectedChar && (
@@ -287,6 +301,7 @@ export function TierListCreatePage() {
         onDragStart={setDragging}
         onDragEnd={() => setDragging(null)}
         onDropHere={() => { const cid = dragging ?? selected; if (cid) place(cid, -1) }}
+        selectedInTier={!!selected && !unassigned.some(c => c.id === selected)}
       />
     </div>
   )
