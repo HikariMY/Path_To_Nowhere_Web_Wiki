@@ -9,7 +9,8 @@ import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { PageLoader } from '../../components/ui/Spinner'
 import { RARITY_COLORS, JOB_CLASS_LABEL, ALIGNMENT_LABEL, ALIGNMENT_ICON, TENDENCY_ICON } from '../../lib/constants'
-import { formatDate } from '../../lib/utils'
+import { cn, formatDate } from '../../lib/utils'
+import { rangeCellSize, skillRanges } from '../../lib/skillRange'
 import { useAbilityTags } from '../../hooks/useAbilityTags'
 import type { TagGroup } from '../../lib/abilityTags'
 import { Modal } from '../../components/ui/Modal'
@@ -119,8 +120,7 @@ function tagStyle(tag: string) {
 // ---- RangeGrid -----------------------------------------------------------
 
 function RangeGrid({ range }: { range: { rows: number; cols: number; cells: number[] } }) {
-  // cell size: smaller for 5×5, normal for ≤4 cols
-  const cellSize = range.cols >= 5 ? '1.4rem' : '1.75rem'
+  const cellSize = rangeCellSize(range.cols)
   return (
     <div className="flex items-center gap-4 px-4 py-3 flex-1 min-w-0">
       <span className="text-[10px] tracking-widest text-ptn-disabled font-mono shrink-0">RANGE</span>
@@ -155,7 +155,7 @@ function RangeGrid({ range }: { range: { rows: number; cols: number; cells: numb
 function ExclusiveCrimebrandCard({ data }: { data: {
   name: string; image_url: string; description: string; flavor_text: string; hasRange: boolean; range: { rows: number; cols: number; cells: number[] }
 } }) {
-  const cellSize = data.range?.cols >= 5 ? '1.4rem' : '1.75rem'
+  const cellSize = rangeCellSize(data.range?.cols ?? 0)
   return (
     <div className="border border-amber-500/30 rounded-lg overflow-hidden bg-ptn-surface">
       {/* Heading */}
@@ -344,6 +344,7 @@ function SkillCard({ skill }: { skill: CharacterSkill }) {
   const ordStr = skill.order ? (ORDINAL[skill.order - 1] ?? `${skill.order}th`) : null
   const levelDesc = skill.levels?.[activeLevel - 1]
   const hasAnyLevel = skill.levels?.some(Boolean)
+  const ranges = skillRanges(skill)
 
   return (
     <div className="border border-ptn-border rounded-lg overflow-hidden bg-ptn-surface">
@@ -404,11 +405,14 @@ function SkillCard({ skill }: { skill: CharacterSkill }) {
         ))}
       </div>
 
-      {/* ── Range (รองรับ 2 อัน แสดงข้างกัน) ── */}
-      {((skill.range?.cells?.length ?? 0) > 0 || (skill.range2?.cells?.length ?? 0) > 0) && (
-        <div className="flex divide-x divide-ptn-border border-b border-ptn-border bg-black/40">
-          {(skill.range?.cells?.length ?? 0) > 0 && <RangeGrid range={skill.range} />}
-          {(skill.range2?.cells?.length ?? 0) > 0 && <RangeGrid range={skill.range2} />}
+      {/* ── Range (สูงสุด 3 อัน เรียงข้างกัน จอแคบขึ้นบรรทัดใหม่) ── */}
+      {ranges.length > 0 && (
+        <div className="flex flex-wrap border-b border-ptn-border bg-black/40">
+          {ranges.map((r, i) => (
+            <div key={i} className={cn('min-w-0 flex', i > 0 && 'border-l border-ptn-border')}>
+              <RangeGrid range={r} />
+            </div>
+          ))}
         </div>
       )}
 
