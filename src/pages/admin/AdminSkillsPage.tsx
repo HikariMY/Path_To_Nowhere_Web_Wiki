@@ -14,6 +14,7 @@ import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../contexts/AuthContext'
 import { JOB_CLASS_LABEL, ALIGNMENT_LABEL } from '../../lib/constants'
 import type { CharacterSkill, SkillRange, ShackleBreak } from '../../types/models'
+import { GRID_PRESETS } from '../../lib/skillRange'
 import { ShacklesPanel } from './ShacklesPanel'
 import { CharacterInfoPanel } from './CharacterInfoPanel'
 import { CrimebrandBuildsPanel } from './CrimebrandBuildsPanel'
@@ -40,6 +41,8 @@ type SkillForm = {
   range: SkillRange
   hasRange2: boolean
   range2: SkillRange
+  hasRange3: boolean
+  range3: SkillRange
 }
 
 const DEFAULT_RANGE: SkillRange = { rows: 3, cols: 3, cells: Array(9).fill(0) }
@@ -76,15 +79,9 @@ const blankForm = (): SkillForm => ({
   range: { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
   hasRange2: false,
   range2: { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
+  hasRange3: false,
+  range3: { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
 })
-
-const GRID_PRESETS = [
-  { label: '1×1', rows: 1, cols: 1 },
-  { label: '3×3', rows: 3, cols: 3 },
-  { label: '3×4', rows: 3, cols: 4 },
-  { label: '3×5', rows: 3, cols: 5 },
-  { label: '5×5', rows: 5, cols: 5 },
-]
 
 // ── range grid editor ────────────────────────────────────────────────────────
 
@@ -120,6 +117,7 @@ function RangeGridEditor({ range, onChange }: {
           </button>
         ))}
       </div>
+      <div className="overflow-x-auto">
       <div
         className="inline-grid gap-[3px] p-2 bg-black/50 rounded border border-ptn-border"
         style={{ gridTemplateColumns: `repeat(${range.cols}, 2rem)` }}
@@ -141,6 +139,7 @@ function RangeGridEditor({ range, onChange }: {
             {cell === 2 && <div className="w-3 h-3 rounded-full bg-red-300" />}
           </button>
         ))}
+      </div>
       </div>
       <p className="text-xs text-ptn-muted">
         คลิกเพื่อสลับ: ว่าง → ช่วง (เทา) → ตัวละคร (แดง) → ว่าง
@@ -294,6 +293,8 @@ export function AdminSkillsPage() {
       range: skill.range ? { ...skill.range, cells: [...skill.range.cells] } : { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
       hasRange2: !!skill.range2,
       range2: skill.range2 ? { ...skill.range2, cells: [...skill.range2.cells] } : { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
+      hasRange3: !!skill.range3,
+      range3: skill.range3 ? { ...skill.range3, cells: [...skill.range3.cells] } : { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
     })
     setModalOpen(true)
   }
@@ -310,6 +311,7 @@ export function AdminSkillsPage() {
       levels: form.levels.map(l => l.trim()),
       range: form.hasRange ? form.range : undefined,
       range2: form.hasRange2 ? form.range2 : undefined,
+      range3: form.hasRange3 ? form.range3 : undefined,
     }
     let updated: CharacterSkill[]
     if (editingId) {
@@ -704,6 +706,25 @@ export function AdminSkillsPage() {
               <RangeGridEditor
                 range={form.range2}
                 onChange={range2 => setForm(p => ({ ...p, range2 }))}
+              />
+            )}
+          </div>
+
+          {/* Range grid 3 (เช่นสกิลที่ยิงได้ 3 ทิศ) */}
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={form.hasRange3}
+                onChange={e => setForm(p => ({ ...p, hasRange3: e.target.checked }))}
+                className="accent-ptn-cyan"
+              />
+              <span className="text-sm font-medium text-ptn-text">มี Range Grid อันที่ 3 (เช่นยิงได้ 3 ทิศ)</span>
+            </label>
+            {form.hasRange3 && (
+              <RangeGridEditor
+                range={form.range3}
+                onChange={range3 => setForm(p => ({ ...p, range3 }))}
               />
             )}
           </div>
