@@ -18,6 +18,7 @@ import { toGuideBuild } from '../../lib/reforge'
 import { useExAnchorOptions } from '../../hooks/useExAnchorOptions'
 import { cn, formatRelativeTime } from '../../lib/utils'
 import { describeWriteError } from '../../lib/moderation'
+import { GuideComments } from '../../components/guides/GuideComments'
 
 export function CharacterGuidesTab({ characterId, skills, shackles, reforge = null, jobClass = '', onOpenReforge }: {
   characterId: string
@@ -239,6 +240,9 @@ export function CharacterGuidesTab({ characterId, skills, shackles, reforge = nu
           onOpenReforge={onOpenReforge}
         />
       )}
+
+      {/* key = ไกด์ — สลับไกด์แล้วล้างข้อความที่พิมพ์ค้าง / สถานะแก้ไข */}
+      {selected && <GuideComments key={selected.id} guideId={selected.id} />}
 
       {/* ไกด์อื่น ๆ — คลิกเพื่อสลับมาอ่าน */}
       {others.length > 0 && (

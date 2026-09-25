@@ -39,13 +39,17 @@ async function fetchPreviews(groups: readonly ReportGroup[]): Promise<Map<string
     previews.set(`${type}:${id}`, { text, href: reportTargetHref(type, info) })
 
   const posts = idsOf('forum_post'), replies = idsOf('forum_reply'), tiers = idsOf('tier_list'), guides = idsOf('character_guide')
-  const [postsRes, repliesRes, tiersRes, guidesRes] = await Promise.all([
+  const comments = idsOf('guide_comment')
+  const [postsRes, repliesRes, tiersRes, guidesRes, commentsRes] = await Promise.all([
     posts.length ? supabase.from('forum_posts').select('id, title, category:forum_categories(slug)').in('id', posts) : null,
     replies.length
       ? supabase.from('forum_replies').select('id, content, post_id, post:forum_posts(category:forum_categories(slug))').in('id', replies)
       : null,
     tiers.length ? supabase.from('tier_lists').select('id, title').in('id', tiers) : null,
     guides.length ? supabase.from('character_guides').select('id, title, character:characters(slug)').in('id', guides) : null,
+    comments.length
+      ? supabase.from('guide_comments').select('id, content, guide:character_guides(character:characters(slug))').in('id', comments)
+      : null,
   ])
 
   for (const p of postsRes?.data ?? []) {
@@ -58,6 +62,9 @@ async function fetchPreviews(groups: readonly ReportGroup[]): Promise<Map<string
   for (const t of tiersRes?.data ?? []) put('tier_list', t.id, t.title, { id: t.id })
   for (const g of guidesRes?.data ?? []) {
     put('character_guide', g.id, g.title, { id: g.id, characterSlug: one(g.character)?.slug })
+  }
+  for (const c of commentsRes?.data ?? []) {
+    put('guide_comment', c.id, snippet(c.content), { id: c.id, characterSlug: one(one(c.guide)?.character)?.slug })
   }
   return previews
 }
