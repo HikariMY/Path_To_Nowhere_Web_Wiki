@@ -38,6 +38,7 @@ import { AdminForumPage } from './pages/admin/AdminForumPage'
 import { AdminLogsPage } from './pages/admin/AdminLogsPage'
 import { AdminAnnouncementsPage } from './pages/admin/AdminAnnouncementsPage'
 import { AdminSkillsPage } from './pages/admin/AdminSkillsPage'
+import { AdminDataGapsPage } from './pages/admin/AdminDataGapsPage'
 import { AdminGameInfoPage } from './pages/admin/AdminGameInfoPage'
 
 export default function App() {
@@ -113,6 +114,7 @@ export default function App() {
               <Route index element={<AdminDashboardPage />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="characters" element={<AdminSkillsPage />} />
+              <Route path="data-gaps" element={<AdminDataGapsPage />} />
               <Route path="events" element={<AdminEventsPage />} />
               <Route path="announcements" element={<AdminAnnouncementsPage />} />
               <Route path="forum" element={<AdminForumPage />} />

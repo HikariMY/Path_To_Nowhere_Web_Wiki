@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Plus, Edit2, Trash2, Search, Zap, Unlink, Sword, Layers, Network } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Character } from '../../types'
@@ -153,6 +154,9 @@ function RangeGridEditor({ range, onChange }: {
 export function AdminSkillsPage() {
   const { profile } = useAuth()
   const { toast } = useToast()
+  const [searchParams] = useSearchParams()
+  // ตัวละครที่ลิงก์มา (/admin/characters?char=<slug>) — ใช้ครั้งเดียวแล้วล้างทิ้ง
+  const [linkedSlug, setLinkedSlug] = useState(() => searchParams.get('char'))
 
   const [characters, setCharacters] = useState<CharListItem[]>([])
   const [loadingChars, setLoadingChars] = useState(true)
@@ -222,6 +226,14 @@ export function AdminSkillsPage() {
       hasRange: !!ec.hasRange,
       range: ec.range ? { ...ec.range, cells: [...ec.range.cells] } : { ...DEFAULT_RANGE, cells: [...DEFAULT_RANGE.cells] },
     } : blankExclusive())
+  }
+
+  // ลิงก์จากหน้า "ข้อมูลที่ขาด" → เปิดตัวละครนั้นทันทีที่รายชื่อโหลดเสร็จ (ครั้งเดียว)
+  // ตั้ง state ระหว่าง render ได้เพราะมีเงื่อนไขกันวน (linkedSlug ถูกล้างก่อน)
+  if (linkedSlug && !loadingChars) {
+    setLinkedSlug(null)
+    const linked = characters.find(c => c.slug === linkedSlug)
+    if (linked) selectCharacter(linked)
   }
 
   const persistSkills = async (updated: CharacterSkill[]) => {
