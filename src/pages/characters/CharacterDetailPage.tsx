@@ -9,7 +9,7 @@ import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { PageLoader } from '../../components/ui/Spinner'
 import { RARITY_COLORS, JOB_CLASS_LABEL, ALIGNMENT_LABEL, ALIGNMENT_ICON, TENDENCY_ICON } from '../../lib/constants'
-import { cn, formatDate } from '../../lib/utils'
+import { formatDate } from '../../lib/utils'
 import { rangeCellSize, skillRanges } from '../../lib/skillRange'
 import { useAbilityTags } from '../../hooks/useAbilityTags'
 import type { TagGroup } from '../../lib/abilityTags'
@@ -407,9 +407,9 @@ function SkillCard({ skill }: { skill: CharacterSkill }) {
 
       {/* ── Range (สูงสุด 3 อัน เรียงข้างกัน จอแคบขึ้นบรรทัดใหม่) ── */}
       {ranges.length > 0 && (
-        <div className="flex flex-wrap border-b border-ptn-border bg-black/40">
+        <div className="flex flex-wrap gap-x-2 border-b border-ptn-border bg-black/40">
           {ranges.map((r, i) => (
-            <div key={i} className={cn('min-w-0 flex', i > 0 && 'border-l border-ptn-border')}>
+            <div key={i} className="min-w-0 flex">
               <RangeGrid range={r} />
             </div>
           ))}
