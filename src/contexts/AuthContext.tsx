@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { authCallbackUrl, type SocialProvider } from '../lib/authRedirect'
 import type { Profile } from '../types'
 
 interface AuthContextValue {
@@ -12,6 +13,8 @@ interface AuthContextValue {
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null }>
+  /** ล็อกอินผ่าน Discord/Google — พาไปหน้าแพลตฟอร์ม แล้วกลับมาที่ /auth/callback?next=... */
+  signInWithProvider: (provider: SocialProvider, next?: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -76,6 +79,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null }
   }
 
+  const signInWithProvider = async (provider: SocialProvider, next?: string) => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: authCallbackUrl(window.location.origin, next) },
+    })
+    return { error: error as Error | null }
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
     setProfile(null)
@@ -87,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       session, user, profile, isAdmin, isModerator,
-      loading, signIn, signUp, signOut, refreshProfile,
+      loading, signIn, signUp, signInWithProvider, signOut, refreshProfile,
     }}>
       {children}
     </AuthContext.Provider>

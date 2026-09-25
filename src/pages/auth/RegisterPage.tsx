@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { useToast } from '../../components/ui/Toast'
+import { SocialLoginButtons } from '../../components/auth/SocialLoginButtons'
+import { supabase } from '../../lib/supabase'
 
 export function RegisterPage() {
   const { signUp } = useAuth()
@@ -31,6 +33,17 @@ export function RegisterPage() {
     if (Object.keys(errs).length) { setErrors(errs); return }
 
     setLoading(true)
+    // trigger สร้างโปรไฟล์จะเติมเลขท้ายชื่อที่ซ้ำให้เอง — เช็กก่อนเพื่อให้ผู้ใช้ได้ชื่อที่ตั้งใจ
+    const { data: taken } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', form.username)
+      .maybeSingle()
+    if (taken) {
+      setLoading(false)
+      setErrors({ username: 'ชื่อผู้ใช้นี้ถูกใช้แล้ว' })
+      return
+    }
     const { error } = await signUp(form.email, form.password, form.username)
     setLoading(false)
 
@@ -110,6 +123,7 @@ export function RegisterPage() {
               สมัครสมาชิก
             </Button>
           </form>
+          <SocialLoginButtons />
         </div>
 
         <p className="mt-4 text-center text-sm text-ptn-muted">
