@@ -18,6 +18,7 @@ export function Footer() {
             <Link to="/characters" className="hover:text-ptn-text transition-colors">ตัวละคร</Link>
             <Link to="/tier-lists" className="hover:text-ptn-text transition-colors">เทียร์ลิสต์</Link>
             <Link to="/forum" className="hover:text-ptn-text transition-colors">ฟอรัม</Link>
+            <Link to="/privacy" className="hover:text-ptn-text transition-colors">นโยบายความเป็นส่วนตัว</Link>
           </div>
 
           <p className="text-xs text-ptn-disabled text-center">

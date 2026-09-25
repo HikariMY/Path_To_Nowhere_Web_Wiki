@@ -11,6 +11,7 @@ import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/auth/LoginPage'
 import { RegisterPage } from './pages/auth/RegisterPage'
 import { AuthCallbackPage } from './pages/auth/AuthCallbackPage'
+import { PrivacyPage } from './pages/PrivacyPage'
 import { CharactersPage } from './pages/characters/CharactersPage'
 import { CharacterDetailPage } from './pages/characters/CharacterDetailPage'
 import { TierListsPage } from './pages/tier-lists/TierListsPage'
@@ -52,6 +53,7 @@ export default function App() {
               <Route path="login" element={<LoginPage />} />
               <Route path="register" element={<RegisterPage />} />
               <Route path="auth/callback" element={<AuthCallbackPage />} />
+              <Route path="privacy" element={<PrivacyPage />} />
 
               {/* Characters */}
               <Route path="characters" element={<CharactersPage />} />
