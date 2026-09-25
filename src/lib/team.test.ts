@@ -1,8 +1,25 @@
 import { describe, expect, test } from 'vitest'
 import {
-  MAX_TEAM_SIZE, TEAM_TITLE_MAX, addMember, moveMember, parseMembers, removeMember, setMemberBuild,
-  teamSummary, validateTeam, type TeamMember,
+  MAX_TEAM_SIZE, TEAM_DESCRIPTION_MAX, TEAM_TITLE_MAX, addMember, memberBuild, moveMember, parseMembers,
+  removeMember, setMemberBuild, teamSummary, validateTeam, type TeamMember,
 } from './team'
+
+describe('memberBuild', () => {
+  const builds = new Map([
+    ['b1', { id: 'b1', character_id: 'a' }],
+    ['b2', { id: 'b2', character_id: 'z' }],
+  ])
+
+  test('returns the chosen build when it belongs to that character', () => {
+    expect(memberBuild({ character_id: 'a', build_id: 'b1' }, builds)?.id).toBe('b1')
+  })
+
+  test('ignores a build that belongs to a different character, or none chosen', () => {
+    expect(memberBuild({ character_id: 'a', build_id: 'b2' }, builds)).toBeUndefined()
+    expect(memberBuild({ character_id: 'a', build_id: null }, builds)).toBeUndefined()
+    expect(memberBuild({ character_id: 'a', build_id: 'gone' }, builds)).toBeUndefined()
+  })
+})
 
 const m = (character_id: string, build_id: string | null = null): TeamMember => ({ character_id, build_id })
 
@@ -71,6 +88,11 @@ describe('validateTeam', () => {
   test('limits title length and team size', () => {
     expect(validateTeam({ title: 'x'.repeat(TEAM_TITLE_MAX + 1), members: [m('a')] })).toMatch(/ชื่อทีม/)
     expect(validateTeam({ title: 'PvE', members: ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map(id => m(id)) })).toMatch(/6/)
+  })
+
+  test('limits description length', () => {
+    const description = 'ก'.repeat(TEAM_DESCRIPTION_MAX + 1)
+    expect(validateTeam({ title: 'PvE', description, members: [m('a')] })).toMatch(/คำอธิบาย/)
   })
 
   test('accepts a valid team', () => {

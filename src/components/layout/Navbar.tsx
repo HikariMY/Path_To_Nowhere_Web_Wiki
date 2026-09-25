@@ -13,6 +13,7 @@ const navLinks = [
   { to: '/crimebrands', label: 'Crimebrands', exact: false },
   { to: '/game-info',   label: 'ข้อมูลเกม',  exact: false },
   { to: '/tier-lists',  label: 'เทียร์ลิสต์', exact: false },
+  { to: '/teams',       label: 'ทีม',        exact: false },
   { to: '/forum',       label: 'ฟอรัม',       exact: false },
 ]
 

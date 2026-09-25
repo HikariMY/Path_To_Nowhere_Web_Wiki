@@ -17,6 +17,9 @@ import { CharacterDetailPage } from './pages/characters/CharacterDetailPage'
 import { TierListsPage } from './pages/tier-lists/TierListsPage'
 import { TierListDetailPage } from './pages/tier-lists/TierListDetailPage'
 import { TierListCreatePage } from './pages/tier-lists/TierListCreatePage'
+import { TeamsPage } from './pages/teams/TeamsPage'
+import { TeamDetailPage } from './pages/teams/TeamDetailPage'
+import { TeamEditorPage } from './pages/teams/TeamEditorPage'
 import { ForumPage } from './pages/forum/ForumPage'
 import { ForumCategoryPage } from './pages/forum/ForumCategoryPage'
 import { ForumPostPage } from './pages/forum/ForumPostPage'
@@ -75,6 +78,16 @@ export default function App() {
               <Route path="tier-lists/:id" element={<TierListDetailPage />} />
               <Route path="tier-lists/:id/edit" element={
                 <ProtectedRoute><TierListCreatePage /></ProtectedRoute>
+              } />
+
+              {/* Team Builder */}
+              <Route path="teams" element={<TeamsPage />} />
+              <Route path="teams/new" element={
+                <ProtectedRoute><TeamEditorPage /></ProtectedRoute>
+              } />
+              <Route path="teams/:id" element={<TeamDetailPage />} />
+              <Route path="teams/:id/edit" element={
+                <ProtectedRoute><TeamEditorPage /></ProtectedRoute>
               } />
 
               {/* Forum */}
