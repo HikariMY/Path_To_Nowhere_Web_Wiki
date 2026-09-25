@@ -4,6 +4,8 @@
 // schema ไม่ตรงสเปก แล้ว fallback ไปเป็น `never` ทำให้ .insert()/.select()
 // พังทั้งโปรเจกต์แบบเงียบ ๆ
 
+import type { ReportReason, ReportStatus, ReportTargetType } from '../lib/moderation'
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Json = any
 
@@ -261,6 +263,19 @@ export type CharacterGuideVoteRow = {
   created_at: string
 }
 
+export type ReportRow = {
+  id: string
+  reporter_id: string
+  target_type: ReportTargetType
+  target_id: string
+  reason: ReportReason
+  detail: string | null
+  status: ReportStatus
+  resolved_by: string | null
+  resolved_at: string | null
+  created_at: string
+}
+
 export type GameInfoRow = {
   id: string
   category: 'tag' | 'alignment' | 'tendency'
@@ -317,6 +332,11 @@ export interface Database {
       ]>
 
       game_info: TableOf<GameInfoRow>
+
+      // reports.resolved_by ก็เป็น FK ไป profiles แต่ไม่ประกาศไว้ — กัน `reporter:profiles(...)` กำกวม
+      reports: TableOf<ReportRow, [
+        FK<'reports_reporter_id_fkey', 'reporter_id', 'profiles'>,
+      ]>
     }
     Views: Record<never, never>
     Functions: {

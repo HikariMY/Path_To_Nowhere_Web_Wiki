@@ -18,6 +18,7 @@ import {
 } from '../../lib/tierList'
 import { TierCharCard } from '../../components/tier-lists/TierParts'
 import { CharacterPool } from '../../components/tier-lists/CharacterPool'
+import { describeWriteError } from '../../lib/moderation'
 
 export function TierListCreatePage() {
   const { id } = useParams<{ id?: string }>()
@@ -104,7 +105,7 @@ export function TierListCreatePage() {
 
     setLoading(false)
     if (error) {
-      toast('เกิดข้อผิดพลาด: ' + error.message, 'error')
+      toast(describeWriteError(error, 'บันทึกไม่สำเร็จ'), 'error')
     } else {
       toast('บันทึกสำเร็จ!', 'success')
       if (isEdit) navigate(`/tier-lists/${id}`)

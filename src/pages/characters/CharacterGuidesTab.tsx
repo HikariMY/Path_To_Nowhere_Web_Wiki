@@ -17,6 +17,7 @@ import type { CharacterSkill, ReforgeData, ReforgeGuideBuild, ShackleBreak } fro
 import { toGuideBuild } from '../../lib/reforge'
 import { useExAnchorOptions } from '../../hooks/useExAnchorOptions'
 import { cn, formatRelativeTime } from '../../lib/utils'
+import { describeWriteError } from '../../lib/moderation'
 
 export function CharacterGuidesTab({ characterId, skills, shackles, reforge = null, jobClass = '', onOpenReforge }: {
   characterId: string
@@ -144,7 +145,7 @@ export function CharacterGuidesTab({ characterId, skills, shackles, reforge = nu
       : await supabase.from('character_guides').insert(payload)
 
     setSaving(false)
-    if (res.error) { toast('บันทึกไม่สำเร็จ: ' + res.error.message, 'error'); return }
+    if (res.error) { toast(describeWriteError(res.error, 'บันทึกไม่สำเร็จ'), 'error'); return }
     toast(editingId ? 'อัปเดตไกด์แล้ว' : 'เผยแพร่ไกด์แล้ว', 'success')
     setEditorOpen(false)
     reload()

@@ -28,6 +28,7 @@ import { CrimebrandsPage } from './pages/crimebrands/CrimebrandsPage'
 import { CrimebrandDetailPage } from './pages/crimebrands/CrimebrandDetailPage'
 import { AdminCrimebrandsPage } from './pages/admin/AdminCrimebrandsPage'
 import { AdminForumPostsPage } from './pages/admin/AdminForumPostsPage'
+import { AdminReportsPage } from './pages/admin/AdminReportsPage'
 import { AdminTierListsPage } from './pages/admin/AdminTierListsPage'
 
 // Admin Pages
@@ -120,6 +121,7 @@ export default function App() {
               <Route path="game-info" element={<AdminGameInfoPage />} />
               <Route path="crimebrands" element={<AdminCrimebrandsPage />} />
               <Route path="posts" element={<AdminForumPostsPage />} />
+              <Route path="reports" element={<AdminReportsPage />} />
               <Route path="tier-lists" element={<AdminTierListsPage />} />
               <Route path="logs" element={<AdminLogsPage />} />
             </Route>

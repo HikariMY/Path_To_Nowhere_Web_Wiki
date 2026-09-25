@@ -539,7 +539,9 @@ export function CharacterDetailPage() {
   const [searchParams] = useSearchParams()
   const [guideBuild, setGuideBuild] = useState<ReforgeGuideBuild | null>(null)
   // ลิงก์แชร์ build Reforge (?build=...) เปิดแท็บ Reforge ทันที
-  const [activeTab, setActiveTab] = useState(() => (searchParams.has('build') ? 'reforge' : 'info'))
+  // ?tab=guides เปิดแท็บไกด์ (ลิงก์จากหน้ารายงานของแอดมิน)
+  const [activeTab, setActiveTab] = useState(() =>
+    searchParams.has('build') ? 'reforge' : searchParams.get('tab') === 'guides' ? 'guides' : 'info')
   const [tagsModalOpen, setTagsModalOpen] = useState(false)
   const [builds, setBuilds] = useState<CrimebrandBuild[]>([])
   const [buildCbs, setBuildCbs] = useState<CrimebrandSimple[]>([])
