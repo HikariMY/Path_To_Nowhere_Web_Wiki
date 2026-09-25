@@ -69,11 +69,28 @@ export function teamSummary(
   }
 }
 
+/**
+ * build ที่เลือกไว้ของช่องนี้ — เฉพาะถ้าเป็น build ของตัวละครในช่องนั้นจริง
+ * (members เป็น jsonb ที่เจ้าของเขียนเองได้ อย่าโชว์ build ของตัวอื่นใต้การ์ดผิดตัว)
+ */
+export function memberBuild<B extends { character_id: string }>(
+  member: TeamMember,
+  buildById: ReadonlyMap<string, B>,
+): B | undefined {
+  const build = member.build_id ? buildById.get(member.build_id) : undefined
+  return build?.character_id === member.character_id ? build : undefined
+}
+
 /** ข้อความ error ภาษาไทย หรือ null ถ้าบันทึกได้ */
-export function validateTeam({ title, members }: { title: string; members: readonly TeamMember[] }): string | null {
+export function validateTeam({ title, description = '', members }: {
+  title: string
+  description?: string
+  members: readonly TeamMember[]
+}): string | null {
   const trimmed = title.trim()
   if (!trimmed) return 'กรุณาตั้งชื่อทีม'
   if ([...trimmed].length > TEAM_TITLE_MAX) return `ชื่อทีมยาวได้ไม่เกิน ${TEAM_TITLE_MAX} ตัวอักษร`
+  if (description.trim().length > TEAM_DESCRIPTION_MAX) return `คำอธิบายยาวได้ไม่เกิน ${TEAM_DESCRIPTION_MAX} ตัวอักษร`
   if (members.length === 0) return 'เลือกตัวละครอย่างน้อย 1 ตัว'
   if (members.length > MAX_TEAM_SIZE) return `ทีมหนึ่งมีได้ไม่เกิน ${MAX_TEAM_SIZE} ตัว`
   return null

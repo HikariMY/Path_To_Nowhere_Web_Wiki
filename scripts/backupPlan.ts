@@ -20,10 +20,11 @@ export const BACKUP_TABLES = [
   'profiles',
   'favorite_characters',
   'reports',
+  'teams',
 ] as const
 
 /** ตารางใหม่ที่อาจยังไม่ได้รัน migration — ถ้าหาไม่เจอให้ข้ามได้ (ตารางหลักหาไม่เจอต้องล้มดัง ๆ) */
-const OPTIONAL_TABLES: ReadonlySet<string> = new Set(['favorite_characters', 'reports'])
+const OPTIONAL_TABLES: ReadonlySet<string> = new Set(['favorite_characters', 'reports', 'teams'])
 
 /**
  * ข้ามตารางนี้ได้ไหม — เฉพาะตารางใน OPTIONAL_TABLES และเฉพาะ error "ไม่มีตาราง"

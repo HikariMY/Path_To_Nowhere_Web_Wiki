@@ -280,6 +280,18 @@ export type ReportRow = {
   created_at: string
 }
 
+export type TeamRow = {
+  id: string
+  author_id: string
+  title: string
+  description: string | null
+  /** [{ character_id, build_id }] สูงสุด 6 ช่อง — อ่านผ่าน parseMembers() */
+  members: Json
+  is_public: boolean
+  created_at: string
+  updated_at: string
+}
+
 export type FavoriteCharacterRow = {
   id: string
   user_id: string
@@ -345,6 +357,10 @@ export interface Database {
       game_info: TableOf<GameInfoRow>
 
       // reports.resolved_by ก็เป็น FK ไป profiles แต่ไม่ประกาศไว้ — กัน `reporter:profiles(...)` กำกวม
+      teams: TableOf<TeamRow, [
+        FK<'teams_author_id_fkey', 'author_id', 'profiles'>,
+      ]>
+
       favorite_characters: TableOf<FavoriteCharacterRow, [
         FK<'favorite_characters_user_id_fkey', 'user_id', 'profiles'>,
         FK<'favorite_characters_character_id_fkey', 'character_id', 'characters'>,
