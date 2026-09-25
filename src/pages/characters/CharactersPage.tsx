@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Filter, Users, ChevronDown, SlidersHorizontal, Network } from 'lucide-react'
+import { Search, Filter, Users, ChevronDown, SlidersHorizontal, Network, Heart } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Character } from '../../types'
 import { Input } from '../../components/ui/Input'
@@ -10,6 +10,8 @@ import { JOB_CLASS_LABEL, ALIGNMENT_LABEL, ALIGNMENT_ICON } from '../../lib/cons
 import { cn } from '../../lib/utils'
 import { parseReforge } from '../../lib/reforge'
 import { isNewCharacter } from '../../lib/newBadge'
+import { useFavorites } from '../../hooks/useFavorites'
+import { FavoriteButton } from '../../components/characters/FavoriteButton'
 import { useAbilityTags } from '../../hooks/useAbilityTags'
 
 // ── Tendency icons from /TenIcon/ ────────────────────────────────────────
@@ -273,6 +275,8 @@ export function CharactersPage() {
   const [showTagFilter, setShowTagFilter] = useState(false)
   const [sort, setSort] = useState<'release' | 'alpha'>('release')
   const [onlyReforge, setOnlyReforge] = useState(false)
+  const [onlyFavorites, setOnlyFavorites] = useState(false)
+  const favorites = useFavorites()
 
   const toggleTag = (tag: string) => {
     setSelectedTags(prev =>
@@ -312,6 +316,7 @@ export function CharactersPage() {
       if (filterClass && c.job_class !== filterClass) return false
       if (filterFaction && c.faction !== filterFaction) return false
       if (onlyReforge && !reforgeIds.has(c.id)) return false
+      if (onlyFavorites && !favorites.ids.has(c.id)) return false
       if (selectedTags.length > 0) {
         const charTags = (c.ability_tags as string[] | null) || []
         if (!selectedTags.some(t => charTags.includes(t))) return false
@@ -406,6 +411,20 @@ export function CharactersPage() {
             <Network size={12} /> มี Reforge
           </button>
         )}
+        {favorites.enabled && (
+          <button
+            onClick={() => setOnlyFavorites(v => !v)}
+            aria-pressed={onlyFavorites}
+            className={cn(
+              'flex items-center gap-1 px-3 py-1 rounded text-xs font-medium border transition-all',
+              onlyFavorites
+                ? 'border-rose-500 bg-rose-500/20 text-rose-300'
+                : 'border-ptn-border text-ptn-muted hover:border-ptn-border/80'
+            )}
+          >
+            <Heart size={12} className={onlyFavorites ? 'fill-current' : ''} /> เฉพาะที่ชอบ ({favorites.ids.size})
+          </button>
+        )}
         <span className="text-xs text-ptn-disabled ml-1">{filtered.length} ตัว</span>
       </div>
 
@@ -464,18 +483,35 @@ export function CharactersPage() {
       {filtered.length === 0 ? (
         <div className="text-center py-20 text-ptn-muted">
           <Users size={48} className="mx-auto mb-4 opacity-30" />
-          <p>ไม่พบตัวละครที่ตรงกับเงื่อนไข</p>
+          <p>{onlyFavorites && favorites.ids.size === 0
+            ? 'ยังไม่มีตัวละครโปรด — กดหัวใจบนการ์ดเพื่อเก็บไว้'
+            : 'ไม่พบตัวละครที่ตรงกับเงื่อนไข'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-2 md:gap-3">
-          {filtered.map(char => <CharacterCard key={char.id} character={char} hasReforge={reforgeIds.has(char.id)} />)}
+          {filtered.map(char => (
+            <CharacterCard
+              key={char.id}
+              character={char}
+              hasReforge={reforgeIds.has(char.id)}
+              favorite={favorites.ids.has(char.id)}
+              onToggleFavorite={() => favorites.toggle(char.id)}
+            />
+          ))}
         </div>
       )}
     </div>
   )
 }
 
-function CharacterCard({ character, hasReforge }: { character: Character; hasReforge: boolean }) {
+interface CharacterCardProps {
+  character: Character
+  hasReforge: boolean
+  favorite: boolean
+  onToggleFavorite: () => void
+}
+
+function CharacterCard({ character, hasReforge, favorite, onToggleFavorite }: CharacterCardProps) {
   const color = RARITY_COLOR[character.rarity] || '#888'
   const mbccId = (character.tags as string[])?.[0] || ''
   const isCN = COLLAB_SLUGS.has(character.slug)
@@ -491,7 +527,9 @@ function CharacterCard({ character, hasReforge }: { character: Character; hasRef
   const shadowHover   = isLimited ? '0 0 18px 5px rgba(245,166,35,0.6), 0 0 0 1px rgba(245,166,35,0.25)' : 'none'
 
   return (
-    <Link to={`/characters/${character.slug}`} className="group block">
+    // ปุ่มหัวใจอยู่ข้าง Link (ไม่ใช่ข้างใน) — ปุ่มซ้อนใน <a> ผิดหลัก HTML และ screen reader อ่านเพี้ยน
+    <div className="group relative">
+    <Link to={`/characters/${character.slug}`} className="block">
       <div
         className="relative rounded-lg overflow-hidden aspect-[2/3] bg-ptn-elevated
           transition-all duration-300 hover:-translate-y-0.5"
@@ -582,7 +620,7 @@ function CharacterCard({ character, hasReforge }: { character: Character; hasRef
         </div>
 
         {/* Bottom info */}
-        <div className="absolute bottom-0 left-0 right-0 px-2 pb-1.5 pt-8">
+        <div className="absolute bottom-0 left-0 right-0 pl-2 pr-7 pb-1.5 pt-8">
           <p className="font-heading font-bold text-white text-sm leading-tight drop-shadow truncate">
             {character.name}
           </p>
@@ -598,5 +636,7 @@ function CharacterCard({ character, hasReforge }: { character: Character; hasRef
         />
       </div>
     </Link>
+    <FavoriteButton active={favorite} onToggle={onToggleFavorite} size={14} className="absolute bottom-1 right-0.5 z-10" />
+    </div>
   )
 }

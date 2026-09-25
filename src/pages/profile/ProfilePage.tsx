@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { MessageSquare, Calendar } from 'lucide-react'
+import { MessageSquare, Calendar, Heart } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import type { Profile, ForumPostWithAuthor } from '../../types'
+import type { Profile, ForumPostWithAuthor, Character } from '../../types'
+import { RARITY_COLORS } from '../../lib/constants'
 import { Avatar } from '../../components/ui/Avatar'
 import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { PageLoader } from '../../components/ui/Spinner'
 import { formatDate, formatRelativeTime } from '../../lib/utils'
 
+type FavoriteCharacter = Pick<Character, 'id' | 'name' | 'slug' | 'portrait_url' | 'portrait_pos' | 'rarity'>
+
 export function ProfilePage() {
   const { username } = useParams<{ username: string }>()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [posts, setPosts] = useState<ForumPostWithAuthor[]>([])
+  const [favorites, setFavorites] = useState<FavoriteCharacter[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -24,14 +28,26 @@ export function ProfilePage() {
         .single()
       if (profileData) {
         setProfile(profileData)
-        const { data: postsData } = await supabase
-          .from('forum_posts')
-          .select('*, author:profiles(id, username, avatar_url, role), category:forum_categories(id, name, slug, color)')
-          .eq('author_id', profileData.id)
-          .eq('is_deleted', false)
-          .order('created_at', { ascending: false })
-          .limit(10)
+        const [{ data: postsData }, { data: favoritesData }] = await Promise.all([
+          supabase
+            .from('forum_posts')
+            .select('*, author:profiles(id, username, avatar_url, role), category:forum_categories(id, name, slug, color)')
+            .eq('author_id', profileData.id)
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: false })
+            .limit(10),
+          supabase
+            .from('favorite_characters')
+            .select('character:characters(id, name, slug, portrait_url, portrait_pos, rarity)')
+            .eq('user_id', profileData.id)
+            .order('created_at', { ascending: false }),
+        ])
         setPosts((postsData || []) as ForumPostWithAuthor[])
+        // ตัวละครที่ถูกลบไปแล้วจะมาเป็น null — ตัดทิ้ง
+        setFavorites((favoritesData || []).flatMap(f => {
+          const character = Array.isArray(f.character) ? f.character[0] : f.character
+          return character ? [character as FavoriteCharacter] : []
+        }))
       }
       setLoading(false)
     }
@@ -68,6 +84,42 @@ export function ProfilePage() {
           </div>
         </div>
       </Card>
+
+      {/* Favourite characters */}
+      {favorites.length > 0 && (
+        <section className="mb-6">
+          <h2 className="font-heading text-lg font-semibold text-ptn-text mb-3 flex items-center gap-2">
+            <Heart size={16} className="text-rose-500 fill-current" />
+            ตัวละครโปรด <span className="text-sm font-normal text-ptn-muted">{favorites.length}</span>
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {favorites.map(c => (
+              <Link
+                key={c.id}
+                to={`/characters/${c.slug}`}
+                title={c.name}
+                className="group w-16 shrink-0"
+              >
+                <div
+                  className="aspect-square overflow-hidden rounded-lg border bg-ptn-elevated transition-transform group-hover:-translate-y-0.5"
+                  style={{ borderColor: `${RARITY_COLORS[c.rarity] ?? '#888'}80` }}
+                >
+                  {c.portrait_url && (
+                    <img
+                      src={c.portrait_url}
+                      alt={c.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                      style={{ objectPosition: c.portrait_pos || '50% 20%' }}
+                    />
+                  )}
+                </div>
+                <p className="mt-1 truncate text-center text-[11px] text-ptn-muted group-hover:text-ptn-text">{c.name}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Recent posts */}
       <h2 className="font-heading text-lg font-semibold text-ptn-text mb-3">กระทู้ล่าสุด</h2>

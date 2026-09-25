@@ -8,7 +8,9 @@
 // ============================================================
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { BACKUP_BUCKET, BACKUP_TABLES, backupFileName, filesToPrune, orderColumns } from './backupPlan.ts'
+import {
+  BACKUP_BUCKET, BACKUP_TABLES, backupFileName, canSkipMissingTable, filesToPrune, orderColumns,
+} from './backupPlan.ts'
 
 const PAGE_SIZE = 1000
 
@@ -18,7 +20,8 @@ function requireEnv(name: string): string {
   return value
 }
 
-async function dumpTable(client: SupabaseClient, table: string): Promise<unknown[]> {
+/** คืน null ถ้าเป็นตารางใหม่ที่ยังไม่ถูกสร้างในฐานข้อมูล (ยังไม่ได้รัน migration) */
+async function dumpTable(client: SupabaseClient, table: string): Promise<unknown[] | null> {
   let rows: unknown[] = []
   // เลื่อนตามจำนวนแถวที่ได้จริง และหยุดเมื่อได้หน้าว่าง — ถ้า Max Rows ของ Supabase ถูกตั้งต่ำกว่า
   // PAGE_SIZE หน้าจะสั้นกว่าที่ขอ การเลื่อนทีละ PAGE_SIZE จะข้ามแถวไปเงียบ ๆ
@@ -28,6 +31,7 @@ async function dumpTable(client: SupabaseClient, table: string): Promise<unknown
       client.from(table).select('*'),
     )
     const { data, error } = await query.range(rows.length, rows.length + PAGE_SIZE - 1)
+    if (error && canSkipMissingTable(table, error)) return null
     if (error) throw new Error(`อ่านตาราง ${table} ไม่สำเร็จ: ${error.message}`)
     if (data.length === 0) return rows
     rows = rows.concat(data)
@@ -53,8 +57,13 @@ async function main(): Promise<void> {
 
   const tables: Record<string, unknown[]> = {}
   for (const table of BACKUP_TABLES) {
-    tables[table] = await dumpTable(client, table)
-    console.info(`${table}: ${tables[table].length} แถว`)
+    const rows = await dumpTable(client, table)
+    if (rows === null) {
+      console.warn(`${table}: ยังไม่มีตารางนี้ในฐานข้อมูล — ข้าม`)
+      continue
+    }
+    tables[table] = rows
+    console.info(`${table}: ${rows.length} แถว`)
   }
 
   const fileName = backupFileName(now)
