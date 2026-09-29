@@ -10,17 +10,19 @@ import { Input } from '../../components/ui/Input'
 import { Textarea } from '../../components/ui/Textarea'
 import { PageLoader } from '../../components/ui/Spinner'
 import { TierCharCard } from '../../components/tier-lists/TierParts'
-import { BuildBadge, TeamSummaryPanel } from '../../components/teams/TeamParts'
-import { useTeamCatalog, type TeamCatalog } from '../../hooks/useTeamCatalog'
+import { CrimebrandBadge, TeamSummaryPanel } from '../../components/teams/TeamParts'
+import { useTeamCatalog, type TeamCatalog, type TeamCrimebrand } from '../../hooks/useTeamCatalog'
 import { filterCharacters } from '../../lib/tierList'
 import { describeWriteError } from '../../lib/moderation'
 import { cn } from '../../lib/utils'
 import {
-  MAX_TEAM_SIZE, TEAM_DESCRIPTION_MAX, TEAM_TITLE_MAX, addMember, memberBuild, moveMember, parseMembers,
-  removeMember, setMemberBuild, validateTeam, type TeamMember,
+  CB_PIECES, CB_PIECE_LABEL, MAX_TEAM_SIZE, TEAM_DESCRIPTION_MAX, TEAM_TITLE_MAX, addMember, hasCustomCbs, memberCrimebrands,
+  moveMember, parseMembers, removeMember, setMemberBuild, setMemberCustomCb, validateTeam,
+  type CustomCbSlots, type TeamMember,
 } from '../../lib/team'
 
 const RARITIES = ['S', 'A', 'B', 'C'] as const
+const SLOT_INDEXES = [0, 1, 2] as const
 
 interface Draft {
   title: string
@@ -147,6 +149,8 @@ export function TeamEditorPage() {
             onRemove={cid => setMembers(ms => removeMember(ms, cid))}
             onMove={(index, dir) => setMembers(ms => moveMember(ms, index, dir))}
             onBuild={(cid, buildId) => setMembers(ms => setMemberBuild(ms, cid, buildId))}
+            onCustomCbs={(cid, slots) => setMembers(ms =>
+              SLOT_INDEXES.reduce((acc, i) => setMemberCustomCb(acc, cid, i, slots[i]), ms))}
           />
 
           <CharacterPicker
@@ -164,26 +168,60 @@ export function TeamEditorPage() {
   )
 }
 
-function TeamSlots({ members, catalog, onRemove, onMove, onBuild }: {
+function TeamSlots({ members, catalog, onRemove, onMove, onBuild, onCustomCbs }: {
   members: readonly TeamMember[]
   catalog: TeamCatalog
   onRemove: (characterId: string) => void
   onMove: (index: number, dir: -1 | 1) => void
   onBuild: (characterId: string, buildId: string | null) => void
+  onCustomCbs: (characterId: string, slots: CustomCbSlots) => void
 }) {
+  // ตัวที่อยู่โหมดเลือกเอง — จำไว้แยก เพราะเพิ่งสลับมาช่องยังว่างหมดก็ต้องยังอยู่โหมดนี้
+  const [customIds, setCustomIds] = useState(() => new Set(members.filter(hasCustomCbs).map(m => m.character_id)))
   const empty = MAX_TEAM_SIZE - members.length
+
+  const switchToCustom = (member: TeamMember) => {
+    setCustomIds(prev => new Set(prev).add(member.character_id))
+    // เริ่มจาก build แนะนำที่เลือกไว้ (ถ้ามี) แล้วค่อยปรับเอง
+    const { slots } = memberCrimebrands(member, catalog.buildById)
+    const start = SLOT_INDEXES.map(i => {
+      const s = slots.find(x => x.position === i)
+      return s ? { cb_id: s.cb_id, piece: s.piece ?? 1 } : null
+    })
+    onCustomCbs(member.character_id, [start[0], start[1], start[2]])
+  }
+
+  const leaveCustom = (characterId: string) => setCustomIds(prev => {
+    const next = new Set(prev)
+    next.delete(characterId)
+    return next
+  })
+
+  const switchToBuild = (member: TeamMember) => {
+    leaveCustom(member.character_id)
+    onBuild(member.character_id, null)
+  }
+
+  // เอาออกแล้วเพิ่มกลับ ต้องเริ่มที่โหมด build แนะนำใหม่
+  const remove = (characterId: string) => {
+    leaveCustom(characterId)
+    onRemove(characterId)
+  }
+
   return (
     <section aria-label="ตัวละครในทีม" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
       {members.map((member, index) => {
         const char = catalog.charById.get(member.character_id)
         const builds = catalog.buildsByChar.get(member.character_id) ?? []
-        const build = memberBuild(member, catalog.buildById)
+        const custom = customIds.has(member.character_id) || hasCustomCbs(member)
+        const { buildName, slots } = memberCrimebrands(member, catalog.buildById)
+        const charName = char?.name ?? 'ตัวละคร'
         return (
           <Card key={member.character_id} className="flex flex-col gap-2 p-2">
             <div className="flex items-start gap-2">
               {char ? <TierCharCard char={char} /> : <span className="text-xs text-ptn-muted">ตัวละครถูกลบ</span>}
               <div className="ml-auto flex flex-col gap-1">
-                <button type="button" onClick={() => onRemove(member.character_id)} aria-label="เอาออกจากทีม"
+                <button type="button" onClick={() => remove(member.character_id)} aria-label="เอาออกจากทีม"
                   className="rounded p-1 text-ptn-muted hover:text-ptn-red"><X size={14} /></button>
                 <button type="button" onClick={() => onMove(index, -1)} disabled={index === 0} aria-label="เลื่อนไปทางซ้าย"
                   className="rounded p-1 text-ptn-muted hover:text-ptn-text disabled:opacity-30"><ChevronLeft size={14} /></button>
@@ -192,16 +230,39 @@ function TeamSlots({ members, catalog, onRemove, onMove, onBuild }: {
                   className="rounded p-1 text-ptn-muted hover:text-ptn-text disabled:opacity-30"><ChevronRight size={14} /></button>
               </div>
             </div>
-            <select
-              value={member.build_id ?? ''}
-              onChange={e => onBuild(member.character_id, e.target.value || null)}
-              aria-label={`Crimebrand build ของ ${char?.name ?? 'ตัวละคร'}`}
-              className="w-full rounded border border-ptn-border bg-ptn-elevated px-2 py-1 text-xs text-ptn-text"
-            >
-              <option value="">{builds.length ? 'ไม่ระบุ Crimebrand' : 'ยังไม่มี build ในวิกิ'}</option>
-              {builds.map(b => <option key={b.id} value={b.id}>{b.build_name}</option>)}
-            </select>
-            {build && <BuildBadge build={build} cbById={catalog.cbById} />}
+            <div role="group" aria-label={`วิธีเลือก Crimebrand ของ ${charName}`} className="grid grid-cols-2 gap-1">
+              {([['build แนะนำ', false], ['เลือกเอง', true]] as const).map(([label, isCustom]) => (
+                <button
+                  key={label}
+                  type="button"
+                  aria-pressed={custom === isCustom}
+                  onClick={() => { if (custom !== isCustom) (isCustom ? switchToCustom : switchToBuild)(member) }}
+                  className={cn('rounded border px-1.5 py-0.5 text-[11px]',
+                    custom === isCustom ? 'border-ptn-red bg-ptn-red/15 text-ptn-text' : 'border-ptn-border text-ptn-muted')}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {custom ? (
+              <CustomCbPicker
+                slots={member.custom_cbs}
+                crimebrands={catalog.crimebrands}
+                charName={charName}
+                onChange={next => onCustomCbs(member.character_id, next)}
+              />
+            ) : (
+              <select
+                value={member.build_id ?? ''}
+                onChange={e => onBuild(member.character_id, e.target.value || null)}
+                aria-label={`Crimebrand build ของ ${charName}`}
+                className="w-full rounded border border-ptn-border bg-ptn-elevated px-2 py-1 text-xs text-ptn-text"
+              >
+                <option value="">{builds.length ? 'ไม่ระบุ Crimebrand' : 'ยังไม่มี build ในวิกิ'}</option>
+                {builds.map(b => <option key={b.id} value={b.id}>{b.build_name}</option>)}
+              </select>
+            )}
+            {slots.length > 0 && <CrimebrandBadge buildName={buildName} slots={slots} cbById={catalog.cbById} />}
           </Card>
         )
       })}
@@ -212,6 +273,59 @@ function TeamSlots({ members, catalog, onRemove, onMove, onBuild }: {
         </div>
       ))}
     </section>
+  )
+}
+
+/** เลือก Crimebrand เอง 3 ช่อง จาก Crimebrand ทั้งหมดในเว็บ ไม่ผูกกับตัวละคร */
+function CustomCbPicker({ slots, crimebrands, charName, onChange }: {
+  slots: CustomCbSlots
+  crimebrands: readonly TeamCrimebrand[]
+  charName: string
+  onChange: (next: CustomCbSlots) => void
+}) {
+  const ranks = [...new Set(crimebrands.map(cb => cb.rank))]
+  const setSlot = (index: 0 | 1 | 2, cbId: string, piece: number) => {
+    const next = [...slots] as [CustomCbSlots[0], CustomCbSlots[1], CustomCbSlots[2]]
+    next[index] = cbId ? { cb_id: cbId, piece } : null
+    onChange(next)
+  }
+
+  return (
+    <div className="space-y-1">
+      {SLOT_INDEXES.map(i => {
+        const slot = slots[i]
+        const label = CB_PIECE_LABEL[i]
+        return (
+          <div key={i} className="flex items-center gap-1">
+            <span className="w-4 shrink-0 font-mono text-[10px] text-ptn-disabled">{label}</span>
+            <select
+              value={slot?.cb_id ?? ''}
+              onChange={e => setSlot(i, e.target.value, slot?.piece ?? 1)}
+              aria-label={`Crimebrand ช่อง ${label} ของ ${charName}`}
+              className="min-w-0 flex-1 rounded border border-ptn-border bg-ptn-elevated px-1 py-0.5 text-[11px] text-ptn-text"
+            >
+              <option value="">— ว่าง —</option>
+              {ranks.map(rank => (
+                <optgroup key={rank} label={`แรงก์ ${rank}`}>
+                  {crimebrands.filter(cb => cb.rank === rank).map(cb => (
+                    <option key={cb.id} value={cb.id}>{cb.name}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <select
+              value={slot?.piece ?? 1}
+              onChange={e => slot && setSlot(i, slot.cb_id, Number(e.target.value))}
+              disabled={!slot}
+              aria-label={`ชิ้นของ Crimebrand ช่อง ${label} ของ ${charName}`}
+              className="w-12 shrink-0 rounded border border-ptn-border bg-ptn-elevated px-1 py-0.5 text-[11px] text-ptn-text disabled:opacity-40"
+            >
+              {CB_PIECES.map(p => <option key={p} value={p}>{CB_PIECE_LABEL[p - 1]}</option>)}
+            </select>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 

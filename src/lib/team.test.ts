@@ -1,27 +1,51 @@
 import { describe, expect, test } from 'vitest'
 import {
-  MAX_TEAM_SIZE, TEAM_DESCRIPTION_MAX, TEAM_TITLE_MAX, addMember, memberBuild, moveMember, parseMembers,
-  removeMember, setMemberBuild, teamSummary, validateTeam, type TeamMember,
+  EMPTY_CUSTOM_CBS, MAX_TEAM_SIZE, TEAM_DESCRIPTION_MAX, TEAM_TITLE_MAX, addMember, memberBuild,
+  memberCrimebrands, moveMember, parseMembers, removeMember, setMemberBuild, setMemberCustomCb, teamSummary,
+  validateTeam, type CustomCbSlots, type TeamMember,
 } from './team'
 
-describe('memberBuild', () => {
-  const builds = new Map([
-    ['b1', { id: 'b1', character_id: 'a' }],
-    ['b2', { id: 'b2', character_id: 'z' }],
-  ])
+const m = (character_id: string, build_id: string | null = null, custom_cbs: CustomCbSlots = EMPTY_CUSTOM_CBS): TeamMember =>
+  ({ character_id, build_id, custom_cbs })
 
+const builds = new Map([
+  ['b1', { id: 'b1', character_id: 'a', build_name: 'DPS', slots: [{ cb_id: 'x', piece: 1 }, { cb_id: 'x', piece: 2 }] }],
+  ['b2', { id: 'b2', character_id: 'z', build_name: 'Other', slots: [{ cb_id: 'y', piece: 1 }] }],
+])
+
+describe('memberBuild', () => {
   test('returns the chosen build when it belongs to that character', () => {
-    expect(memberBuild({ character_id: 'a', build_id: 'b1' }, builds)?.id).toBe('b1')
+    expect(memberBuild(m('a', 'b1'), builds)?.id).toBe('b1')
   })
 
   test('ignores a build that belongs to a different character, or none chosen', () => {
-    expect(memberBuild({ character_id: 'a', build_id: 'b2' }, builds)).toBeUndefined()
-    expect(memberBuild({ character_id: 'a', build_id: null }, builds)).toBeUndefined()
-    expect(memberBuild({ character_id: 'a', build_id: 'gone' }, builds)).toBeUndefined()
+    expect(memberBuild(m('a', 'b2'), builds)).toBeUndefined()
+    expect(memberBuild(m('a'), builds)).toBeUndefined()
+    expect(memberBuild(m('a', 'gone'), builds)).toBeUndefined()
   })
 })
 
-const m = (character_id: string, build_id: string | null = null): TeamMember => ({ character_id, build_id })
+describe('memberCrimebrands', () => {
+  test('shows freely chosen crimebrands, keeping each one in its own slot position', () => {
+    const member = m('a', null, [{ cb_id: 'any', piece: 3 }, null, { cb_id: 'any', piece: 1 }])
+    expect(memberCrimebrands(member, builds)).toEqual({
+      buildName: null,
+      slots: [{ position: 0, cb_id: 'any', piece: 3 }, { position: 2, cb_id: 'any', piece: 1 }],
+    })
+  })
+
+  test('falls back to the recommended build for teams saved before custom picks existed', () => {
+    expect(memberCrimebrands(m('a', 'b1'), builds)).toEqual({
+      buildName: 'DPS',
+      slots: [{ position: 0, cb_id: 'x', piece: 1 }, { position: 1, cb_id: 'x', piece: 2 }],
+    })
+  })
+
+  test('is empty when nothing is chosen or the build belongs to someone else', () => {
+    expect(memberCrimebrands(m('a'), builds)).toEqual({ buildName: null, slots: [] })
+    expect(memberCrimebrands(m('a', 'b2'), builds)).toEqual({ buildName: null, slots: [] })
+  })
+})
 
 describe('addMember', () => {
   test('appends a new character without a build', () => {
@@ -58,6 +82,29 @@ describe('removeMember / moveMember / setMemberBuild', () => {
   test('setMemberBuild sets or clears the build of one member', () => {
     expect(setMemberBuild([m('a'), m('b')], 'b', 'x')).toEqual([m('a'), m('b', 'x')])
     expect(setMemberBuild([m('a', 'x')], 'a', null)).toEqual([m('a')])
+  })
+
+  test('setMemberBuild drops custom picks — only one kind is used at a time', () => {
+    const custom = m('a', null, [{ cb_id: 'c', piece: 1 }, null, null])
+    expect(setMemberBuild([custom], 'a', 'x')).toEqual([m('a', 'x')])
+  })
+})
+
+describe('setMemberCustomCb', () => {
+  test('sets one slot to any crimebrand and drops the recommended build', () => {
+    expect(setMemberCustomCb([m('a', 'b1'), m('b')], 'a', 1, { cb_id: 'c', piece: 2 }))
+      .toEqual([m('a', null, [null, { cb_id: 'c', piece: 2 }, null]), m('b')])
+  })
+
+  test('clears a slot without moving the others', () => {
+    const start = [m('a', null, [{ cb_id: 'c', piece: 1 }, { cb_id: 'd', piece: 2 }, null])]
+    expect(setMemberCustomCb(start, 'a', 0, null)).toEqual([m('a', null, [null, { cb_id: 'd', piece: 2 }, null])])
+  })
+
+  test('never changes the members it was given', () => {
+    const start = [m('a')]
+    setMemberCustomCb(start, 'a', 0, { cb_id: 'c', piece: 1 })
+    expect(start).toEqual([m('a')])
   })
 })
 
@@ -110,5 +157,18 @@ describe('parseMembers', () => {
       ...['b', 'c', 'd', 'e', 'f', 'g'].map(id => ({ character_id: id }))]
     expect(parseMembers(raw).map(x => x.character_id)).toEqual(['a', 'b', 'c', 'd', 'e', 'f'])
     expect(parseMembers('nope')).toEqual([])
+  })
+
+  test('reads custom crimebrands, turning bad slots into empty ones and dropping extras', () => {
+    const raw = [{
+      character_id: 'a',
+      custom_cbs: [{ cb_id: 'c', piece: 2 }, { cb_id: 'd', piece: 9 }, 'junk', { cb_id: 'e', piece: 1 }],
+    }]
+    expect(parseMembers(raw)).toEqual([m('a', null, [{ cb_id: 'c', piece: 2 }, null, null])])
+  })
+
+  test('lets custom picks win when stored data has both kinds', () => {
+    const raw = [{ character_id: 'a', build_id: 'b1', custom_cbs: [{ cb_id: 'c', piece: 1 }] }]
+    expect(parseMembers(raw)).toEqual([m('a', null, [{ cb_id: 'c', piece: 1 }, null, null])])
   })
 })

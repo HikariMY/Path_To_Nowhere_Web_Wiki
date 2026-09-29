@@ -26,8 +26,13 @@ export interface TeamCatalog {
   charById: Map<string, TeamCharacter>
   buildsByChar: Map<string, TeamBuild[]>
   buildById: Map<string, TeamBuild>
+  /** Crimebrand ทุกตัวในเว็บ เรียงตามแรงก์แล้วชื่อ — ใช้ให้เลือกเองได้ไม่ผูกกับตัวละคร */
+  crimebrands: TeamCrimebrand[]
   cbById: Map<string, TeamCrimebrand>
 }
+
+const RANK_ORDER = ['S', 'A', 'B']
+const rankIndex = (rank: string) => (RANK_ORDER.includes(rank) ? RANK_ORDER.indexOf(rank) : RANK_ORDER.length)
 
 type BuildRow = {
   id: string
@@ -80,6 +85,8 @@ async function loadCatalog(): Promise<TeamCatalog> {
   if (cbRes.error) throw cbRes.error
 
   const characters = (charsRes.data ?? []) as TeamCharacter[]
+  const crimebrands = ((cbRes.data ?? []) as TeamCrimebrand[])
+    .sort((a, b) => rankIndex(a.rank) - rankIndex(b.rank) || a.name.localeCompare(b.name))
   const builds = buildRows.map(toBuild)
   const buildsByChar = new Map<string, TeamBuild[]>()
   for (const build of builds) {
@@ -90,7 +97,8 @@ async function loadCatalog(): Promise<TeamCatalog> {
     charById: new Map(characters.map(c => [c.id, c])),
     buildsByChar,
     buildById: new Map(builds.map(b => [b.id, b])),
-    cbById: new Map((cbRes.data ?? []).map(cb => [cb.id, cb as TeamCrimebrand])),
+    crimebrands,
+    cbById: new Map(crimebrands.map(cb => [cb.id, cb])),
   }
 }
 
