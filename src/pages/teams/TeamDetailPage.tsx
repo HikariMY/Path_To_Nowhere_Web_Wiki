@@ -9,9 +9,9 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { PageLoader } from '../../components/ui/Spinner'
 import { TierCharCard } from '../../components/tier-lists/TierParts'
-import { BuildBadge, TeamSummaryPanel } from '../../components/teams/TeamParts'
+import { CrimebrandBadge, TeamSummaryPanel } from '../../components/teams/TeamParts'
 import { useTeamCatalog } from '../../hooks/useTeamCatalog'
-import { memberBuild, parseMembers, type TeamMember } from '../../lib/team'
+import { memberCrimebrands, parseMembers, type TeamMember } from '../../lib/team'
 import { formatRelativeTime } from '../../lib/utils'
 import type { Profile } from '../../types'
 import type { TeamRow } from '../../types/database.types'
@@ -124,7 +124,7 @@ export function TeamDetailPage() {
         <section aria-label="ตัวละครในทีม" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {team.members.map(member => {
             const char = catalog.charById.get(member.character_id)
-            const build = memberBuild(member, catalog.buildById)
+            const { buildName, slots } = memberCrimebrands(member, catalog.buildById)
             return (
               <Card key={member.character_id} className="flex flex-col gap-2 p-2">
                 {char ? (
@@ -132,8 +132,8 @@ export function TeamDetailPage() {
                 ) : (
                   <span className="text-xs text-ptn-muted">ตัวละครถูกลบ</span>
                 )}
-                {build
-                  ? <BuildBadge build={build} cbById={catalog.cbById} />
+                {slots.length > 0
+                  ? <CrimebrandBadge buildName={buildName} slots={slots} cbById={catalog.cbById} />
                   : <p className="text-[11px] text-ptn-disabled">ไม่ระบุ Crimebrand</p>}
               </Card>
             )

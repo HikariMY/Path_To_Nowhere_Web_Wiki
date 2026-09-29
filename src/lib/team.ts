@@ -8,15 +8,34 @@ export const MAX_TEAM_SIZE = 6
 export const TEAM_TITLE_MAX = 60
 export const TEAM_DESCRIPTION_MAX = 500
 
-/** หนึ่งช่องในทีม — build_id อ้าง character_crimebrand_builds ของตัวละครนั้น (ไม่เลือก = null) */
+/** Crimebrand หนึ่งช่องที่ผู้ใช้เลือกเอง — piece คือชิ้นที่ 1–3 ของ Crimebrand นั้น */
+export interface CustomCbSlot {
+  cb_id: string
+  piece: number
+}
+
+/** Crimebrand ที่เลือกเองมี 3 ช่องเสมอ ช่องที่ไม่เลือกเป็น null */
+export type CustomCbSlots = readonly [CustomCbSlot | null, CustomCbSlot | null, CustomCbSlot | null]
+
+export const CB_PIECES = [1, 2, 3] as const
+/** ป้ายชิ้น / ช่องของ Crimebrand — แบบเดียวกับหน้าตัวละคร */
+export const CB_PIECE_LABEL = ['I', 'II', 'III']
+export const EMPTY_CUSTOM_CBS: CustomCbSlots = [null, null, null]
+
+/**
+ * หนึ่งช่องในทีม — ใส่ Crimebrand ได้ 2 แบบ ใช้ได้ทีละแบบ:
+ * - build_id: build แนะนำของตัวละครนั้น (character_crimebrand_builds)
+ * - custom_cbs: เลือกเองจาก Crimebrand ทั้งหมดในเว็บ ไม่ผูกกับตัวละคร
+ */
 export interface TeamMember {
   character_id: string
   build_id: string | null
+  custom_cbs: CustomCbSlots
 }
 
 export function addMember(members: readonly TeamMember[], characterId: string): TeamMember[] {
   if (members.length >= MAX_TEAM_SIZE || members.some(m => m.character_id === characterId)) return [...members]
-  return [...members, { character_id: characterId, build_id: null }]
+  return [...members, { character_id: characterId, build_id: null, custom_cbs: EMPTY_CUSTOM_CBS }]
 }
 
 export function removeMember(members: readonly TeamMember[], characterId: string): TeamMember[] {
@@ -32,9 +51,27 @@ export function moveMember(members: readonly TeamMember[], index: number, dir: -
   return next
 }
 
+/** เลือก build แนะนำ — ล้าง Crimebrand ที่เลือกเองของตัวนั้นทิ้ง */
 export function setMemberBuild(members: readonly TeamMember[], characterId: string, buildId: string | null): TeamMember[] {
-  return members.map(m => (m.character_id === characterId ? { ...m, build_id: buildId } : m))
+  return members.map(m => (m.character_id === characterId ? { ...m, build_id: buildId, custom_cbs: EMPTY_CUSTOM_CBS } : m))
 }
+
+/** ตั้ง Crimebrand ที่เลือกเองช่องที่ index (0–2) — null = ล้างช่องนั้น · เลือกเองแล้วเลิกใช้ build แนะนำ */
+export function setMemberCustomCb(
+  members: readonly TeamMember[],
+  characterId: string,
+  index: 0 | 1 | 2,
+  slot: CustomCbSlot | null,
+): TeamMember[] {
+  return members.map(m => {
+    if (m.character_id !== characterId) return m
+    const next = [...m.custom_cbs] as [CustomCbSlot | null, CustomCbSlot | null, CustomCbSlot | null]
+    next[index] = slot
+    return { ...m, build_id: null, custom_cbs: next }
+  })
+}
+
+export const hasCustomCbs = (member: TeamMember): boolean => member.custom_cbs.some(s => s !== null)
 
 export interface CountEntry {
   key: string
@@ -81,6 +118,40 @@ export function memberBuild<B extends { character_id: string }>(
   return build?.character_id === member.character_id ? build : undefined
 }
 
+/** Crimebrand หนึ่งช่องสำหรับแสดงผล — position คือช่องที่ 0–2 (ขึ้นป้าย I/II/III) */
+export interface CbSlotView {
+  position: number
+  cb_id: string
+  piece: number | null
+}
+
+interface BuildLike {
+  character_id: string
+  build_name: string
+  slots: { cb_id: string; piece: number | null }[]
+}
+
+/**
+ * Crimebrand ที่ใช้แสดงของช่องนี้ — เลือกเองมาก่อน ไม่งั้นใช้ build แนะนำ
+ * (ทีมที่บันทึกก่อนมีระบบเลือกเองมีแค่ build_id)
+ */
+export function memberCrimebrands<B extends BuildLike>(
+  member: TeamMember,
+  buildById: ReadonlyMap<string, B>,
+): { buildName: string | null; slots: CbSlotView[] } {
+  if (hasCustomCbs(member)) {
+    return {
+      buildName: null,
+      slots: member.custom_cbs.flatMap((s, position) => (s ? [{ position, cb_id: s.cb_id, piece: s.piece }] : [])),
+    }
+  }
+  const build = memberBuild(member, buildById)
+  return {
+    buildName: build?.build_name ?? null,
+    slots: (build?.slots ?? []).map((s, position) => ({ position, cb_id: s.cb_id, piece: s.piece })),
+  }
+}
+
 /** ข้อความ error ภาษาไทย หรือ null ถ้าบันทึกได้ */
 export function validateTeam({ title, description = '', members }: {
   title: string
@@ -99,6 +170,17 @@ export function validateTeam({ title, description = '', members }: {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
+const parseCustomCb = (raw: unknown): CustomCbSlot | null =>
+  isRecord(raw) && typeof raw.cb_id === 'string' && (CB_PIECES as readonly unknown[]).includes(raw.piece)
+    ? { cb_id: raw.cb_id, piece: raw.piece as number }
+    : null
+
+/** Crimebrand ที่เลือกเองจาก jsonb — รูปแบบผิดกลายเป็นช่องว่าง เกิน 3 ช่องทิ้ง */
+function parseCustomCbs(raw: unknown): CustomCbSlots {
+  if (!Array.isArray(raw)) return EMPTY_CUSTOM_CBS
+  return [parseCustomCb(raw[0]), parseCustomCb(raw[1]), parseCustomCb(raw[2])]
+}
+
 /** อ่าน members (jsonb) จากฐานข้อมูลอย่างระวัง — ทิ้งช่องที่รูปแบบผิด ตัวซ้ำ และส่วนเกิน 6 ตัว */
 export function parseMembers(raw: unknown): TeamMember[] {
   if (!Array.isArray(raw)) return []
@@ -107,7 +189,14 @@ export function parseMembers(raw: unknown): TeamMember[] {
   for (const item of raw) {
     if (!isRecord(item) || typeof item.character_id !== 'string' || seen.has(item.character_id)) continue
     seen.add(item.character_id)
-    members.push({ character_id: item.character_id, build_id: typeof item.build_id === 'string' ? item.build_id : null })
+    const custom_cbs = parseCustomCbs(item.custom_cbs)
+    const hasCustom = custom_cbs.some(s => s !== null)
+    members.push({
+      character_id: item.character_id,
+      // ใช้ได้ทีละแบบ — ถ้ามีทั้งคู่ (เขียนตรงเข้า DB) ให้แบบเลือกเองชนะ
+      build_id: !hasCustom && typeof item.build_id === 'string' ? item.build_id : null,
+      custom_cbs,
+    })
     if (members.length === MAX_TEAM_SIZE) break
   }
   return members
