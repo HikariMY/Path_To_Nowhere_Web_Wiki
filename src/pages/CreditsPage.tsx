@@ -36,6 +36,30 @@ export function CreditsPage() {
         </p>
       </Section>
 
+      <Section title="无期迷途WIKI (BWIKI)">
+        <p>
+          ข้อมูลตัวละครบางส่วนอ้างอิงจาก{' '}
+          <a href="https://wiki.biligame.com/wqmt/" target="_blank" rel="noopener noreferrer" className="text-ptn-cyan hover:underline">
+            无期迷途WIKI (BWIKI)
+          </a>{' '}
+          ซึ่งเผยแพร่ภายใต้สัญญาอนุญาต{' '}
+          <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.th" target="_blank" rel="noopener noreferrer" className="text-ptn-cyan hover:underline">
+            CC BY-SA 4.0
+          </a>{' '}
+          เนื้อหาที่แปลและเรียบเรียงเป็นภาษาไทยจากแหล่งนี้ เผยแพร่ภายใต้สัญญาอนุญาตเดียวกัน
+        </p>
+      </Section>
+
+      <Section title="Path to Nowhere Wiki (Fandom)">
+        <p>
+          ข้อมูลตัวละครบางส่วนอ้างอิงจาก{' '}
+          <a href="https://path-to-nowhere.fandom.com/" target="_blank" rel="noopener noreferrer" className="text-ptn-cyan hover:underline">
+            Path to Nowhere Wiki
+          </a>{' '}
+          บน Fandom ซึ่งเผยแพร่ภายใต้สัญญาอนุญาต CC BY-SA เช่นกัน
+        </p>
+      </Section>
+
       <Section title="เนื้อหาที่ผู้ใช้สร้าง">
         <p>ไกด์ กระทู้ เทียร์ลิสต์ และความคิดเห็น เป็นผลงานของผู้เขียนแต่ละคน ไม่ใช่ของเว็บไซต์</p>
       </Section>
