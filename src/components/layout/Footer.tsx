@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { Shield } from 'lucide-react'
 
 export function Footer() {
   return (
@@ -19,6 +18,7 @@ export function Footer() {
             <Link to="/tier-lists" className="hover:text-ptn-text transition-colors">เทียร์ลิสต์</Link>
             <Link to="/forum" className="hover:text-ptn-text transition-colors">ฟอรัม</Link>
             <Link to="/privacy" className="hover:text-ptn-text transition-colors">นโยบายความเป็นส่วนตัว</Link>
+            <Link to="/credits" className="hover:text-ptn-text transition-colors">เครดิต</Link>
           </div>
 
           <p className="text-xs text-ptn-disabled text-center">
