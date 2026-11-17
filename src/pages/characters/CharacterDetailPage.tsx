@@ -1129,6 +1129,7 @@ export function CharacterDetailPage() {
         {/* GUIDES TAB */}
         {currentTab === 'guides' && (
           <CharacterGuidesSection
+            key={searchParams.get('src') ?? 'web'}
             characterName={character.name}
             initialSource={searchParams.get('src') === 'cn' ? 'cn' : 'web'}
             characterId={character.id}

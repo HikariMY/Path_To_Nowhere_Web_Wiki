@@ -20,13 +20,15 @@ import { cn, formatRelativeTime } from '../../lib/utils'
 import { describeWriteError } from '../../lib/moderation'
 import { GuideComments } from '../../components/guides/GuideComments'
 
-export function CharacterGuidesTab({ characterId, skills, shackles, reforge = null, jobClass = '', onOpenReforge }: {
+export function CharacterGuidesTab({ characterId, skills, shackles, reforge = null, jobClass = '', onOpenReforge, onCountChange }: {
   characterId: string
   skills: CharacterSkill[]
   shackles: ShackleBreak[]
   reforge?: ReforgeData | null
   jobClass?: string
   onOpenReforge?: (build: ReforgeGuideBuild) => void
+  /** จำนวนไกด์หลังโหลด/บันทึก/ลบ — ใช้ทำตัวเลขบนปุ่มสลับแหล่งไกด์ */
+  onCountChange?: (count: number) => void
 }) {
   const exOptions = useExAnchorOptions(jobClass, !!reforge)
   const { user, profile, isAdmin } = useAuth()
@@ -78,6 +80,10 @@ export function CharacterGuidesTab({ characterId, skills, shackles, reforge = nu
     })()
     return () => { cancelled = true }
   }, [characterId, reloadKey])
+
+  useEffect(() => {
+    if (!loading && !loadError) onCountChange?.(guides.length)
+  }, [guides.length, loading, loadError, onCountChange])
 
   // โหวตของเราเอง — ใช้ทำปุ่มให้เป็นสถานะกดแล้ว
   useEffect(() => {

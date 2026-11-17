@@ -26,8 +26,6 @@ export function CharacterGuidesSection({ characterName, initialSource = 'web', .
 
   useEffect(() => {
     let cancelled = false
-    supabase.from('character_guides').select('id', { count: 'exact', head: true }).eq('character_id', characterId)
-      .then(({ count }) => { if (!cancelled) setWebCount(count ?? null) })
     // ยังไม่ได้รัน supabase_migration_cn_guides.sql → โหลดไม่ได้ ถือว่ายังไม่มีข้อมูล (ไม่ทำให้หน้าพัง)
     supabase.from('character_cn_guides').select('*').eq('character_id', characterId)
       .order('sort_order').order('created_at')
@@ -62,7 +60,7 @@ export function CharacterGuidesSection({ characterName, initialSource = 'web', .
 
       <div className={cn('space-y-4', source !== 'web' && 'hidden')}>
         <OfficialTierRank characterId={characterId} server="global" />
-        <CharacterGuidesTab {...guidesProps} />
+        <CharacterGuidesTab {...guidesProps} onCountChange={setWebCount} />
       </div>
 
       {source === 'cn' && (
