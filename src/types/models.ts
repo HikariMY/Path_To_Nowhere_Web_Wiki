@@ -144,10 +144,42 @@ export interface ReforgeGuideBuild {
 }
 
 // Tier list tiers schema
+// เครื่องหมายมุมรูปแบบเทียร์ลิสต์จีน (ความหมายอยู่ใน lib/tierMarks.ts)
+export type TierMarkKey = 'new' | 'limited' | 'collab' | 'reforged' | 'archetype' | 'budget' | 'dated'
+
+// รายละเอียดรายตัวในแถว — ช่องเสริม ข้อมูลเก่าไม่มีก็ได้
+export interface TierCharDetail {
+  marks?: TierMarkKey[]
+  note?: string
+  col?: number // คอลัมน์บทบาท (เริ่มที่ 0)
+}
+
 export interface TierRow {
   label: string
   color: string
   character_ids: string[]
+  note?: string
+  details?: Record<string, TierCharDetail>
+}
+
+export type TierServer = 'global' | 'cn'
+
+// เครดิตต้นฉบับ (เทียร์ลิสต์ที่สรุปจากเซิร์ฟจีน)
+export interface TierListSource {
+  title: string
+  author: string
+  url: string
+  original_url?: string
+  date?: string
+}
+
+// คอลัมน์เสริมของ tier_lists (supabase_migration_tier_list_details.sql) — อ่านผ่าน readTierListMeta
+export interface TierListMeta {
+  server: TierServer
+  roleColumns: string[]
+  legend: TierMarkKey[]
+  source: TierListSource | null
+  isArchived: boolean
 }
 
 // Editor state
