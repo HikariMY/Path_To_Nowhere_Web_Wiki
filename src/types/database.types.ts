@@ -295,6 +295,22 @@ export type GuideCommentRow = {
   updated_at: string
 }
 
+// supabase_migration_cn_guides.sql — สรุปไกด์จากผู้เล่นเซิร์ฟจีน (points = CnPoint[])
+export type CharacterCnGuideRow = {
+  id: string
+  character_id: string
+  verdict: string | null
+  points: Json
+  source_title: string
+  source_author: string
+  source_url: string
+  checked_at: string
+  sort_order: number
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type TeamRow = {
   id: string
   author_id: string
@@ -375,6 +391,10 @@ export interface Database {
       guide_comments: TableOf<GuideCommentRow, [
         FK<'guide_comments_author_id_fkey', 'author_id', 'profiles'>,
         FK<'guide_comments_guide_id_fkey', 'guide_id', 'character_guides'>,
+      ]>
+
+      character_cn_guides: TableOf<CharacterCnGuideRow, [
+        FK<'character_cn_guides_character_id_fkey', 'character_id', 'characters'>,
       ]>
 
       teams: TableOf<TeamRow, [
