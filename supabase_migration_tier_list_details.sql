@@ -12,6 +12,7 @@
 --
 -- + ปิดช่องโหว่เดิม: insert policy เช็กแค่ผู้สร้าง ผู้ใช้ทั่วไปจึงสร้างเทียร์ลิสต์ is_official = true ได้
 --   ตอนนี้ตั้งเป็นทางการได้เฉพาะแอดมิน (เหมือนกับ update policy ที่มีอยู่แล้ว)
+-- + trigger: server / source / is_archived แก้ได้เฉพาะแอดมิน (กันเทียร์ลิสต์ชุมชนปลอมเครดิตต้นฉบับ)
 --
 -- ปลอดภัยต่อการรันซ้ำ
 -- วิธีใช้: Supabase Dashboard → SQL Editor → วางทั้งไฟล์ → Run
@@ -55,6 +56,37 @@ create policy "Users create tier lists as themselves"
     and (is_official = false
          or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
   );
+
+-- server / source / is_archived ตั้งได้เฉพาะแอดมิน — ผู้ใช้ทั่วไปยิง API ตรงก็ไม่มีผล (insert = ค่าเริ่มต้น, update = คงค่าเดิม)
+-- auth.uid() ว่าง = SQL Editor / service role (เช่นสคริปต์กู้ข้อมูลจาก backup) ไม่ต้องกัน
+create or replace function public.tier_lists_guard_admin_fields()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null
+     or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') then
+    return new;
+  end if;
+  if tg_op = 'INSERT' then
+    new.server := 'global';
+    new.source := null;
+    new.is_archived := false;
+  else
+    new.server := old.server;
+    new.source := old.source;
+    new.is_archived := old.is_archived;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists tier_lists_guard_admin_fields on public.tier_lists;
+create trigger tier_lists_guard_admin_fields
+  before insert or update on public.tier_lists
+  for each row execute function public.tier_lists_guard_admin_fields();
 
 -- ตรวจผล: ควรเห็น 5 คอลัมน์ใหม่ และ insert policy เดียว
 select column_name, data_type, column_default

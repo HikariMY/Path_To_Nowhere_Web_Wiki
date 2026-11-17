@@ -20,12 +20,11 @@ export function AdminTierListsPage() {
   useEffect(() => { fetchTierLists() }, [])
 
   const fetchTierLists = async () => {
-    const { data } = await supabase
-      .from('tier_lists')
-      // '*' แทนการระบุคอลัมน์ — ก่อนรัน supabase_migration_tier_list_details.sql คอลัมน์ server/is_archived ยังไม่มี
-      .select('*, profiles(username, display_name)')
-      .order('created_at', { ascending: false })
-      .limit(300)
+    // ไม่ดึง tiers (jsonb ใหญ่) — ก่อนรัน supabase_migration_tier_list_details.sql คอลัมน์ server/is_archived ยังไม่มี ให้ถอยไปชุดเดิม
+    const base = 'id, title, description, is_official, is_public, patch_version, upvotes, created_at, profiles(username, display_name)'
+    const query = (cols) => supabase.from('tier_lists').select(cols).order('created_at', { ascending: false }).limit(300)
+    const withMeta = await query(`${base}, server, is_archived`)
+    const { data } = withMeta.error ? await query(base) : withMeta
     setTierLists(data || [])
     setLoading(false)
   }

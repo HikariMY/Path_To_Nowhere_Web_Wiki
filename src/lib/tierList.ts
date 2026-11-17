@@ -52,11 +52,26 @@ export function placeCharacter(tiers: readonly TierRow[], charId: string, tierIn
   })
 }
 
+const validCol = (col: unknown): number | undefined =>
+  (typeof col === 'number' && Number.isInteger(col) && col >= 0 ? col : undefined)
+
+/** อ่านรายละเอียดจาก jsonb แบบไม่เชื่อชนิดข้อมูล — ค่าชนิดผิดถูกทิ้ง (ไม่ตัดช่องว่างของหมายเหตุ ระหว่างพิมพ์ยังใช้ได้) */
+export function readCharDetail(row: TierRow, charId: string): TierCharDetail {
+  const raw = row.details?.[charId] as Record<string, unknown> | undefined
+  if (!raw || typeof raw !== 'object') return {}
+  const out: TierCharDetail = {}
+  if (Array.isArray(raw.marks)) out.marks = raw.marks.filter(isTierMarkKey)
+  if (typeof raw.note === 'string') out.note = raw.note
+  const col = validCol(raw.col)
+  if (col !== undefined) out.col = col
+  return out
+}
+
 /** แถวที่ตัวละครอยู่ + รายละเอียดของตัวนั้น (ยังไม่ได้วาง = null) */
 export function findPlacement(tiers: readonly TierRow[], charId: string): { tierIndex: number; detail: TierCharDetail } | null {
   const tierIndex = tiers.findIndex(t => t.character_ids.includes(charId))
   if (tierIndex < 0) return null
-  return { tierIndex, detail: tiers[tierIndex].details?.[charId] ?? {} }
+  return { tierIndex, detail: readCharDetail(tiers[tierIndex], charId) }
 }
 
 const cut = (text: string, max: number) => [...text].slice(0, max).join('')
@@ -90,7 +105,7 @@ export function parseRoleColumns(text: string): string[] {
 /** ตัวละครในคอลัมน์ col — คอลัมน์ที่เกินจำนวนตกไปคอลัมน์สุดท้าย · columnCount < 2 = ทุกตัว */
 export function charsInColumn(row: TierRow, col: number, columnCount: number): string[] {
   if (columnCount < 2) return [...row.character_ids]
-  return row.character_ids.filter(id => Math.min(row.details?.[id]?.col ?? 0, columnCount - 1) === col)
+  return row.character_ids.filter(id => Math.min(validCol(row.details?.[id]?.col) ?? 0, columnCount - 1) === col)
 }
 
 /** ลดจำนวนคอลัมน์แล้ว ดึงตัวที่อยู่เกินกลับมาคอลัมน์สุดท้าย */

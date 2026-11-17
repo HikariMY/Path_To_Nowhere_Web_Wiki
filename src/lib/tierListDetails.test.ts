@@ -82,6 +82,24 @@ describe('character details', () => {
   })
 })
 
+describe('reading details that were saved by hand', () => {
+  test('findPlacement drops marks, notes and columns of the wrong type', () => {
+    const row = tier('S', ['a'], { details: { a: { marks: 'limited', note: 3, col: '1' } as never } })
+    expect(findPlacement([row], 'a')).toEqual({ tierIndex: 0, detail: {} })
+  })
+
+  test('findPlacement keeps valid fields and unknown marks are dropped', () => {
+    const row = tier('S', ['a'], { details: { a: { marks: ['limited', 'bogus'], note: 'n ', col: 1 } as never } })
+    expect(findPlacement([row], 'a')?.detail).toEqual({ marks: ['limited'], note: 'n ', col: 1 })
+  })
+
+  test('charsInColumn treats a non-number column as the first one', () => {
+    const row = tier('S', ['a', 'b'], { details: { a: { col: '1' } as never, b: { col: 1 } } })
+    expect(charsInColumn(row, 0, 2)).toEqual(['a'])
+    expect(charsInColumn(row, 1, 2)).toEqual(['b'])
+  })
+})
+
 describe('role columns', () => {
   test('parseRoleColumns trims, drops blanks and duplicates, keeps at most 4', () => {
     expect(parseRoleColumns(' Damage, Support ,,Damage')).toEqual(['Damage', 'Support'])
