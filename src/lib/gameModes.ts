@@ -78,6 +78,12 @@ export function seasonState(endsAt: string | null | undefined, now: Date = new D
   return { state: daysLeft <= MODE_ROUND_WARN_DAYS ? 'ending' : 'running', daysLeft }
 }
 
+/** โหมดนี้มีข้อมูลเซิร์ฟจีน (ล่วงหน้า) ให้แสดงไหม */
+export function hasCnInfo(m: { cn_note: string | null; cn_rules: unknown; cn_season_label: string | null; cn_season_effect: string | null; cn_buffs: unknown; cn_tips: unknown }): boolean {
+  const nonEmpty = (v: unknown) => Array.isArray(v) && v.length > 0
+  return !!(m.cn_note || m.cn_season_label || m.cn_season_effect) || nonEmpty(m.cn_rules) || nonEmpty(m.cn_buffs) || nonEmpty(m.cn_tips)
+}
+
 /** ข้อความผิดพลาดภาษาไทย (ว่าง = บันทึกได้) */
 export function validateMode(input: { name: string; slug: string; summary: string }): string[] {
   const errors: string[] = []

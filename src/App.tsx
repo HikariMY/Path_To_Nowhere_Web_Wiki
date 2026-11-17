@@ -28,6 +28,8 @@ import { ForumCreatePostPage } from './pages/forum/ForumCreatePostPage'
 import { ProfilePage } from './pages/profile/ProfilePage'
 import { SettingsPage } from './pages/profile/SettingsPage'
 import { GameInfoPage } from './pages/GameInfoPage'
+import { ModesPage } from './pages/modes/ModesPage'
+import { ModeDetailPage } from './pages/modes/ModeDetailPage'
 import { CrimebrandsPage } from './pages/crimebrands/CrimebrandsPage'
 import { CrimebrandDetailPage } from './pages/crimebrands/CrimebrandDetailPage'
 import { AdminCrimebrandsPage } from './pages/admin/AdminCrimebrandsPage'
@@ -67,6 +69,10 @@ export default function App() {
 
               {/* Game Info */}
               <Route path="game-info" element={<GameInfoPage />} />
+
+              {/* Mode guides */}
+              <Route path="modes" element={<ModesPage />} />
+              <Route path="modes/:slug" element={<ModeDetailPage />} />
 
               {/* Crimebrands */}
               <Route path="crimebrands" element={<CrimebrandsPage />} />
