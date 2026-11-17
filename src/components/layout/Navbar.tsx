@@ -38,20 +38,20 @@ export function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5">
             <img src="/web-logo.png" alt="Project Duck" className="h-9 w-auto object-contain" />
-            <span className="font-heading text-xl font-bold tracking-wide duck-logo-text">
+            <span className="font-heading text-xl font-bold tracking-wide duck-logo-text md:hidden xl:inline">
               PROJECT DUCK
             </span>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-0.5 lg:gap-1">
             {navLinks.map(link => (
               <NavLink
                 key={link.to}
                 to={link.to}
                 end={link.exact}
                 className={({ isActive }) => cn(
-                  'px-3 py-1.5 rounded text-sm font-medium transition-colors',
+                  'whitespace-nowrap px-2 py-1.5 rounded text-sm font-medium transition-colors lg:px-3',
                   isActive
                     ? 'text-ptn-text bg-ptn-elevated'
                     : 'text-ptn-muted hover:text-ptn-text hover:bg-ptn-elevated',
