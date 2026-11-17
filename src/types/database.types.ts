@@ -311,6 +311,50 @@ export type CharacterCnGuideRow = {
   updated_at: string
 }
 
+// supabase_migration_game_modes.sql — ไกด์โหมด (jsonb อ่านผ่าน lib/gameModes.ts / lib/cnGuides.ts)
+export type GameModeRow = {
+  id: string
+  slug: string
+  name: string
+  cn_name: string | null
+  verified: boolean
+  in_global: boolean
+  locked: boolean
+  global_menu: string | null
+  path: string | null
+  tag: string | null
+  summary: string | null
+  sort_order: number
+  global_rules: Json
+  stages_title: string | null
+  stages: Json
+  season_label: string | null
+  season_trait: string | null
+  season_ends: string | null
+  season_bosses: Json
+  tips: Json
+  shots: Json
+  cn_note: string | null
+  cn_rules: Json
+  cn_season_label: string | null
+  cn_season_effect: string | null
+  cn_buffs: Json
+  cn_tips: Json
+  created_at: string
+  updated_at: string
+}
+
+export type GameModeSourceRow = {
+  id: string
+  mode_id: string
+  title: string
+  author: string
+  url: string
+  checked_at: string
+  sort_order: number
+  created_at: string
+}
+
 export type TeamRow = {
   id: string
   author_id: string
@@ -391,6 +435,11 @@ export interface Database {
       guide_comments: TableOf<GuideCommentRow, [
         FK<'guide_comments_author_id_fkey', 'author_id', 'profiles'>,
         FK<'guide_comments_guide_id_fkey', 'guide_id', 'character_guides'>,
+      ]>
+
+      game_modes: TableOf<GameModeRow>
+      game_mode_sources: TableOf<GameModeSourceRow, [
+        FK<'game_mode_sources_mode_id_fkey', 'mode_id', 'game_modes'>,
       ]>
 
       character_cn_guides: TableOf<CharacterCnGuideRow, [
