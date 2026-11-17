@@ -10,6 +10,15 @@ import { Tabs } from '../../components/ui/Tabs'
 import { PageLoader } from '../../components/ui/Spinner'
 import { useAuth } from '../../contexts/AuthContext'
 import { formatRelativeTime } from '../../lib/utils'
+import { readTierListMeta } from '../../lib/tierList'
+import { TierServerBadges } from '../../components/tier-lists/TierParts'
+
+const metaOf = (t: TierListWithAuthor) => readTierListMeta(t as unknown as Record<string, unknown>)
+// ทางการ: อันปัจจุบันก่อน (Global แล้วค่อย CN) ตามด้วยแพทช์ก่อนหน้า
+const officialOrder = (t: TierListWithAuthor) => {
+  const m = metaOf(t)
+  return (m.isArchived ? 2 : 0) + (m.server === 'cn' ? 1 : 0)
+}
 
 const DEMO_TIERS: TierListWithAuthor[] = [
   {
@@ -43,7 +52,8 @@ export function TierListsPage() {
         .order('upvotes', { ascending: false })
 
       if (data && data.length > 0) {
-        setOfficialLists(data.filter((t: TierListWithAuthor) => t.is_official) as TierListWithAuthor[])
+        setOfficialLists((data.filter((t: TierListWithAuthor) => t.is_official) as TierListWithAuthor[])
+          .sort((a, b) => officialOrder(a) - officialOrder(b)))
         setCommunityLists(data.filter((t: TierListWithAuthor) => !t.is_official) as TierListWithAuthor[])
       } else {
         setOfficialLists(DEMO_TIERS.filter(t => t.is_official))
@@ -92,7 +102,15 @@ export function TierListsPage() {
                     <p>ยังไม่มีเทียร์ลิสต์อย่างเป็นทางการ</p>
                   </Card>
                 )}
-                {officialLists.map(tier => <TierListCard key={tier.id} tierList={tier} />)}
+                {officialLists.map((tier, i) => {
+                  const archivedStart = metaOf(tier).isArchived && (i === 0 || !metaOf(officialLists[i - 1]).isArchived)
+                  return (
+                    <div key={tier.id} className="space-y-4">
+                      {archivedStart && <h2 className="pt-2 text-sm font-semibold text-ptn-muted">แพทช์ก่อนหน้า</h2>}
+                      <TierListCard tierList={tier} />
+                    </div>
+                  )
+                })}
               </>
             )}
             {activeTab === 'community' && (
@@ -122,6 +140,7 @@ export function TierListsPage() {
 
 function TierListCard({ tierList }: { tierList: TierListWithAuthor }) {
   const tiers = (tierList.tiers as Array<{ label: string; color: string; character_ids: string[] }>) || []
+  const meta = metaOf(tierList)
 
   return (
     <Link to={`/tier-lists/${tierList.id}`}>
@@ -134,6 +153,7 @@ function TierListCard({ tierList }: { tierList: TierListWithAuthor }) {
                   <Crown size={10} /> ทางการ
                 </span>
               )}
+              <TierServerBadges server={meta.server} archived={meta.isArchived} official={tierList.is_official} />
               {tierList.patch_version && (
                 <span className="text-xs text-ptn-muted bg-ptn-elevated border border-ptn-border px-2 py-0.5 rounded">
                   v{tierList.patch_version}

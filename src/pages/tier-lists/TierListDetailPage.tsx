@@ -1,17 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ChevronLeft, ThumbsUp, Crown, Edit2, Trash2, Clock } from 'lucide-react'
+import { ChevronLeft, ThumbsUp, Crown, Edit2, Trash2, Clock, ExternalLink } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import type { TierListWithAuthor, Character, TierRow } from '../../types'
+import type { TierListWithAuthor, Character, TierRow, TierListMeta } from '../../types'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Avatar } from '../../components/ui/Avatar'
 import { PageLoader } from '../../components/ui/Spinner'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../components/ui/Toast'
-import { formatRelativeTime } from '../../lib/utils'
-import { TierCharCard, TierLabel } from '../../components/tier-lists/TierParts'
+import { cn, formatRelativeTime } from '../../lib/utils'
+import { TierCharCard, TierLabel, TierLegend, TierMarkBadge, TierServerBadges } from '../../components/tier-lists/TierParts'
 import { ReportButton } from '../../components/moderation/ReportButton'
+import { charsInColumn, findPlacement, readTierListMeta, safeHttpUrl } from '../../lib/tierList'
+import { tierMark } from '../../lib/tierMarks'
+
+// เทียร์ลิสต์ทางการของอีกเซิร์ฟ — ใช้บอกว่าตัวเดียวกันอยู่ระดับไหน (Global ↔ CN)
+type OtherList = { id: string; server: TierListMeta['server']; tiers: TierRow[] }
 
 export function TierListDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -20,6 +25,8 @@ export function TierListDetailPage() {
   const navigate = useNavigate()
   const [tierList, setTierList] = useState<TierListWithAuthor | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
+  const [other, setOther] = useState<OtherList | null>(null)
+  const [selected, setSelected] = useState<string | null>(null)
   const [hasVoted, setHasVoted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [voting, setVoting] = useState(false)
@@ -43,6 +50,21 @@ export function TierListDetailPage() {
             .select('*')
             .in('id', allIds)
           setCharacters(chars || [])
+        }
+        // เทียร์ลิสต์ทางการ: หาอันทางการปัจจุบันของอีกเซิร์ฟ — ยิงเฉพาะเมื่อรัน migration แล้ว (แถวมีคอลัมน์ server)
+        const meta = readTierListMeta(tlData as Record<string, unknown>)
+        if ((tlData as TierListWithAuthor).is_official && 'server' in tlData) {
+          const { data: others, error } = await supabase
+            .from('tier_lists')
+            .select('id, server, tiers')
+            .eq('is_official', true)
+            .eq('is_public', true)
+            .eq('is_archived', false)
+            .eq('server', meta.server === 'cn' ? 'global' : 'cn')
+            .order('updated_at', { ascending: false })
+            .limit(1)
+          const o = !error && others?.[0]
+          if (o) setOther({ id: o.id, server: readTierListMeta(o as Record<string, unknown>).server, tiers: o.tiers as TierRow[] })
         }
         // Check if user voted
         if (user) {
@@ -90,11 +112,34 @@ export function TierListDetailPage() {
   )
 
   const tiers = (tierList.tiers as unknown) as TierRow[]
+  const meta = readTierListMeta(tierList as unknown as Record<string, unknown>)
+  const cols = meta.roleColumns
   const charMap = Object.fromEntries(characters.map(c => [c.id, c]))
   const canEdit = user && (profile?.id === tierList.author_id || isAdmin)
+  const sourceUrl = safeHttpUrl(meta.source?.url)
+  const originalUrl = safeHttpUrl(meta.source?.original_url)
+
+  const charButton = (tier: TierRow, cid: string) => {
+    const char = charMap[cid]
+    if (!char) return (
+      <div key={cid} className="w-14 h-[68px] sm:w-16 sm:h-20 rounded bg-ptn-elevated border border-ptn-border flex items-center justify-center text-xs text-ptn-disabled">?</div>
+    )
+    const detail = tier.details?.[cid]
+    return (
+      <button
+        key={cid}
+        type="button"
+        onClick={() => setSelected(prev => (prev === cid ? null : cid))}
+        aria-pressed={selected === cid}
+        className="rounded hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ptn-cyan"
+      >
+        <TierCharCard char={char} selected={selected === cid} marks={detail?.marks} hasNote={!!detail?.note} />
+      </button>
+    )
+  }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className="mx-auto max-w-6xl px-4 py-8">
       <Link to="/tier-lists" className="flex items-center gap-1.5 text-sm text-ptn-muted hover:text-ptn-text mb-6 w-fit">
         <ChevronLeft size={16} /> กลับไปเทียร์ลิสต์
       </Link>
@@ -109,6 +154,7 @@ export function TierListDetailPage() {
                   <Crown size={10} /> ทางการ
                 </span>
               )}
+              <TierServerBadges server={meta.server} archived={meta.isArchived} official={tierList.is_official} />
               {tierList.patch_version && (
                 <span className="text-xs text-ptn-muted bg-ptn-elevated border border-ptn-border px-2 py-0.5 rounded">
                   v{tierList.patch_version}
@@ -157,38 +203,139 @@ export function TierListDetailPage() {
         </div>
       </Card>
 
-      {/* Tier Rows */}
-      <div className="space-y-2">
-        {tiers.map((tier, i) => (
-          <div key={i} className="flex items-stretch rounded-lg border border-ptn-border overflow-hidden">
-            {/* Label */}
-            <TierLabel label={tier.label} color={tier.color} />
-            {/* Characters */}
-            <div className="flex flex-wrap gap-2 p-3 flex-1 bg-ptn-surface min-h-[104px]">
-              {tier.character_ids.length === 0 && (
-                <span className="text-xs text-ptn-disabled self-center">ว่าง</span>
-              )}
-              {tier.character_ids.map(cid => {
-                const char = charMap[cid]
-                if (!char) return (
-                  <div key={cid} className="w-14 h-[68px] sm:w-16 sm:h-20 rounded bg-ptn-elevated border border-ptn-border flex items-center justify-center text-xs text-ptn-disabled">?</div>
-                )
-                return (
-                  <Link key={cid} to={`/characters/${char.slug}`} className="rounded hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ptn-cyan">
-                    <TierCharCard char={char} />
-                  </Link>
-                )
-              })}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
+        {/* Tier Rows */}
+        <div className="space-y-2">
+          {cols.length > 1 && (
+            <div className="hidden sm:flex sm:pl-24">
+              {cols.map(c => (
+                <span key={c} className="flex-1 px-3 font-mono text-[11px] font-bold uppercase tracking-wider text-ptn-disabled">{c}</span>
+              ))}
             </div>
-          </div>
-        ))}
-      </div>
+          )}
+          {tiers.map((tier, i) => (
+            <div key={i} className="flex items-stretch rounded-lg border border-ptn-border overflow-hidden">
+              {/* Label */}
+              <TierLabel label={tier.label} color={tier.color} />
+              {/* Characters */}
+              <div className="flex-1 min-w-0 bg-ptn-surface">
+                {tier.note && <p className="px-3 pt-2 text-xs text-ptn-muted">{tier.note}</p>}
+                <div className={cols.length > 1 ? 'grid sm:grid-flow-col sm:auto-cols-fr' : undefined}>
+                  {(cols.length > 1 ? cols : ['']).map((col, ci) => {
+                    const ids = charsInColumn(tier, ci, cols.length)
+                    return (
+                      <div key={ci} className={cn('p-3', ci > 0 && 'border-t border-dashed border-ptn-border/60 sm:border-l sm:border-t-0')}>
+                        {col && <p className="mb-1 font-mono text-[10px] font-bold uppercase tracking-wider text-ptn-disabled sm:hidden">{col}</p>}
+                        <div className="flex flex-wrap gap-2 min-h-[80px]">
+                          {ids.length === 0 && (
+                            <span className="text-xs text-ptn-disabled self-center">{tier.character_ids.length === 0 ? 'ว่าง' : '—'}</span>
+                          )}
+                          {ids.map(cid => charButton(tier, cid))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          ))}
 
-      {tiers.length === 0 && (
-        <Card className="p-8 text-center text-ptn-muted">
-          <p>เทียร์ลิสต์นี้ยังไม่มีข้อมูล</p>
-        </Card>
-      )}
+          {tiers.length === 0 && (
+            <Card className="p-8 text-center text-ptn-muted">
+              <p>เทียร์ลิสต์นี้ยังไม่มีข้อมูล</p>
+            </Card>
+          )}
+        </div>
+
+        <aside className="space-y-4 lg:sticky lg:top-20">
+          <CharacterInfo
+            charId={selected}
+            char={selected ? charMap[selected] : undefined}
+            tiers={tiers}
+            cols={cols}
+            other={other}
+          />
+          {meta.legend.length > 0 && (
+            <Card className="p-4">
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-ptn-muted">ความหมายเครื่องหมาย</h2>
+              <TierLegend keys={meta.legend} />
+            </Card>
+          )}
+          {meta.source && sourceUrl && (
+            <Card className="p-4 border-l-2 border-l-ptn-red">
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-ptn-muted">ต้นฉบับ</h2>
+              <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 text-sm text-ptn-text hover:text-ptn-cyan">
+                <ExternalLink size={14} className="mt-0.5 shrink-0" />
+                <span><b>{meta.source.title}</b><br /><span className="text-xs text-ptn-muted">โดย {meta.source.author}{meta.source.date ? ` · ${meta.source.date}` : ''}</span></span>
+              </a>
+              {originalUrl && (
+                <a href={originalUrl} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center gap-2 text-xs text-ptn-muted hover:text-ptn-cyan">
+                  <ExternalLink size={12} /> โพสต์ต้นฉบับ
+                </a>
+              )}
+              <p className="mt-3 text-xs text-ptn-disabled">ทีมงานจัดตำแหน่งและเขียนหมายเหตุเองจากต้นฉบับ ไม่ได้นำภาพต้นฉบับมาแสดงซ้ำ</p>
+            </Card>
+          )}
+        </aside>
+      </div>
     </div>
+  )
+}
+
+/** รายละเอียดตัวที่กดเลือก: เครื่องหมาย · หมายเหตุ · ระดับในอีกเซิร์ฟ · ลิงก์หน้าตัวละคร */
+function CharacterInfo({ charId, char, tiers, cols, other }: {
+  charId: string | null
+  char: Character | undefined
+  tiers: TierRow[]
+  cols: string[]
+  other: OtherList | null
+}) {
+  const at = charId ? findPlacement(tiers, charId) : null
+  if (!charId || !char || !at) {
+    return (
+      <Card className="p-4 text-sm text-ptn-muted">
+        กดที่รูปตัวละครเพื่อดูเหตุผลและเงื่อนไข · จุดสีทองมุมขวาล่าง = มีหมายเหตุ
+      </Card>
+    )
+  }
+  const tier = tiers[at.tierIndex]
+  const marks = at.detail.marks ?? []
+  const elsewhere = other ? findPlacement(other.tiers, charId) : null
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center gap-3">
+        {char.portrait_url && <img src={char.portrait_url} alt="" className="h-14 w-14 rounded border border-ptn-border object-cover" />}
+        <div className="min-w-0">
+          <p className="font-heading font-bold text-ptn-text">{char.name}</p>
+          <p className="text-xs text-ptn-muted">
+            {[`${char.rarity}-Rank`, `Tier ${tier.label}`, cols.length > 1 ? cols[Math.min(at.detail.col ?? 0, cols.length - 1)] : null].filter(Boolean).join(' · ')}
+          </p>
+        </div>
+      </div>
+      {marks.length > 0 && (
+        <ul className="space-y-1.5">
+          {marks.map(m => (
+            <li key={m} className="flex items-start gap-2 text-sm">
+              <TierMarkBadge mark={m} className="mt-0.5" />
+              <span><b className="text-ptn-text">{tierMark(m)?.label}</b> <span className="text-ptn-muted">— {tierMark(m)?.th}</span></span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {at.detail.note
+        ? <p className="text-sm text-ptn-text whitespace-pre-line">{at.detail.note}</p>
+        : <p className="text-xs text-ptn-disabled">ยังไม่มีหมายเหตุสำหรับตัวนี้</p>}
+      {other && elsewhere && (
+        <p className="text-sm text-ptn-muted">
+          {other.server === 'cn' ? 'ในเซิร์ฟจีนอยู่ ' : 'ใน Global อยู่ '}
+          <b className="text-ptn-text">Tier {other.tiers[elsewhere.tierIndex].label}</b>
+          {' · '}
+          <Link to={`/tier-lists/${other.id}`} className="text-ptn-cyan hover:underline">ดูเทียร์ลิสต์</Link>
+        </p>
+      )}
+      <Link to={`/characters/${char.slug}`}>
+        <Button variant="outline" size="sm">ดูหน้าตัวละคร</Button>
+      </Link>
+    </Card>
   )
 }

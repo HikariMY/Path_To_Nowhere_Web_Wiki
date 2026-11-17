@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Trash2, Search, Eye, Star, Shield } from 'lucide-react'
+import { Trash2, Search, Eye, Star, Shield, Archive } from 'lucide-react'
+import { TierServerBadges } from '../../components/tier-lists/TierParts'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Input } from '../../components/ui/Input'
@@ -21,7 +22,8 @@ export function AdminTierListsPage() {
   const fetchTierLists = async () => {
     const { data } = await supabase
       .from('tier_lists')
-      .select('id, title, description, is_official, is_public, patch_version, upvotes, created_at, profiles(username, display_name)')
+      // '*' แทนการระบุคอลัมน์ — ก่อนรัน supabase_migration_tier_list_details.sql คอลัมน์ server/is_archived ยังไม่มี
+      .select('*, profiles(username, display_name)')
       .order('created_at', { ascending: false })
       .limit(300)
     setTierLists(data || [])
@@ -51,6 +53,18 @@ export function AdminTierListsPage() {
       setTierLists(prev => prev.map(t => t.id === tl.id ? { ...t, is_official: !t.is_official } : t))
       toast(tl.is_official ? 'ยกเลิก Official แล้ว' : 'ตั้งเป็น Official แล้ว', 'success')
     }
+  }
+
+  // แพทช์ก่อนหน้า: เก็บเทียร์ลิสต์ทางการเก่าไว้ให้ดูย้อนหลัง (ต้องรัน supabase_migration_tier_list_details.sql ก่อน)
+  const toggleArchived = async (tl) => {
+    const next = !tl.is_archived
+    const { error } = await supabase.from('tier_lists').update({ is_archived: next }).eq('id', tl.id)
+    if (error) {
+      toast('เกิดข้อผิดพลาด: ' + error.message, 'error')
+      return
+    }
+    setTierLists(prev => prev.map(t => t.id === tl.id ? { ...t, is_archived: next } : t))
+    toast(next ? 'ย้ายไปแพทช์ก่อนหน้าแล้ว' : 'กลับมาเป็นอันปัจจุบันแล้ว', 'success')
   }
 
   const filtered = tierLists.filter(tl => {
@@ -102,9 +116,12 @@ export function AdminTierListsPage() {
                     )}
                     <span className="text-ptn-text font-medium line-clamp-1">{tl.title}</span>
                   </div>
-                  {tl.patch_version && (
-                    <span className="text-xs text-ptn-disabled">Patch {tl.patch_version}</span>
-                  )}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {tl.server && <TierServerBadges server={tl.server === 'cn' ? 'cn' : 'global'} archived={!!tl.is_archived} official={tl.is_official} />}
+                    {tl.patch_version && (
+                      <span className="text-xs text-ptn-disabled">Patch {tl.patch_version}</span>
+                    )}
+                  </div>
                 </td>
                 <td className="p-3 hidden md:table-cell">
                   <span className="text-xs text-ptn-muted">
@@ -137,6 +154,15 @@ export function AdminTierListsPage() {
                     >
                       <Shield size={13} />
                     </button>
+                    {tl.is_official && tl.server && (
+                      <button
+                        onClick={() => toggleArchived(tl)}
+                        className={`p-1.5 rounded transition-colors ${tl.is_archived ? 'text-ptn-gold' : 'text-ptn-muted hover:text-ptn-gold'}`}
+                        title={tl.is_archived ? 'กลับมาเป็นอันปัจจุบัน' : 'ย้ายไปแพทช์ก่อนหน้า'}
+                      >
+                        <Archive size={13} />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDelete(tl)}
                       className="p-1.5 text-ptn-muted hover:text-ptn-red rounded transition-colors"
