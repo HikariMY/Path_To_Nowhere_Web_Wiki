@@ -27,12 +27,13 @@ export function OfficialTierRank({ characterId, server }: { characterId: string;
       .order('updated_at', { ascending: false })
       .limit(1)
       .then(({ data, error }) => {
-        if (cancelled || error || !data?.[0]) return
-        const tiers = data[0].tiers as TierRow[]
+        if (cancelled || error || !data?.[0] || !Array.isArray(data[0].tiers)) return
+        // แถวที่ไม่มี character_ids (ข้อมูลเสีย) ข้ามไป ไม่ให้ findPlacement พัง
+        const tiers = (data[0].tiers as TierRow[]).filter(t => Array.isArray(t?.character_ids))
         const at = findPlacement(tiers, characterId)
         if (!at) return
         setRank({ listId: data[0].id, patch: data[0].patch_version, tier: tiers[at.tierIndex], marks: at.detail.marks ?? [], note: at.detail.note ?? '' })
-      })
+      }, () => { /* โหลดไม่ได้ = ไม่แสดงการ์ด */ })
     return () => { cancelled = true }
   }, [characterId, server])
 

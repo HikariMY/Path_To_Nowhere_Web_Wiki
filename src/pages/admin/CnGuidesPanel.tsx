@@ -22,7 +22,11 @@ type Form = {
   sort_order: string
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
+// วันที่ตามเวลาเครื่อง (ไทย) — toISOString เป็น UTC ช่วงตีห้าก่อนเจ็ดโมงจะได้วันก่อนหน้า
+const today = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 const blankForm = (): Form => ({ verdict: '', pointsText: '', source_title: '', source_author: '', source_url: '', checked_at: today(), sort_order: '0' })
 
 /**
@@ -115,6 +119,7 @@ export function CnGuidesPanel({ characterId, characterName }: { characterId: str
   const markChecked = async (row: CharacterCnGuideRow) => {
     const { error } = await supabase.from('character_cn_guides').update({ checked_at: today() } as never).eq('id', row.id)
     if (error) { toast('บันทึกไม่สำเร็จ: ' + error.message, 'error'); return }
+    await log(`ตรวจสรุปไกด์จีนกับต้นฉบับแล้ว: ${characterName} — ${row.source_title}`, row.id)
     toast('บันทึกว่าตรวจแล้ววันนี้', 'success')
     reload()
   }
