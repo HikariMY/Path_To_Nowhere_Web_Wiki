@@ -172,6 +172,12 @@ export type TierListRow = {
   upvotes: number
   created_at: string
   updated_at: string
+  // supabase_migration_tier_list_details.sql — แถวที่อ่านก่อนรัน migration จะไม่มีช่องเหล่านี้ อ่านผ่าน readTierListMeta
+  server?: string
+  role_columns?: Json
+  legend?: Json
+  source?: Json | null
+  is_archived?: boolean
 }
 
 export type TierListVoteRow = {
