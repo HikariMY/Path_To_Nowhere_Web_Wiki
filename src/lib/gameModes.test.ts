@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
-  MODE_ROUND_WARN_DAYS, modeStatus, parseLines, parseStages, readShots, readStages, readStrings, seasonState, validateMode,
+  MODE_ROUND_WARN_DAYS, blankModeForm, modeFormFromRow, modePayload, modeStatus, parseLines, parseStages, readShots, readStages,
+  readStrings, seasonState, validateMode,
 } from './gameModes'
 
 describe('readStrings / parseLines', () => {
@@ -75,6 +76,29 @@ describe('seasonState', () => {
   })
   test('a broken date counts as none', () => {
     expect(seasonState('not a date', now).state).toBe('none')
+  })
+})
+
+describe('admin form round trip', () => {
+  const row = {
+    slug: 'oblivion-pit', name: 'Oblivion Pit', cn_name: null, verified: true, in_global: true, locked: false,
+    global_menu: 'DisSea', path: 'DisCity → DisSea → Oblivion Pit', tag: 'Depth Dive', summary: 'ดำดิ่ง', sort_order: 60,
+    global_rules: [{ title: 'Raid', body: 'กวาดรางวัลได้' }], stages_title: 'ชั้น', stages: [{ title: '01 Limbo Resonance', body: '1,000 m' }, { title: 'EX', body: '' }],
+    season_label: 'Remnants of the Depth', season_trait: null, season_ends: '2026-12-07T21:59:00.000Z', season_bosses: [], tips: ['เช็ก Designate Sinner'],
+    shots: [{ url: 'https://x.example/a.jpg', caption: 'Oblivion Pit' }],
+    cn_note: null, cn_rules: [], cn_season_label: null, cn_season_effect: null, cn_buffs: [], cn_tips: [],
+  }
+
+  test('a row survives row → form → payload unchanged', () => {
+    expect(modePayload(modeFormFromRow(row))).toEqual(row)
+  })
+
+  test('blank optional text becomes null and blank lines are dropped', () => {
+    const p = modePayload({ ...blankModeForm(), name: ' New ', slug: 'new', tipsText: '\n a \n\n', summary: '  ' })
+    expect(p.name).toBe('New')
+    expect(p.summary).toBeNull()
+    expect(p.tips).toEqual(['a'])
+    expect(p.season_ends).toBeNull()
   })
 })
 
