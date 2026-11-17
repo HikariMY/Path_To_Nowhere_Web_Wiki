@@ -16,7 +16,7 @@ import { useFavorites } from '../../hooks/useFavorites'
 import { FavoriteButton } from '../../components/characters/FavoriteButton'
 import type { TagGroup } from '../../lib/abilityTags'
 import { Modal } from '../../components/ui/Modal'
-import { CharacterGuidesTab } from './CharacterGuidesTab'
+import { CharacterGuidesSection } from './CharacterGuidesSection'
 import { CharacterReforgeTab } from './CharacterReforgeTab'
 import { parseReforge } from '../../lib/reforge'
 import type { ReforgeGuideBuild } from '../../types/models'
@@ -1128,7 +1128,9 @@ export function CharacterDetailPage() {
 
         {/* GUIDES TAB */}
         {currentTab === 'guides' && (
-          <CharacterGuidesTab
+          <CharacterGuidesSection
+            characterName={character.name}
+            initialSource={searchParams.get('src') === 'cn' ? 'cn' : 'web'}
             characterId={character.id}
             skills={skills}
             shackles={shackles}

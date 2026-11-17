@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit2, Trash2, Search, Zap, Unlink, Sword, Layers, Network } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, Zap, Unlink, Sword, Layers, Network, Globe2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import type { Character } from '../../types'
 import { Button } from '../../components/ui/Button'
@@ -19,6 +19,7 @@ import { ShacklesPanel } from './ShacklesPanel'
 import { CharacterInfoPanel } from './CharacterInfoPanel'
 import { CrimebrandBuildsPanel } from './CrimebrandBuildsPanel'
 import { ReforgePanel } from './ReforgePanel'
+import { CnGuidesPanel } from './CnGuidesPanel'
 
 // ── types ───────────────────────────────────────────────────────────────────
 
@@ -166,7 +167,7 @@ export function AdminSkillsPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [exclusiveForm, setExclusiveForm] = useState<ExclusiveForm>(blankExclusive())
   const [savingExclusive, setSavingExclusive] = useState(false)
-  const [rightTab, setRightTab] = useState<'info' | 'skills' | 'shackles' | 'builds' | 'reforge'>('info')
+  const [rightTab, setRightTab] = useState<'info' | 'skills' | 'shackles' | 'builds' | 'reforge' | 'cn'>('info')
   const [creating, setCreating] = useState(false)
 
   useEffect(() => { fetchChars() }, [])
@@ -419,12 +420,12 @@ export function AdminSkillsPage() {
             </div>
 
             {/* Tabs: ข้อมูลตัวละคร / สกิล / Shackle — ใช้ตัวละครที่เลือกร่วมกัน */}
-            <div className="flex gap-1 mb-4 border-b border-ptn-border">
-              {([['info', 'ข้อมูลตัวละคร', Sword], ['skills', 'สกิล & Crimebrand', Zap], ['shackles', 'Shackle Break', Unlink], ['builds', 'Crimebrand Builds', Layers], ['reforge', 'Reforge', Network]] as const).map(([key, label, Icon]) => (
+            <div className="flex gap-1 mb-4 border-b border-ptn-border overflow-x-auto">
+              {([['info', 'ข้อมูลตัวละคร', Sword], ['skills', 'สกิล & Crimebrand', Zap], ['shackles', 'Shackle Break', Unlink], ['builds', 'Crimebrand Builds', Layers], ['reforge', 'Reforge', Network], ['cn', 'ไกด์ผู้เล่นจีน', Globe2]] as const).map(([key, label, Icon]) => (
                 <button
                   key={key}
                   onClick={() => setRightTab(key)}
-                  className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors ${
+                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors ${
                     rightTab === key
                       ? 'border-ptn-red text-ptn-text'
                       : 'border-transparent text-ptn-muted hover:text-ptn-text'
@@ -441,6 +442,8 @@ export function AdminSkillsPage() {
               <CrimebrandBuildsPanel key={selectedChar.id} characterId={selectedChar.id} />
             ) : rightTab === 'reforge' ? (
               <ReforgePanel key={selectedChar.id} characterId={selectedChar.id} characterName={selectedChar.name} />
+            ) : rightTab === 'cn' ? (
+              <CnGuidesPanel key={selectedChar.id} characterId={selectedChar.id} characterName={selectedChar.name} />
             ) : rightTab === 'shackles' ? (
               <ShacklesPanel character={selectedChar} onUpdated={handleShacklesUpdated} />
             ) : (
