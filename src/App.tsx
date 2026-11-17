@@ -46,6 +46,8 @@ import { AdminLogsPage } from './pages/admin/AdminLogsPage'
 import { AdminAnnouncementsPage } from './pages/admin/AdminAnnouncementsPage'
 import { AdminSkillsPage } from './pages/admin/AdminSkillsPage'
 import { AdminGameInfoPage } from './pages/admin/AdminGameInfoPage'
+import { AdminModesPage } from './pages/admin/AdminModesPage'
+import { AdminSourcesPage } from './pages/admin/AdminSourcesPage'
 
 export default function App() {
   return (
@@ -140,6 +142,8 @@ export default function App() {
               <Route path="forum" element={<AdminForumPage />} />
               <Route path="skills" element={<AdminSkillsPage />} />
               <Route path="game-info" element={<AdminGameInfoPage />} />
+              <Route path="modes" element={<AdminModesPage />} />
+              <Route path="sources" element={<AdminSourcesPage />} />
               <Route path="crimebrands" element={<AdminCrimebrandsPage />} />
               <Route path="posts" element={<AdminForumPostsPage />} />
               <Route path="reports" element={<AdminReportsPage />} />

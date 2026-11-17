@@ -1,4 +1,5 @@
 import { safeHttpUrl } from './tierList'
+import { parsePoints, pointsToText, readPoints, type CnPoint } from './cnGuides'
 
 // ============================================================
 // ไกด์โหมด — logic ล้วน ไม่แตะ React / Supabase
@@ -82,6 +83,128 @@ export function seasonState(endsAt: string | null | undefined, now: Date = new D
 export function hasCnInfo(m: { cn_note: string | null; cn_rules: unknown; cn_season_label: string | null; cn_season_effect: string | null; cn_buffs: unknown; cn_tips: unknown }): boolean {
   const nonEmpty = (v: unknown) => Array.isArray(v) && v.length > 0
   return !!(m.cn_note || m.cn_season_label || m.cn_season_effect) || nonEmpty(m.cn_rules) || nonEmpty(m.cn_buffs) || nonEmpty(m.cn_tips)
+}
+
+// ============================================================
+// ฟอร์มแอดมิน ↔ แถวในฐานข้อมูล
+// ============================================================
+
+/** ช่องของ game_modes ที่แอดมินแก้ได้ (ไม่รวม id / เวลา) */
+export interface ModeData {
+  slug: string
+  name: string
+  cn_name: string | null
+  verified: boolean
+  in_global: boolean
+  locked: boolean
+  global_menu: string | null
+  path: string | null
+  tag: string | null
+  summary: string | null
+  sort_order: number
+  global_rules: CnPoint[]
+  stages_title: string | null
+  stages: ModeStage[]
+  season_label: string | null
+  season_trait: string | null
+  season_ends: string | null
+  season_bosses: string[]
+  tips: string[]
+  shots: ModeShot[]
+  cn_note: string | null
+  cn_rules: CnPoint[]
+  cn_season_label: string | null
+  cn_season_effect: string | null
+  cn_buffs: CnPoint[]
+  cn_tips: string[]
+}
+
+export interface ModeForm {
+  slug: string
+  name: string
+  cn_name: string
+  verified: boolean
+  in_global: boolean
+  locked: boolean
+  global_menu: string
+  path: string
+  tag: string
+  summary: string
+  sort_order: string
+  rulesText: string
+  stages_title: string
+  stagesText: string
+  season_label: string
+  season_trait: string
+  season_ends: string // datetime-local ตามเวลาเครื่อง (ไทย)
+  bossesText: string
+  tipsText: string
+  shots: ModeShot[]
+  cn_note: string
+  cnRulesText: string
+  cn_season_label: string
+  cn_season_effect: string
+  cnBuffsText: string
+  cnTipsText: string
+}
+
+export const blankModeForm = (): ModeForm => ({
+  slug: '', name: '', cn_name: '', verified: false, in_global: true, locked: false, global_menu: '', path: '', tag: '', summary: '',
+  sort_order: '0', rulesText: '', stages_title: '', stagesText: '', season_label: '', season_trait: '', season_ends: '',
+  bossesText: '', tipsText: '', shots: [], cn_note: '', cnRulesText: '', cn_season_label: '', cn_season_effect: '', cnBuffsText: '', cnTipsText: '',
+})
+
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/** ISO → ค่าสำหรับ <input type="datetime-local" step="1"> ตามเวลาเครื่อง */
+export function toLocalInput(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
+/** ค่าจาก datetime-local (เวลาเครื่อง) → ISO · ว่าง/ผิด = null */
+export function fromLocalInput(value: string): string | null {
+  if (!value) return null
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d.toISOString()
+}
+
+const stagesToText = (stages: ModeStage[]) => stages.map(s => (s.body ? `${s.title}: ${s.body}` : s.title)).join('\n')
+const orNull = (s: string) => (s.trim() ? s.trim() : null)
+
+export function modeFormFromRow(row: Record<string, unknown> & { slug: string; name: string }): ModeForm {
+  const text = (k: string) => (typeof row[k] === 'string' ? row[k] as string : '')
+  return {
+    slug: row.slug, name: row.name, cn_name: text('cn_name'),
+    verified: row.verified === true, in_global: row.in_global !== false, locked: row.locked === true,
+    global_menu: text('global_menu'), path: text('path'), tag: text('tag'), summary: text('summary'),
+    sort_order: String(typeof row.sort_order === 'number' ? row.sort_order : 0),
+    rulesText: pointsToText(readPoints(row.global_rules)),
+    stages_title: text('stages_title'), stagesText: stagesToText(readStages(row.stages)),
+    season_label: text('season_label'), season_trait: text('season_trait'), season_ends: toLocalInput(text('season_ends') || null),
+    bossesText: readStrings(row.season_bosses).join('\n'), tipsText: readStrings(row.tips).join('\n'), shots: readShots(row.shots),
+    cn_note: text('cn_note'), cnRulesText: pointsToText(readPoints(row.cn_rules)),
+    cn_season_label: text('cn_season_label'), cn_season_effect: text('cn_season_effect'),
+    cnBuffsText: pointsToText(readPoints(row.cn_buffs)), cnTipsText: readStrings(row.cn_tips).join('\n'),
+  }
+}
+
+export function modePayload(f: ModeForm): ModeData {
+  return {
+    slug: f.slug.trim(), name: f.name.trim(), cn_name: orNull(f.cn_name),
+    verified: f.verified, in_global: f.in_global, locked: f.locked,
+    global_menu: orNull(f.global_menu), path: orNull(f.path), tag: orNull(f.tag), summary: orNull(f.summary),
+    sort_order: Number.parseInt(f.sort_order, 10) || 0,
+    global_rules: parsePoints(f.rulesText), stages_title: orNull(f.stages_title), stages: parseStages(f.stagesText),
+    season_label: orNull(f.season_label), season_trait: orNull(f.season_trait), season_ends: fromLocalInput(f.season_ends),
+    season_bosses: parseLines(f.bossesText), tips: parseLines(f.tipsText),
+    shots: f.shots.filter(s => safeHttpUrl(s.url)).map(s => ({ url: s.url, caption: s.caption.trim() })),
+    cn_note: orNull(f.cn_note), cn_rules: parsePoints(f.cnRulesText),
+    cn_season_label: orNull(f.cn_season_label), cn_season_effect: orNull(f.cn_season_effect),
+    cn_buffs: parsePoints(f.cnBuffsText), cn_tips: parseLines(f.cnTipsText),
+  }
 }
 
 /** ข้อความผิดพลาดภาษาไทย (ว่าง = บันทึกได้) */
