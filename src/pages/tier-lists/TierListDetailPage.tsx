@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ChevronLeft, ThumbsUp, Crown, Edit2, Trash2, Clock, ExternalLink } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -12,7 +12,7 @@ import { useToast } from '../../components/ui/Toast'
 import { cn, formatRelativeTime } from '../../lib/utils'
 import { TierCharCard, TierLabel, TierLegend, TierMarkBadge, TierServerBadges } from '../../components/tier-lists/TierParts'
 import { ReportButton } from '../../components/moderation/ReportButton'
-import { charsInColumn, findPlacement, readTierListMeta, safeHttpUrl } from '../../lib/tierList'
+import { charsInColumn, findPlacement, readCharDetail, readTierListMeta, safeHttpUrl } from '../../lib/tierList'
 import { tierMark } from '../../lib/tierMarks'
 
 // เทียร์ลิสต์ทางการของอีกเซิร์ฟ — ใช้บอกว่าตัวเดียวกันอยู่ระดับไหน (Global ↔ CN)
@@ -25,10 +25,23 @@ export function TierListDetailPage() {
   const navigate = useNavigate()
   const [tierList, setTierList] = useState<TierListWithAuthor | null>(null)
   const [characters, setCharacters] = useState<Character[]>([])
-  const [other, setOther] = useState<OtherList | null>(null)
-  const [selected, setSelected] = useState<string | null>(null)
+  // จำว่าเป็นของเทียร์ลิสต์ไหน — กดลิงก์ไปอีกเทียร์ลิสต์ (หน้าเดิม id ใหม่) ค่าเก่าจะไม่ถูกใช้
+  const [otherFor, setOtherFor] = useState<{ listId: string; list: OtherList } | null>(null)
+  const [selectedFor, setSelectedFor] = useState<{ listId: string; charId: string } | null>(null)
+  const other = otherFor?.listId === id ? otherFor.list : null
+  const selected = selectedFor?.listId === id ? selectedFor.charId : null
   const [hasVoted, setHasVoted] = useState(false)
   const [loading, setLoading] = useState(true)
+  const infoRef = useRef<HTMLElement>(null)
+
+  // จอแคบ: แผงรายละเอียดอยู่ใต้ตาราง — เลื่อนลงไปให้เห็นหลังกดเลือก
+  const pick = (cid: string) => {
+    const next = selected === cid ? null : cid
+    setSelectedFor(next ? { listId: id as string, charId: next } : null)
+    if (next && window.matchMedia('(max-width: 1023px)').matches) {
+      requestAnimationFrame(() => infoRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
+    }
+  }
   const [voting, setVoting] = useState(false)
 
   useEffect(() => {
@@ -64,7 +77,7 @@ export function TierListDetailPage() {
             .order('updated_at', { ascending: false })
             .limit(1)
           const o = !error && others?.[0]
-          if (o) setOther({ id: o.id, server: readTierListMeta(o as Record<string, unknown>).server, tiers: o.tiers as TierRow[] })
+          if (o) setOtherFor({ listId: id as string, list: { id: o.id, server: readTierListMeta(o as Record<string, unknown>).server, tiers: o.tiers as TierRow[] } })
         }
         // Check if user voted
         if (user) {
@@ -124,16 +137,16 @@ export function TierListDetailPage() {
     if (!char) return (
       <div key={cid} className="w-14 h-[68px] sm:w-16 sm:h-20 rounded bg-ptn-elevated border border-ptn-border flex items-center justify-center text-xs text-ptn-disabled">?</div>
     )
-    const detail = tier.details?.[cid]
+    const detail = readCharDetail(tier, cid)
     return (
       <button
         key={cid}
         type="button"
-        onClick={() => setSelected(prev => (prev === cid ? null : cid))}
+        onClick={() => pick(cid)}
         aria-pressed={selected === cid}
         className="rounded hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ptn-cyan"
       >
-        <TierCharCard char={char} selected={selected === cid} marks={detail?.marks} hasNote={!!detail?.note} />
+        <TierCharCard char={char} selected={selected === cid} marks={detail.marks} hasNote={!!detail.note} />
       </button>
     )
   }
@@ -247,7 +260,7 @@ export function TierListDetailPage() {
           )}
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-20">
+        <aside ref={infoRef} className="space-y-4 scroll-mt-20 lg:sticky lg:top-20">
           <CharacterInfo
             charId={selected}
             char={selected ? charMap[selected] : undefined}
@@ -261,7 +274,7 @@ export function TierListDetailPage() {
               <TierLegend keys={meta.legend} />
             </Card>
           )}
-          {meta.source && sourceUrl && (
+          {tierList.is_official && meta.source && sourceUrl && (
             <Card className="p-4 border-l-2 border-l-ptn-red">
               <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-ptn-muted">ต้นฉบับ</h2>
               <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 text-sm text-ptn-text hover:text-ptn-cyan">

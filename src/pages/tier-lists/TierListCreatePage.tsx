@@ -17,7 +17,7 @@ import {
   CHAR_NOTE_MAX, MAX_TIERS, MIN_TIERS, TIER_LABEL_MAX, TIER_NOTE_MAX, TIER_PALETTE,
   addTier, buildMetaPayload, charsInColumn, clampColumns, findPlacement, moveTier, normalizeTiersForSave,
   parseRoleColumns, placeCharacter, readTierListMeta, recolorTier, removeTier, renameTier, setTierNote,
-  toggleCharMark, unassignedIds, updateCharDetail,
+  readCharDetail, toggleCharMark, unassignedIds, updateCharDetail,
 } from '../../lib/tierList'
 import { TIER_MARKS } from '../../lib/tierMarks'
 import { TierCharCard, TierMarkBadge } from '../../components/tier-lists/TierParts'
@@ -106,7 +106,7 @@ export function TierListCreatePage() {
   const setSource = (patch: Partial<NonNullable<TierListMeta['source']>>) =>
     setMeta(m => {
       const next = { title: '', author: '', url: '', ...m.source, ...patch }
-      return { ...m, source: next.title || next.author || next.url || next.original_url ? next : null }
+      return { ...m, source: next.title || next.author || next.url || next.original_url || next.date ? next : null }
     })
 
   const handleSave = async () => {
@@ -151,7 +151,9 @@ export function TierListCreatePage() {
 
     setLoading(false)
     if (error) {
-      toast(describeWriteError(error, 'บันทึกไม่สำเร็จ'), 'error')
+      // ฐานข้อมูลยังไม่ได้รัน supabase_migration_tier_list_details.sql แต่ใช้ฟีเจอร์ใหม่ (คอลัมน์/เครื่องหมาย/เซิร์ฟ)
+      const missingColumn = /column|schema cache/i.test(error.message ?? '') && /server|role_columns|legend|source|is_archived/.test(error.message ?? '')
+      toast(missingColumn ? 'ฟีเจอร์คอลัมน์/เครื่องหมายยังไม่เปิดใช้ — ลองเอาออกแล้วบันทึกใหม่ หรือแจ้งทีมงาน' : describeWriteError(error, 'บันทึกไม่สำเร็จ'), 'error')
     } else {
       toast('บันทึกสำเร็จ!', 'success')
       if (isEdit) navigate(`/tier-lists/${id}`)
@@ -210,7 +212,11 @@ export function TierListCreatePage() {
             onBlur={e => applyColumns(e.target.value)}
             placeholder="เช่น Damage, Support"
           />
-          <p className="mt-1 text-xs text-ptn-disabled">คั่นด้วยจุลภาค 2–4 คอลัมน์ · เว้นว่าง = ไม่แบ่ง</p>
+          <p className="mt-1 text-xs text-ptn-disabled">
+            {columnsText.trim() && parseRoleColumns(columnsText).length === 0
+              ? 'ต้องมีอย่างน้อย 2 คอลัมน์ ตอนนี้ยังไม่แบ่ง'
+              : 'คั่นด้วยจุลภาค 2–4 คอลัมน์ · เว้นว่าง = ไม่แบ่ง'}
+          </p>
         </div>
         <div>
           <p className="mb-1 text-sm font-medium text-ptn-muted">เครื่องหมายที่ใช้ (แสดงในคำอธิบาย)</p>
@@ -355,7 +361,7 @@ export function TierListCreatePage() {
                       {ids.map(cid => {
                         const char = charMap[cid]
                         if (!char) return null
-                        const detail = tier.details?.[cid]
+                        const detail = readCharDetail(tier, cid)
                         return (
                           <div key={cid} className="group relative">
                             <button
@@ -367,7 +373,7 @@ export function TierListCreatePage() {
                               aria-pressed={selected === cid}
                               className="cursor-grab rounded active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-ptn-cyan"
                             >
-                              <TierCharCard char={char} selected={selected === cid} marks={detail?.marks} hasNote={!!detail?.note} />
+                              <TierCharCard char={char} selected={selected === cid} marks={detail.marks} hasNote={!!detail.note} />
                             </button>
                             <button
                               type="button"
