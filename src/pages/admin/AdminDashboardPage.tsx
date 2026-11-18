@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { Card } from '../../components/ui/Card'
 import { formatRelativeTime } from '../../lib/utils'
 import type { AdminLog } from '../../types'
+import { AdminTodoPanel } from './dashboard/AdminTodoPanel'
 
 interface DashStats {
   users: number
@@ -65,6 +66,8 @@ export function AdminDashboardPage() {
           </Card>
         ))}
       </div>
+
+      <AdminTodoPanel />
 
       {/* Recent logs */}
       <Card className="p-4">
