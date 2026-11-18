@@ -462,13 +462,15 @@ function SkillCard({ skill }: { skill: CharacterSkill }) {
 type StatPair = { min: string | number; max: string | number }
 type CharStatsData = { health?: StatPair; attack?: StatPair; defense?: StatPair; magic_resistance?: StatPair; attack_speed?: StatPair; block?: StatPair }
 
+// ชื่อและลำดับตามหน้า Info ในเกม (Global): HP · ATK · DEF · Magic RES · Block · ATK Interval
+// key attack_speed คงเดิม — ค่าที่เก็บคือช่วงเวลาระหว่างการโจมตี (เกมเรียก ATK Interval)
 const STAT_ROWS: { key: keyof CharStatsData; label: string; icon: React.ElementType }[] = [
-  { key: 'health',           label: 'Health',           icon: Heart },
-  { key: 'attack',           label: 'Attack',           icon: Sword },
-  { key: 'defense',          label: 'Defense',          icon: Shield },
-  { key: 'magic_resistance', label: 'Magic Resistance', icon: ShieldCheck },
-  { key: 'attack_speed',     label: 'Attack Speed',     icon: Zap },
-  { key: 'block',            label: 'Block',            icon: Layers },
+  { key: 'health',           label: 'HP',           icon: Heart },
+  { key: 'attack',           label: 'ATK',          icon: Sword },
+  { key: 'defense',          label: 'DEF',          icon: Shield },
+  { key: 'magic_resistance', label: 'Magic RES',    icon: ShieldCheck },
+  { key: 'block',            label: 'Block',        icon: Layers },
+  { key: 'attack_speed',     label: 'ATK Interval', icon: Zap },
 ]
 
 function StatsCard({ stats }: { stats: CharStatsData }) {

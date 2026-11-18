@@ -388,12 +388,13 @@ export function CharacterInfoPanel({ characterId, onSaved, onDeleted }: {
             <p className="text-xs text-ptn-muted mb-3">ค่า Min (LV1) และ Max (LV90) ของแต่ละสถิติ</p>
             <div className="space-y-2">
               {([
-                { key: 'health',           label: 'Health' },
-                { key: 'attack',           label: 'Attack' },
-                { key: 'defense',          label: 'Defense' },
-                { key: 'magic_resistance', label: 'Magic Resistance' },
-                { key: 'attack_speed',     label: 'Attack Speed' },
+                // ชื่อและลำดับตามหน้า Info ในเกม — attack_speed คือ ATK Interval (วินาทีต่อการโจมตี)
+                { key: 'health',           label: 'HP' },
+                { key: 'attack',           label: 'ATK' },
+                { key: 'defense',          label: 'DEF' },
+                { key: 'magic_resistance', label: 'Magic RES' },
                 { key: 'block',            label: 'Block' },
+                { key: 'attack_speed',     label: 'ATK Interval' },
               ] as { key: keyof CharStats; label: string }[]).map(({ key, label }) => (
                 <div key={key} className="flex items-center gap-3">
                   <span className="text-xs text-ptn-disabled w-32 shrink-0">{label}</span>
@@ -636,7 +637,7 @@ export function CharacterInfoPanel({ characterId, onSaved, onDeleted }: {
           {/* ── Overview Cards (Initial Attribute / Mania Intensify) ── */}
           <div>
             <p className="text-sm font-medium text-ptn-text mb-1">การ์ดคำอธิบาย (Overview Cards)</p>
-            <p className="text-xs text-ptn-muted mb-3">แสดงเป็น 2 คอลัมน์ใต้ INFO เช่น "Initial Attribute", "Mania Intensify"</p>
+            <p className="text-xs text-ptn-muted mb-3">แสดงเป็น 2 คอลัมน์ใต้ INFO — ใช้ชื่อแท็บตามในเกม: "Characteristic", "Mania Intensify"</p>
             <div className="space-y-3">
               {form.overview_cards.map((card, i) => (
                 <div key={i} className="p-3 border border-ptn-border rounded-lg bg-ptn-elevated space-y-2">
@@ -649,7 +650,7 @@ export function CharacterInfoPanel({ characterId, onSaved, onDeleted }: {
                         cards[i] = { ...cards[i], title: e.target.value }
                         return { ...p, overview_cards: cards }
                       })}
-                      placeholder="ชื่อหัวข้อ เช่น Initial Attribute"
+                      placeholder="ชื่อหัวข้อ เช่น Characteristic"
                       className="flex-1 px-3 py-1.5 text-sm bg-ptn-surface border border-ptn-border rounded text-ptn-text placeholder-ptn-disabled focus:outline-none focus:border-ptn-cyan font-semibold"
                     />
                     <button
