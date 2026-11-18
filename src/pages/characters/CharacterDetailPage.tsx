@@ -17,6 +17,7 @@ import { FavoriteButton } from '../../components/characters/FavoriteButton'
 import type { TagGroup } from '../../lib/abilityTags'
 import { Modal } from '../../components/ui/Modal'
 import { CharacterGuidesSection } from './CharacterGuidesSection'
+import { REFORGE_IN_GLOBAL } from '../../lib/serverStatus'
 import { CharacterReforgeTab } from './CharacterReforgeTab'
 import { parseReforge } from '../../lib/reforge'
 import type { ReforgeGuideBuild } from '../../types/models'
@@ -783,6 +784,9 @@ export function CharacterDetailPage() {
               }`}
             >
               {tab.label}
+              {tab.id === 'reforge' && !REFORGE_IN_GLOBAL && (
+                <span title="ยังไม่เปิดในเซิร์ฟ Global — ข้อมูลจากเซิร์ฟจีน" className="ml-1.5 rounded border border-ptn-red/40 px-1 py-px align-middle font-mono text-[10px] font-bold text-ptn-red">CN</span>
+              )}
             </button>
           ))}
         </div>

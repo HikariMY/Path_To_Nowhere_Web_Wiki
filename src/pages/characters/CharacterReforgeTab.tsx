@@ -12,6 +12,7 @@ import { ReforgeDetailPanel } from '../../components/reforge/ReforgeDetailPanel'
 import { ReforgeOverview } from '../../components/reforge/ReforgeOverview'
 import { CostMeter } from '../../components/reforge/CostMeter'
 import { displayName } from '../../components/reforge/reforgeStyle'
+import { REFORGE_CHECKED_AT, REFORGE_IN_GLOBAL } from '../../lib/serverStatus'
 
 type View = 'tree' | 'list'
 
@@ -90,6 +91,19 @@ export function CharacterReforgeTab({ character, data, initialBuild = null }: {
 
   return (
     <div className="space-y-3">
+      {/* Reforge ยังไม่เปิดในเซิร์ฟ Global — บอกให้รู้ว่าข้อมูลมาจากเซิร์ฟจีน */}
+      {!REFORGE_IN_GLOBAL && (
+        <div className="rounded-lg border border-ptn-border border-l-2 border-l-ptn-red bg-ptn-surface px-4 py-3">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-ptn-muted">ข้อมูลเซิร์ฟจีน (ล่วงหน้า)</span>
+            <span className="rounded border border-ptn-gold/25 bg-ptn-gold/10 px-2 py-0.5 text-xs text-ptn-gold">ยังไม่เปิดใน Global</span>
+          </div>
+          <p className="text-sm text-ptn-muted">
+            เช็กในเกมเซิร์ฟ Global แล้ว ({REFORGE_CHECKED_AT}) ยังไม่มีเมนู Reforge ในหน้า Sinner — โหนด ค่าพลัง และไอคอนในแท็บนี้มาจากเซิร์ฟจีน ของจริงตอนเปิดใน Global อาจต่างออกไป
+          </p>
+        </div>
+      )}
+
       {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-wrap gap-2">
