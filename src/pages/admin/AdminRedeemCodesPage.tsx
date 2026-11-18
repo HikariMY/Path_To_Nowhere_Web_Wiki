@@ -10,9 +10,10 @@ import { useToast } from '../../components/ui/Toast'
 import { useAuth } from '../../contexts/AuthContext'
 import { fromDateTimeInput, toDateTimeInput } from '../../lib/datetime'
 import { cn, formatDate } from '../../lib/utils'
-import { isCodeVisible, validateCode, PATCH_NAME_MAX, REDEEM_REWARD_MAX } from '../../lib/redeemCodes'
+import { isCodeVisible, validateCode, PATCH_NAME_MAX, REDEEM_CODE_MAX, REDEEM_REWARD_MAX } from '../../lib/redeemCodes'
 
-const MIGRATION_HINT = 'โหลดไม่ได้ — ตรวจว่ารัน supabase_migration_redeem_codes.sql แล้วหรือยัง'
+const UNIQUE_VIOLATION = '23505'
+const MIGRATION_HINT ='โหลดไม่ได้ — ตรวจว่ารัน supabase_migration_redeem_codes.sql แล้วหรือยัง'
 
 type CodeForm = { id: string | null; code: string; reward: string; expires: string }
 const EMPTY_FORM: CodeForm = { id: null, code: '', reward: '', expires: '' }
@@ -71,7 +72,8 @@ export function AdminRedeemCodesPage() {
       ? await supabase.from('redeem_codes').update(payload).eq('id', form.id)
       : await supabase.from('redeem_codes').insert({ ...payload, sort_order: codes.length })
     setSaving(false)
-    if (error) { toast('บันทึกไม่สำเร็จ: ' + error.message, 'error'); return }
+    // 23505 = ชนกับ unique index lower(code) เช่นแอดมินอีกคนเพิ่งเพิ่มโค้ดเดียวกัน
+    if (error) { toast(error.code === UNIQUE_VIOLATION ? 'มีโค้ดนี้อยู่แล้ว' : 'บันทึกไม่สำเร็จ: ' + error.message, 'error'); return }
     await log(`${form.id ? 'แก้' : 'เพิ่ม'} Redeem Code: ${check.code}`, 'redeem_codes', form.id)
     toast(form.id ? 'บันทึกแล้ว' : 'เพิ่มโค้ดแล้ว', 'success')
     setForm(EMPTY_FORM)
@@ -141,7 +143,7 @@ export function AdminRedeemCodesPage() {
       <Card className="mb-4 p-4">
         <h2 className="mb-3 font-heading text-lg font-bold text-ptn-text">{form.id ? 'แก้ไขโค้ด' : 'เพิ่มโค้ด'}</h2>
         <div className="grid gap-3 sm:grid-cols-[1fr_1.4fr_1fr_auto] sm:items-end">
-          <Input label="โค้ด" value={form.code} placeholder="เช่น Happy4thAnniv" onChange={e => setForm(f => ({ ...f, code: e.target.value }))} />
+          <Input label="โค้ด" value={form.code} maxLength={REDEEM_CODE_MAX} placeholder="เช่น Happy4thAnniv" onChange={e => setForm(f => ({ ...f, code: e.target.value }))} />
           <Input label="ของรางวัล (ไม่บังคับ)" value={form.reward} maxLength={REDEEM_REWARD_MAX} placeholder="เช่น Hypercube ×100" onChange={e => setForm(f => ({ ...f, reward: e.target.value }))} />
           <Input label="ใช้ได้ถึง (ไม่บังคับ)" type="datetime-local" value={form.expires} onChange={e => setForm(f => ({ ...f, expires: e.target.value }))} />
           <div className="flex gap-2">
