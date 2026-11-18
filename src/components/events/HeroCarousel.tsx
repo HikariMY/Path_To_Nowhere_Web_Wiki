@@ -69,7 +69,7 @@ export function HeroCarousel({ events }: { events: GameEvent[] }) {
 
   return (
     <section
-      className="relative overflow-hidden min-h-[340px] md:min-h-[400px] flex items-center"
+      className="slash-hero relative overflow-hidden min-h-[340px] md:min-h-[400px] flex items-center"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -107,6 +107,9 @@ export function HeroCarousel({ events }: { events: GameEvent[] }) {
         </div>
       ))}
 
+      {/* ธีม Slash: เลขสไลด์ตัวโปร่ง (ธีม Duck ซ่อนไว้ — styles/slash-home.css) */}
+      <span className="slash-hero-num" aria-hidden="true">{String(active + 1).padStart(2, '0')}</span>
+
       {/* เนื้อหาของสไลด์ที่กำลังแสดง — key ทำให้ animate ใหม่ทุกครั้งที่สลับ */}
       <div className="relative w-full mx-auto max-w-7xl px-4 py-12 md:py-20">
         <div key={current.id} className={cn('max-w-xl', !reducedMotion && 'animate-slide-up')}>
@@ -114,9 +117,10 @@ export function HeroCarousel({ events }: { events: GameEvent[] }) {
             <div className="h-1 w-8 bg-ptn-red rounded" />
             <span className="text-xs font-medium text-ptn-red uppercase tracking-widest">
               อีเวนต์ปัจจุบัน
+              {count > 1 && <span className="ml-2 font-mono text-ptn-muted">{String(active + 1).padStart(2, '0')}/{String(count).padStart(2, '0')}</span>}
             </span>
           </div>
-          <h1 className="font-heading text-3xl md:text-4xl font-bold text-ptn-text mb-3 leading-tight drop-shadow-lg">
+          <h1 className="slash-hero-title font-heading text-3xl md:text-4xl font-bold text-ptn-text mb-3 leading-tight drop-shadow-lg">
             {current.title}
           </h1>
           {current.description && (
@@ -162,7 +166,7 @@ export function HeroCarousel({ events }: { events: GameEvent[] }) {
                 aria-label={`ไปที่อีเวนต์ ${i + 1}: ${ev.title}`}
                 aria-current={i === active}
                 className={cn(
-                  'h-2 rounded-full transition-all duration-300',
+                  'slash-dot h-2 rounded-full transition-all duration-300',
                   i === active
                     ? 'w-6 bg-ptn-red'
                     : 'w-2 bg-ptn-text/40 hover:bg-ptn-text/70',
@@ -179,6 +183,13 @@ export function HeroCarousel({ events }: { events: GameEvent[] }) {
             <ChevronRight size={18} />
           </button>
         </div>
+      )}
+
+      {/* ธีม Slash: แถบเวลาก่อนสลับสไลด์ — key ทำให้เริ่มนับใหม่ทุกสไลด์ · หยุดชี้ = ไม่แสดง (ตัวจับเวลาก็หยุดอยู่) */}
+      {count > 1 && !paused && (
+        <span className="slash-hero-progress" aria-hidden="true">
+          <span key={active} style={{ animationDuration: `${ROTATE_MS}ms` }} />
+        </span>
       )}
     </section>
   )
