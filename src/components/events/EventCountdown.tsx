@@ -24,18 +24,14 @@ export function EventCountdown({ targetDate, label = 'สิ้นสุดใ�
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium" style={{ color: '#b8a4f0' }}>{label}</span>
+      {/* สีอยู่ใน class (ไม่ใช่ style) เพื่อให้ธีม Slash ทับได้ — styles/slash-home.css */}
+      <span className="slash-count-label text-sm font-medium text-[#b8a4f0]">{label}</span>
       <div className="flex items-center gap-2">
         {UNITS.map(({ key, th }, i) => (
           <Fragment key={key}>
             <div
-              className="flex flex-col items-center justify-center rounded-xl"
-              style={{
-                background: 'rgba(80, 40, 140, 0.85)',
-                width: 64,
-                height: 64,
-                minWidth: 64,
-              }}
+              className="slash-count-box flex flex-col items-center justify-center rounded-xl bg-[rgba(80,40,140,0.85)]"
+              style={{ width: 64, height: 64, minWidth: 64 }}
             >
               <span className="text-2xl font-bold text-white leading-none">
                 {String(values[key]).padStart(2, '0')}

@@ -184,7 +184,7 @@ export function HomePage() {
       {/* Stats bar */}
       <section className="border-y border-ptn-border/20 bg-black/5 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-4 py-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="slash-stats grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: 'ตัวละครทั้งหมด', value: stats.characters || '40+', icon: Users, color: 'text-ptn-cyan' },
               { label: 'อีเวนต์ที่ใช้งาน', value: stats.events || activeEvents.length, icon: Calendar, color: 'text-ptn-gold' },
@@ -207,7 +207,7 @@ export function HomePage() {
         {/* Active Events */}
         <div className="md:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-xl font-bold text-ptn-text flex items-center gap-2">
+            <h2 data-ghost="MBCC News" className="slash-ghost font-heading text-xl font-bold text-ptn-text flex items-center gap-2">
               <Calendar size={18} className="text-ptn-red" />
               อีเวนต์ที่กำลังดำเนินอยู่
             </h2>
@@ -230,7 +230,7 @@ export function HomePage() {
           {upcomingEvents.length > 0 && (
             <>
               <div className="flex items-center justify-between mt-8 mb-4">
-                <h2 className="font-heading text-xl font-bold text-ptn-text flex items-center gap-2">
+                <h2 data-ghost="Coming Soon" className="slash-ghost font-heading text-xl font-bold text-ptn-text flex items-center gap-2">
                   <Clock size={18} className="text-ptn-cyan" />
                   อีเวนต์ที่กำลังจะมา
                 </h2>
@@ -251,7 +251,7 @@ export function HomePage() {
 
         {/* Quick Links */}
         <div>
-          <h2 className="font-heading text-xl font-bold text-ptn-text mb-4">เข้าถึงด่วน</h2>
+          <h2 data-ghost="Quick Access" className="slash-ghost font-heading text-xl font-bold text-ptn-text mb-4">เข้าถึงด่วน</h2>
           <div className="space-y-3">
             {[
               { to: '/characters', label: 'ฐานข้อมูลตัวละคร', desc: 'ข้อมูลตัวละครทั้งหมด', icon: Users, color: 'text-ptn-cyan' },
@@ -259,7 +259,7 @@ export function HomePage() {
               { to: '/forum', label: 'ฟอรัมชุมชน', desc: 'พูดคุยและแชร์ข้อมูล', icon: MessageSquare, color: 'text-green-400' },
             ].map(({ to, label, desc, icon: Icon, color }) => (
               <Link key={to} to={to}>
-                <Card hover className="p-4 flex items-center gap-3">
+                <Card hover className="slash-panel p-4 flex items-center gap-3">
                   <Icon size={20} className={color} />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-ptn-text text-sm">{label}</p>
@@ -274,7 +274,7 @@ export function HomePage() {
           <RedeemCodesCard />
 
           {/* News/Updates box */}
-          <div className="mt-6 rounded-lg border border-ptn-border bg-ptn-surface p-4">
+          <div className="slash-panel mt-6 rounded-lg border border-ptn-border bg-ptn-surface p-4">
             <h3 className="font-heading text-sm font-bold text-ptn-text mb-3 flex items-center gap-2">
               <div className="h-1 w-4 bg-ptn-red rounded" />
               ข่าวสารล่าสุด
@@ -294,7 +294,7 @@ export function HomePage() {
       {/* About — Google ใช้หน้าแรกตรวจว่าชื่อแอปและจุดประสงค์ตรงกับหน้าขอสิทธิ์ล็อกอิน */}
       <section className="border-t border-ptn-border/20">
         <div className="mx-auto max-w-7xl px-4 py-10">
-          <h2 className="font-heading text-xl font-bold text-ptn-text mb-3">เกี่ยวกับ Project Duck</h2>
+          <h2 data-ghost="About" className="slash-ghost font-heading text-xl font-bold text-ptn-text mb-3">เกี่ยวกับ Project Duck</h2>
           <div className="max-w-3xl space-y-2 text-sm leading-relaxed text-ptn-muted">
             <p>
               Project Duck คือวิกิและเว็บไซต์ชุมชนภาษาไทยสำหรับแฟนเกม Path to Nowhere
@@ -351,10 +351,10 @@ function EventBannerCard({
   const hasDetails = (event.featured_character_ids?.length ?? 0) > 0
 
   return (
-    <div className="rounded-xl overflow-hidden border border-ptn-border">
+    <div className="slash-card rounded-xl overflow-hidden border border-ptn-border">
       {/* Banner */}
       <div
-        className="relative h-[160px] cursor-pointer group"
+        className="slash-card-banner relative h-[160px] cursor-pointer group"
         onClick={() => hasDetails && setExpanded(v => !v)}
       >
         {event.banner_url ? (
@@ -410,8 +410,8 @@ function EventBannerCard({
                 ] as const).map(({ v, th }, i, arr) => (
                   <Fragment key={th}>
                     <div
-                      className="flex flex-col items-center justify-center rounded-lg"
-                      style={{ background: 'rgba(80,40,140,0.85)', width: 40, height: 40, minWidth: 40 }}
+                      className="slash-count-box flex flex-col items-center justify-center rounded-lg bg-[rgba(80,40,140,0.85)]"
+                      style={{ width: 40, height: 40, minWidth: 40 }}
                     >
                       <span className="text-sm font-bold text-white leading-none">{String(v).padStart(2, '0')}</span>
                       <span className="text-[9px] text-white/70 mt-0.5">{th}</span>

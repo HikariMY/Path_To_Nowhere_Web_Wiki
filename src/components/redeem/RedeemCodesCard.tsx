@@ -9,7 +9,7 @@ export function RedeemCodesCard() {
   if (!codes || codes.length === 0) return null
 
   return (
-    <div className="mt-6 rounded-lg border border-ptn-border bg-ptn-surface p-4">
+    <div className="slash-panel mt-6 rounded-lg border border-ptn-border bg-ptn-surface p-4">
       <h3 className="mb-3 flex items-center gap-2 font-heading text-sm font-bold text-ptn-text">
         <div className="h-1 w-4 rounded bg-ptn-red" />
         Redeem Code
