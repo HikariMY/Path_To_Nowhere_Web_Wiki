@@ -4,21 +4,22 @@ export default {
   theme: {
     extend: {
       colors: {
+        // ธีม Slash (design-demos) — ดำลึก เทาเย็น แดงเดิม · ธีม Duck ทับสีเองใน index.css
         ptn: {
-          bg:          '#0A0A0F',
-          surface:     '#12121A',
-          elevated:    '#1A1A26',
-          border:      '#2A2A3E',
+          bg:          '#08090C',
+          surface:     '#101218',
+          elevated:    '#161922',
+          border:      '#22262F',
           red:         '#C8102E',
           'red-dim':   '#8B0A1F',
-          'red-hover': '#E8122F',
+          'red-hover': '#FF2B42',
           cyan:        '#00D4FF',
           'cyan-dim':  '#007A99',
           gold:        '#FFD700',
           purple:      '#6B5CE7',
-          text:        '#E8E8F0',
-          muted:       '#9898B0',
-          disabled:    '#4A4A5E',
+          text:        '#ECEEF2',
+          muted:       '#8D95A5',
+          disabled:    '#5D6474',
         }
       },
       fontFamily: {

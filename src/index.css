@@ -15,11 +15,80 @@
 
 body {
   margin: 0;
-  background-color: #0A0A0F;
-  color: #E8E8F0;
+  background-color: #08090C;
+  color: #ECEEF2;
   font-family: 'Inter', sans-serif;
   min-height: 100vh;
   transition: background-color 0.3s, color 0.3s;
+}
+
+/* ── Slash theme (ธีมเดิม) ─────────────────────────────────── */
+/* พื้นหลัง: เส้นตารางจาง ๆ + แสงแดงด้านบน (ธีม Duck ไม่ใช้) */
+html:not(.theme-duck) body {
+  background-image:
+    radial-gradient(ellipse 80% 45% at 50% -12%, rgba(200, 16, 46, 0.10), transparent 70%),
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 100% 100%, 48px 48px, 48px 48px;
+  background-attachment: fixed;
+}
+
+/* เส้นแดงจาง ๆ ใต้แถบเมนู */
+.slash-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200, 16, 46, 0.55), transparent);
+  pointer-events: none;
+}
+
+/* เมนูบนสุด: hover กวาดพื้นเฉียง · หน้าที่เปิดอยู่มีรอยปาดสีแดงใต้เมนู */
+.nav-slash a {
+  position: relative;
+  isolation: isolate;
+}
+.nav-slash a::before {
+  content: '';
+  position: absolute;
+  inset: 0.15rem -0.1rem;
+  z-index: -1;
+  background: #161922;
+  transform: skewX(-14deg) scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.nav-slash a:hover::before {
+  transform: skewX(-14deg) scaleX(1);
+}
+.nav-slash a[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  left: 0.4rem;
+  right: 0.4rem;
+  bottom: -0.7rem;
+  height: 3px;
+  background: #C8102E;
+  transform: skewX(-40deg);
+  box-shadow: 0 0 14px #FF2B42;
+}
+
+/* ปุ่มทรงสี่เหลี่ยมด้านขนาน (เช่น สมัครสมาชิก) */
+.btn-slash {
+  border-radius: 0 !important;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  padding-left: 1.1rem !important;
+  padding-right: 1.1rem !important;
+}
+
+html.theme-duck .nav-slash a::before { background: #341550; }
+html.theme-duck .nav-slash a[aria-current='page']::after { background: #9333ea; box-shadow: 0 0 14px #f472b6; }
+html.theme-duck .slash-header::after { background: linear-gradient(90deg, transparent, rgba(244, 114, 182, 0.5), transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-slash a::before { transition: none; }
 }
 
 #root {
@@ -86,10 +155,10 @@ html.theme-duck .duck-logo-text {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #12121A;
+  background: #101218;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2A2A3E;
+  background: #22262F;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {

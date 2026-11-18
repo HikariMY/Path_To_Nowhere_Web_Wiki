@@ -32,7 +32,7 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ptn-border bg-ptn-bg/95 backdrop-blur-sm">
+    <header className="slash-header sticky top-0 z-40 border-b border-ptn-border bg-ptn-bg/95 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-4">
         <div className="flex h-14 items-center justify-between">
           {/* Logo */}
@@ -44,17 +44,16 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-0.5 lg:gap-1">
+          {/* nav-slash (index.css): hover กวาดพื้นเฉียง · หน้าที่เปิดอยู่มีรอยปาดสีแดงใต้เมนู */}
+          <nav className="nav-slash hidden md:flex items-center gap-0.5 lg:gap-1">
             {navLinks.map(link => (
               <NavLink
                 key={link.to}
                 to={link.to}
                 end={link.exact}
                 className={({ isActive }) => cn(
-                  'whitespace-nowrap px-2 py-1.5 rounded text-sm font-medium transition-colors lg:px-3',
-                  isActive
-                    ? 'text-ptn-text bg-ptn-elevated'
-                    : 'text-ptn-muted hover:text-ptn-text hover:bg-ptn-elevated',
+                  'whitespace-nowrap px-2 py-1.5 text-sm font-medium transition-colors lg:px-3',
+                  isActive ? 'text-ptn-text' : 'text-ptn-muted hover:text-ptn-text',
                 )}
               >
                 {link.label}
@@ -130,7 +129,7 @@ export function Navbar() {
                 <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
                   เข้าสู่ระบบ
                 </Button>
-                <Button size="sm" onClick={() => navigate('/register')} className="hidden sm:flex">
+                <Button size="sm" onClick={() => navigate('/register')} className="btn-slash hidden sm:flex">
                   สมัครสมาชิก
                 </Button>
               </div>
@@ -171,10 +170,10 @@ export function Navbar() {
                 end={link.exact}
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => cn(
-                  'px-3 py-2 rounded text-sm font-medium transition-colors',
+                  'px-3 py-2 rounded text-sm font-medium transition-colors border-l-2',
                   isActive
-                    ? 'text-ptn-text bg-ptn-elevated'
-                    : 'text-ptn-muted hover:text-ptn-text',
+                    ? 'text-ptn-text bg-ptn-elevated border-ptn-red'
+                    : 'text-ptn-muted hover:text-ptn-text border-transparent',
                 )}
               >
                 {link.label}
@@ -185,7 +184,7 @@ export function Navbar() {
                 <Button variant="ghost" size="sm" className="flex-1" onClick={() => { navigate('/login'); setMobileOpen(false) }}>
                   เข้าสู่ระบบ
                 </Button>
-                <Button size="sm" className="flex-1" onClick={() => { navigate('/register'); setMobileOpen(false) }}>
+                <Button size="sm" className="btn-slash flex-1" onClick={() => { navigate('/register'); setMobileOpen(false) }}>
                   สมัครสมาชิก
                 </Button>
               </div>
