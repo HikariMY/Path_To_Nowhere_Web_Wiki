@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { ChevronUp } from 'lucide-react'
 import { Navbar } from './Navbar'
 import { Footer } from './Footer'
+import { StatusBar } from '../redeem/StatusBar'
 
 function ScrollToTop() {
   const [visible, setVisible] = useState(false)
@@ -30,6 +31,7 @@ export function Layout() {
   return (
     <div className="flex flex-col min-h-screen bg-ptn-bg">
       <Navbar />
+      <StatusBar />
       <main className="flex-1">
         <Outlet />
       </main>

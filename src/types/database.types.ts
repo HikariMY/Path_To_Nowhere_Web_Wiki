@@ -355,6 +355,26 @@ export type GameModeSourceRow = {
   created_at: string
 }
 
+// supabase_migration_redeem_codes.sql — Redeem Code + แถบสถานะใต้เมนู (logic อยู่ใน lib/redeemCodes.ts)
+export type RedeemCodeRow = {
+  id: string
+  code: string
+  reward: string | null
+  expires_at: string | null
+  is_active: boolean
+  sort_order: number
+  created_at: string
+}
+
+/** แถวเดียว id = 1 */
+export type SiteStatusRow = {
+  id: number
+  show_bar: boolean
+  patch_name: string | null
+  show_event: boolean
+  updated_at: string
+}
+
 export type TeamRow = {
   id: string
   author_id: string
@@ -441,6 +461,9 @@ export interface Database {
       game_mode_sources: TableOf<GameModeSourceRow, [
         FK<'game_mode_sources_mode_id_fkey', 'mode_id', 'game_modes'>,
       ]>
+
+      redeem_codes: TableOf<RedeemCodeRow>
+      site_status:  TableOf<SiteStatusRow>
 
       character_cn_guides: TableOf<CharacterCnGuideRow, [
         FK<'character_cn_guides_character_id_fkey', 'character_id', 'characters'>,
