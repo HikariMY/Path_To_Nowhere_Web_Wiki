@@ -9,6 +9,10 @@ import { parsePoints, pointsToText, readPoints, type CnPoint } from './cnGuides'
 
 export const MODE_ROUND_WARN_DAYS = 30
 export const MODE_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+// ตรงกับ check ใน supabase_migration_game_modes.sql
+export const MODE_NAME_MAX = 80
+export const SOURCE_TITLE_MAX = 200
+export const SOURCE_AUTHOR_MAX = 100
 
 export interface ModeShot {
   url: string
@@ -154,20 +158,26 @@ export const blankModeForm = (): ModeForm => ({
   bossesText: '', tipsText: '', shots: [], cn_note: '', cnRulesText: '', cn_season_label: '', cn_season_effect: '', cnBuffsText: '', cnTipsText: '',
 })
 
-const pad = (n: number) => String(n).padStart(2, '0')
+// เวลารอบในเกมเป็นเวลาไทยเสมอ (UTC+7 ไม่มี DST) — ไม่ขึ้นกับเขตเวลาของเครื่องแอดมิน
+const BANGKOK_OFFSET = '+07:00'
+const bangkokParts = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+})
 
-/** ISO → ค่าสำหรับ <input type="datetime-local" step="1"> ตามเวลาเครื่อง */
+/** ISO → ค่าสำหรับ <input type="datetime-local" step="1"> เป็นเวลาไทย */
 export function toLocalInput(iso: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  const p = Object.fromEntries(bangkokParts.formatToParts(d).map(x => [x.type, x.value]))
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}`
 }
 
-/** ค่าจาก datetime-local (เวลาเครื่อง) → ISO · ว่าง/ผิด = null */
+/** ค่าจาก datetime-local (อ่านเป็นเวลาไทย) → ISO · ว่าง/ผิด = null */
 export function fromLocalInput(value: string): string | null {
-  if (!value) return null
-  const d = new Date(value)
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value)) return null
+  const d = new Date(`${value}${BANGKOK_OFFSET}`)
   return Number.isNaN(d.getTime()) ? null : d.toISOString()
 }
 
@@ -211,6 +221,7 @@ export function modePayload(f: ModeForm): ModeData {
 export function validateMode(input: { name: string; slug: string; summary: string }): string[] {
   const errors: string[] = []
   if (!input.name.trim()) errors.push('ใส่ชื่อโหมด')
+  else if ([...input.name.trim()].length > MODE_NAME_MAX) errors.push(`ชื่อโหมดยาวเกิน ${MODE_NAME_MAX} ตัวอักษร`)
   if (!MODE_SLUG_RE.test(input.slug.trim())) errors.push('slug ใช้ได้แค่ a-z 0-9 และ - เช่น dark-area')
   return errors
 }
