@@ -9,6 +9,7 @@ import { cn, formatDate } from '../lib/utils'
 import { useCountdown } from '../hooks/useCountdown'
 import { PageLoader } from '../components/ui/Spinner'
 import { EVENT_TYPE_LABEL, isPermanentEvent } from '../lib/constants'
+import { RedeemCodesCard } from '../components/redeem/RedeemCodesCard'
 
 type CharOption = { id: string; name: string; portrait_url: string | null; slug: string }
 
@@ -269,6 +270,8 @@ export function HomePage() {
               </Link>
             ))}
           </div>
+
+          <RedeemCodesCard />
 
           {/* News/Updates box */}
           <div className="mt-6 rounded-lg border border-ptn-border bg-ptn-surface p-4">
