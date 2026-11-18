@@ -54,7 +54,8 @@ export function buildTodos(input: TodoInput, now: Date = new Date()): TodoItem[]
   return [
     {
       key: 'reports', tone: 'red', href: '/admin/reports', count: input.openReports,
-      label: 'รายงานที่ยังไม่ปิด', detail: 'สแปม ข้อมูลผิด ฯลฯ — ตรวจแล้วปิดเรื่อง',
+      // นับทีละรายงาน — หน้ารายงานรวมรายงานที่ชี้เป้าเดียวกันเป็นการ์ดเดียว ตัวเลขจึงอาจมากกว่าจำนวนการ์ด
+      label: 'รายงานที่ยังไม่ปิด', detail: 'นับทุกรายงาน (หลายรายงานอาจเป็นเรื่องเดียวกัน) — ตรวจแล้วปิดเรื่อง',
     },
     {
       key: 'events', tone: 'amber', href: '/admin/events', count: endingEvents.length,
