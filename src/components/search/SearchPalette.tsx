@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, Search } from 'lucide-react'
 import { groupResults, searchItems, KIND_LABEL, type SearchItem } from '../../lib/quickSearch'
@@ -21,14 +22,15 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
     return () => { cancelled = true }
   }, [])
 
-  // ล็อกหน้าหลังไม่ให้เลื่อน · ปิดแล้วคืนโฟกัสให้ปุ่มที่กดเปิด
+  // ล็อกหน้าหลังไม่ให้เลื่อน · ปิดแล้วคืนค่าเดิม (เผื่อเปิดทับ Modal ที่ล็อกไว้แล้ว) และคืนโฟกัส
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
+    const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     inputRef.current?.focus()
     return () => {
-      document.body.style.overflow = ''
-      previous?.focus?.()
+      document.body.style.overflow = previousOverflow
+      if (previous?.isConnected) previous.focus()
     }
   }, [])
 
@@ -50,24 +52,38 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
     navigate(item.href)
   }
 
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { e.preventDefault(); onClose() }
-    else if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(flat.length - 1, current + 1)) }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(0, current - 1)) }
-    else if (e.key === 'Enter' && flat[current]) { e.preventDefault(); open(flat[current]) }
-  }
+  // ฟังที่ document ทั้งหน้า — ปุ่มยังใช้ได้แม้โฟกัสหลุดจากช่องค้นหา
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.isComposing) return
+      if (e.key === 'Escape') { e.preventDefault(); onClose() }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(flat.length - 1, current + 1)) }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(0, current - 1)) }
+      else if (e.key === 'Enter' && flat[current]) {
+        e.preventDefault()
+        onClose()
+        navigate(flat[current].href)
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [flat, current, onClose, navigate])
 
   const optionId = (i: number) => `${listId}-opt-${i}`
 
-  return (
+  // portal ไปที่ body — ถ้าอยู่ใน header (sticky + backdrop-blur) พื้นหลังมืดจะถูกจำกัดแค่ความสูงของ header
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 px-4 pt-[10vh] backdrop-blur-sm" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label="ค้นหาด่วน"
         className="w-full max-w-xl overflow-hidden rounded-lg border border-ptn-border bg-ptn-surface shadow-ptn-card"
-        onMouseDown={e => e.stopPropagation()}
-        onKeyDown={onKeyDown}
+        onMouseDown={e => {
+          e.stopPropagation()
+          // คลิกที่อื่นในหน้าต่าง (ไม่ใช่ช่องค้นหา) ไม่ให้โฟกัสหลุดจากช่องค้นหา
+          if (e.target !== inputRef.current) e.preventDefault()
+        }}
       >
         <label className="flex items-center gap-3 border-b border-ptn-border px-4">
           <Search size={18} className="shrink-0 text-ptn-muted" />
@@ -118,6 +134,7 @@ export function SearchPalette({ onClose }: { onClose: () => void }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

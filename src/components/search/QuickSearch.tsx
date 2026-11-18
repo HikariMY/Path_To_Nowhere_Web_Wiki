@@ -9,6 +9,11 @@ function isTyping(target: EventTarget | null): boolean {
   return !!el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)
 }
 
+function isLongTextField(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null
+  return !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable)
+}
+
 /**
  * ปุ่มค้นหาในแถบเมนู + คีย์ลัด Ctrl/⌘+K หรือ "/" เปิดค้นหาด่วนได้จากทุกหน้า
  * ปุ่มโชว์เฉพาะจอ lg ขึ้นไป — จอเล็กกว่านั้นแถบเมนูเต็มแล้ว (มือถือเปิดจากเมนู ☰ แทน)
@@ -18,7 +23,8 @@ export function QuickSearch() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      // ในช่องข้อความยาว (เช่น ตัวแก้ไขฟอรัม) Ctrl+K มักเป็นคีย์ใส่ลิงก์ — ปล่อยให้ทำงานตามเดิม
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !isLongTextField(e.target)) {
         e.preventDefault()
         setOpen(v => !v)
       } else if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e.target)) {
