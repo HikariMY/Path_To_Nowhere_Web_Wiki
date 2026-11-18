@@ -1,6 +1,8 @@
 /* ============================================================
    ธีม Slash — หน้าแรก (แบนเนอร์ · แถบตัวเลข · หัวข้อ · การ์ดอีเวนต์ · ตัวนับถอยหลัง)
+   ตัวนับถอยหลัง (EventCountdown) ใช้ที่หน้าไกด์โหมดด้วย จึงได้หน้าตาเดียวกันทั้งสองหน้า
    ใช้เฉพาะธีมเดิม — ธีม Duck ไม่โดนทุกกฎในไฟล์นี้ (html:not(.theme-duck))
+   มุมตัด (clip-path) ทำให้เงาเรืองแดงตอน hover ของการ์ดหายไป — ตั้งใจ ใช้แถบแดงเฉียงแทน
    คอมโพเนนต์แค่ใส่ class ไว้ ถ้าลบไฟล์นี้หน้าตาจะกลับเป็นแบบเดิมทันที
    ============================================================ */
 
@@ -10,7 +12,9 @@ html:not(.theme-duck) .slash-hero {
 }
 
 .slash-hero-num,
+.slash-hero-count,
 .slash-hero-progress { display: none; }
+html:not(.theme-duck) .slash-hero-count { display: inline; }
 
 html:not(.theme-duck) .slash-hero-num {
   display: block;
@@ -44,9 +48,9 @@ html:not(.theme-duck) .slash-hero-progress > span {
 }
 @keyframes slash-progress { from { width: 0; } to { width: 100%; } }
 
-/* หัวข้อเผยแบบปาดจากซ้าย */
+/* หัวข้อเผยแบบปาดจากซ้าย — backwards: จบแล้วถอด clip ออก ไม่ให้ตัดสระ/วรรณยุกต์ไทยหรือเงาตัวหนังสือ */
 @media (prefers-reduced-motion: no-preference) {
-  html:not(.theme-duck) .slash-hero-title { animation: slash-reveal 0.9s cubic-bezier(0.7, 0, 0.2, 1) both; }
+  html:not(.theme-duck) .slash-hero-title { animation: slash-reveal 0.9s cubic-bezier(0.7, 0, 0.2, 1) backwards; }
 }
 @keyframes slash-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 
@@ -77,9 +81,11 @@ html:not(.theme-duck) .slash-count-label { color: #8D95A5; }
 
 /* ---------- หัวข้อ: คำอังกฤษโปร่งขนาดใหญ่ซ้อนด้านหลัง (ข้อความจาก data-ghost) ---------- */
 /* หัวข้อบางอันกว้างแค่ตัวหนังสือ (อยู่ใน flex) จึงห้าม clip ที่หัวข้อ — คำโปร่งต้องยื่นออกไปได้ */
-.slash-ghost { position: relative; isolation: isolate; }
+html:not(.theme-duck) .slash-ghost { position: relative; isolation: isolate; }
 html:not(.theme-duck) .slash-ghost::before {
   content: attr(data-ghost);
+  /* alt ว่าง = โปรแกรมอ่านหน้าจอไม่อ่านคำตกแต่งนี้ (เบราว์เซอร์เก่าใช้บรรทัดบน) */
+  content: attr(data-ghost) / '';
   position: absolute;
   z-index: -1;
   left: -0.04em;

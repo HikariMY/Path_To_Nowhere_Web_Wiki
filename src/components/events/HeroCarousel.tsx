@@ -117,7 +117,7 @@ export function HeroCarousel({ events }: { events: GameEvent[] }) {
             <div className="h-1 w-8 bg-ptn-red rounded" />
             <span className="text-xs font-medium text-ptn-red uppercase tracking-widest">
               อีเวนต์ปัจจุบัน
-              {count > 1 && <span className="ml-2 font-mono text-ptn-muted">{String(active + 1).padStart(2, '0')}/{String(count).padStart(2, '0')}</span>}
+              {count > 1 && <span aria-hidden="true" className="slash-hero-count ml-2 font-mono text-ptn-muted">{String(active + 1).padStart(2, '0')}/{String(count).padStart(2, '0')}</span>}
             </span>
           </div>
           <h1 className="slash-hero-title font-heading text-3xl md:text-4xl font-bold text-ptn-text mb-3 leading-tight drop-shadow-lg">
