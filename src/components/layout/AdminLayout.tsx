@@ -16,7 +16,7 @@ const adminNav = [
   { to: '/admin/sources',       label: 'แหล่งอ้างอิงภายนอก', icon: Link2,           exact: false },
   { to: '/admin/events',        label: 'จัดการอีเวนต์',   icon: Calendar,        exact: false },
   { to: '/admin/announcements', label: 'ข่าวสาร/ประกาศ',  icon: Megaphone,       exact: false },
-  { to: '/admin/redeem-codes',  label: 'Redeem Code & แถบสถานะ', icon: Ticket,  exact: false },
+  { to: '/admin/redeem-codes',  label: 'Redeem Code', icon: Ticket,  exact: false },
   { to: '/admin/forum',         label: 'จัดการฟอรัม',     icon: MessageSquare,   exact: false },
   { to: '/admin/posts',         label: 'จัดการโพสต์',      icon: Pin,             exact: false },
   { to: '/admin/reports',       label: 'รายงานจากผู้ใช้',   icon: Flag,            exact: false },
