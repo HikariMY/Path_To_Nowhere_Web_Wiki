@@ -48,6 +48,7 @@ import { AdminSkillsPage } from './pages/admin/AdminSkillsPage'
 import { AdminGameInfoPage } from './pages/admin/AdminGameInfoPage'
 import { AdminModesPage } from './pages/admin/AdminModesPage'
 import { AdminSourcesPage } from './pages/admin/AdminSourcesPage'
+import { AdminRedeemCodesPage } from './pages/admin/AdminRedeemCodesPage'
 
 export default function App() {
   return (
@@ -139,6 +140,7 @@ export default function App() {
               <Route path="characters" element={<AdminSkillsPage />} />
               <Route path="events" element={<AdminEventsPage />} />
               <Route path="announcements" element={<AdminAnnouncementsPage />} />
+              <Route path="redeem-codes" element={<AdminRedeemCodesPage />} />
               <Route path="forum" element={<AdminForumPage />} />
               <Route path="skills" element={<AdminSkillsPage />} />
               <Route path="game-info" element={<AdminGameInfoPage />} />
