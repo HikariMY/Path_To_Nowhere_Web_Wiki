@@ -1,22 +1,14 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { Menu, X, Shield, LogOut, User, Settings, ChevronDown, Palette } from 'lucide-react'
+import { Menu, X, Shield, LogOut, User, Settings, ChevronDown, Palette, Search } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useTheme } from '../../contexts/ThemeContext'
 import { Avatar } from '../ui/Avatar'
 import { Button } from '../ui/Button'
 import { cn } from '../../lib/utils'
-
-const navLinks = [
-  { to: '/',            label: 'หน้าแรก',    exact: true },
-  { to: '/characters',  label: 'ตัวละคร',    exact: false },
-  { to: '/crimebrands', label: 'Crimebrands', exact: false },
-  { to: '/game-info',   label: 'ข้อมูลเกม',  exact: false },
-  { to: '/modes',       label: 'ไกด์โหมด',   exact: false },
-  { to: '/tier-lists',  label: 'เทียร์ลิสต์', exact: false },
-  { to: '/teams',       label: 'ทีม',        exact: false },
-  { to: '/forum',       label: 'ฟอรัม',       exact: false },
-]
+import { NAV_LINKS as navLinks } from '../../lib/navLinks'
+import { QuickSearch } from '../search/QuickSearch'
+import { openQuickSearch } from '../search/openQuickSearch'
 
 export function Navbar() {
   const { user, profile, isAdmin, signOut } = useAuth()
@@ -135,6 +127,8 @@ export function Navbar() {
               </div>
             )}
 
+            <QuickSearch />
+
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
@@ -163,6 +157,13 @@ export function Navbar() {
       {mobileOpen && (
         <div className="md:hidden border-t border-ptn-border bg-ptn-surface px-4 py-3">
           <nav className="flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => { setMobileOpen(false); openQuickSearch() }}
+              className="mb-1 flex items-center gap-2 rounded border border-ptn-border bg-ptn-bg px-3 py-2 text-left text-sm text-ptn-muted transition-colors hover:text-ptn-text"
+            >
+              <Search size={14} /> ค้นหาตัวละคร Crimebrand โหมด…
+            </button>
             {navLinks.map(link => (
               <NavLink
                 key={link.to}
