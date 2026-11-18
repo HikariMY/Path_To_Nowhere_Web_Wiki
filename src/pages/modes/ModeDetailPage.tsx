@@ -7,7 +7,7 @@ import { Card } from '../../components/ui/Card'
 import { PageLoader } from '../../components/ui/Spinner'
 import { EventCountdown } from '../../components/events/EventCountdown'
 import { readPoints, type CnPoint } from '../../lib/cnGuides'
-import { hasCnInfo, readShots, readStages, readStrings } from '../../lib/gameModes'
+import { hasCnInfo, readShots, readStages, readStrings, seasonState } from '../../lib/gameModes'
 import { safeHttpUrl } from '../../lib/tierList'
 import { ModePath, ModeStatusBadges } from './ModeParts'
 
@@ -98,6 +98,7 @@ export function ModeDetailPage() {
   const cnBuffs = readPoints(mode.cn_buffs)
   const cnTips = readStrings(mode.cn_tips)
   const stagesWithDetail = stages.every(s => s.body)
+  const roundEnded = seasonState(mode.season_ends).state === 'ended'
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -139,7 +140,8 @@ export function ModeDetailPage() {
           )}
 
           {mode.in_global && mode.season_label && (
-            <Section title="รอบปัจจุบัน" badge={<GlobalBadge />}>
+            <Section title={roundEnded ? 'รอบล่าสุด (หมดแล้ว)' : 'รอบปัจจุบัน'} badge={<GlobalBadge />}>
+              {roundEnded && <p className="mb-3 text-xs text-ptn-gold">รอบนี้หมดแล้ว ทีมงานจะอัปเดตข้อมูลรอบใหม่เร็ว ๆ นี้</p>}
               <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
                 <div>
                   <p className="font-heading text-2xl font-bold italic text-ptn-text">{mode.season_label}</p>
@@ -147,12 +149,12 @@ export function ModeDetailPage() {
                 </div>
                 {mode.season_ends && <p className="text-xs text-ptn-muted">สิ้นสุด {fmtEnds(mode.season_ends)} น.</p>}
               </div>
-              {mode.season_ends && <EventCountdown targetDate={mode.season_ends} />}
+              {mode.season_ends && !roundEnded && <EventCountdown targetDate={mode.season_ends} />}
               {bosses.length > 0 && (
                 <div className="mt-4">
                   <p className="mb-2 text-xs font-bold uppercase tracking-wider text-ptn-muted">Boss</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {bosses.map(b => <span key={b} className="rounded border border-ptn-red/25 bg-ptn-red/10 px-2 py-0.5 font-mono text-xs text-ptn-red">{b}</span>)}
+                    {bosses.map((b, i) => <span key={`${i}-${b}`}className="rounded border border-ptn-red/25 bg-ptn-red/10 px-2 py-0.5 font-mono text-xs text-ptn-red">{b}</span>)}
                   </div>
                 </div>
               )}
@@ -162,8 +164,8 @@ export function ModeDetailPage() {
           {shots.length > 0 && (
             <Section title="ภาพจากในเกม" badge={<GlobalBadge />}>
               <div className="grid gap-3 sm:grid-cols-2">
-                {shots.map(s => (
-                  <figure key={s.url} className="space-y-1">
+                {shots.map((s, i) => (
+                  <figure key={`${i}-${s.url}`} className="space-y-1">
                     <a href={s.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded border border-ptn-border">
                       <img src={s.url} alt={s.caption} loading="lazy" className="aspect-video w-full object-cover transition-transform hover:scale-[1.03]" />
                     </a>

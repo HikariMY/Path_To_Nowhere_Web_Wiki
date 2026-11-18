@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
-  MODE_ROUND_WARN_DAYS, blankModeForm, modeFormFromRow, modePayload, modeStatus, parseLines, parseStages, readShots, readStages,
-  readStrings, seasonState, validateMode,
+  MODE_ROUND_WARN_DAYS, blankModeForm, fromLocalInput, modeFormFromRow, modePayload, modeStatus, parseLines, parseStages, readShots,
+  readStages, readStrings, seasonState, toLocalInput, validateMode,
 } from './gameModes'
 
 describe('readStrings / parseLines', () => {
@@ -102,8 +102,23 @@ describe('admin form round trip', () => {
   })
 })
 
+describe('round end time is always Thai time, whatever the browser time zone', () => {
+  test('toLocalInput shows the instant in Asia/Bangkok', () => {
+    expect(toLocalInput('2026-12-07T21:59:59.000Z')).toBe('2026-12-08T04:59:59')
+  })
+  test('fromLocalInput reads the value as Asia/Bangkok', () => {
+    expect(fromLocalInput('2026-12-08T04:59:59')).toBe('2026-12-07T21:59:59.000Z')
+    expect(fromLocalInput('2026-12-21T05:00')).toBe('2026-12-20T22:00:00.000Z')
+    expect(fromLocalInput('')).toBeNull()
+    expect(fromLocalInput('nope')).toBeNull()
+  })
+})
+
 describe('validateMode', () => {
   const ok = { name: 'Dark Area', slug: 'dark-domain', summary: 'x' }
+  test('name is at most 80 characters (database limit)', () => {
+    expect(validateMode({ ...ok, name: 'x'.repeat(81) })).toEqual(['ชื่อโหมดยาวเกิน 80 ตัวอักษร'])
+  })
   test('a minimal valid mode', () => {
     expect(validateMode(ok)).toEqual([])
   })

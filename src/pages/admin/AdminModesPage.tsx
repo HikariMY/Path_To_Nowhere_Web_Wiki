@@ -54,7 +54,8 @@ export function AdminModesPage() {
 
   if (loading) return <PageLoader />
 
-  const rounds = modes.filter(m => ['ended', 'ending'].includes(seasonState(m.season_ends).state))
+  // เตือนเฉพาะโหมดที่มีใน Global (หน้าเว็บแสดงรอบเฉพาะโหมดเหล่านี้)
+  const rounds = modes.filter(m => m.in_global && ['ended', 'ending'].includes(seasonState(m.season_ends).state))
 
   return (
     <div>

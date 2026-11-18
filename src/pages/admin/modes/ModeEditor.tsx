@@ -8,7 +8,9 @@ import { Textarea } from '../../../components/ui/Textarea'
 import { ImageUpload } from '../../../components/ui/ImageUpload'
 import { useToast } from '../../../components/ui/Toast'
 import { useAuth } from '../../../contexts/AuthContext'
-import { blankModeForm, modeFormFromRow, modePayload, validateMode, type ModeForm } from '../../../lib/gameModes'
+import {
+  MODE_NAME_MAX, SOURCE_AUTHOR_MAX, SOURCE_TITLE_MAX, blankModeForm, modeFormFromRow, modePayload, validateMode, type ModeForm,
+} from '../../../lib/gameModes'
 import { isStale } from '../../../lib/cnGuides'
 import { safeHttpUrl } from '../../../lib/tierList'
 
@@ -74,7 +76,7 @@ export function ModeEditor({ mode, onSaved, onClose }: { mode: GameModeRow | nul
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-2">
-        <Input label="ชื่อโหมด (อังกฤษ ตามในเกม) *" value={form.name} onChange={text('name')} />
+        <Input label="ชื่อโหมด (อังกฤษ ตามในเกม) *" value={form.name} onChange={text('name')} maxLength={MODE_NAME_MAX} />
         <Input label="slug (ลิงก์ /modes/...) *" value={form.slug} onChange={text('slug')} placeholder="เช่น oblivion-pit" />
         <Input label="อยู่ในเมนู" value={form.global_menu} onChange={text('global_menu')} placeholder="เช่น DisSea, Broken Frontline" />
         <Input label="ป้ายกำกับ" value={form.tag} onChange={text('tag')} placeholder="เช่น Score Attack · Weekly" />
@@ -112,7 +114,7 @@ export function ModeEditor({ mode, onSaved, onClose }: { mode: GameModeRow | nul
 
       <Group title="ภาพจากในเกม" note="ครอปเฉพาะหน้าต่างเกม ใส่คำอธิบายสั้น ๆ ทุกภาพ">
         {form.shots.map((s, i) => (
-          <div key={s.url} className="flex items-center gap-3">
+          <div key={`${i}-${s.url}`} className="flex items-center gap-3">
             <img src={s.url} alt="" className="h-12 w-20 shrink-0 rounded border border-ptn-border object-cover" />
             <input
               value={s.caption}
@@ -127,7 +129,7 @@ export function ModeEditor({ mode, onSaved, onClose }: { mode: GameModeRow | nul
           </div>
         ))}
         {/* key เปลี่ยนทุกครั้งที่เพิ่มภาพ → ช่องอัปโหลดกลับมาว่างพร้อมรับภาพถัดไป */}
-        <ImageUpload key={form.shots.length} bucket="events" aspectRatio="banner" label="เพิ่มภาพ" onUpload={url => set('shots')([...form.shots, { url, caption: '' }])} />
+        <ImageUpload key={form.shots.length} bucket="events" aspectRatio="banner" label="เพิ่มภาพ" onUpload={url => setForm(f => ({ ...f, shots: [...f.shots, { url, caption: '' }] }))} />
       </Group>
 
       <Group title="ข้อมูลเซิร์ฟจีน (ล่วงหน้า)" note='สรุปจากแหล่งอ้างอิงด้วยคำของเราเอง แสดงแยกจาก Global พร้อมป้าย "ข้อมูลเซิร์ฟจีน" · ไม่ต้องใส่ชื่อภาษาจีน'>
@@ -166,7 +168,8 @@ function ModeSources({ modeId, modeName }: { modeId: string; modeName: string })
   }, [modeId, reloadKey])
 
   const add = async () => {
-    if (!draft.title.trim() || !draft.author.trim() || !safeHttpUrl(draft.url) || !/^https?:\/\//i.test(draft.url.trim())) {
+    const tooLong = [...draft.title.trim()].length > SOURCE_TITLE_MAX || [...draft.author.trim()].length > SOURCE_AUTHOR_MAX
+    if (tooLong || !draft.title.trim() || !draft.author.trim() || !safeHttpUrl(draft.url) || !/^https?:\/\//i.test(draft.url.trim())) {
       toast('แหล่งอ้างอิงต้องมีชื่อ ผู้เขียน และลิงก์ที่ขึ้นต้นด้วย https://', 'error')
       return
     }
@@ -199,8 +202,8 @@ function ModeSources({ modeId, modeName }: { modeId: string; modeName: string })
         </div>
       ))}
       <div className="grid gap-2 sm:grid-cols-[1fr_10rem]">
-        <Input placeholder="ชื่อบทความต้นฉบับ" value={draft.title} onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} />
-        <Input placeholder="ผู้เขียน" value={draft.author} onChange={e => setDraft(d => ({ ...d, author: e.target.value }))} />
+        <Input placeholder="ชื่อบทความต้นฉบับ" maxLength={SOURCE_TITLE_MAX} value={draft.title} onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} />
+        <Input placeholder="ผู้เขียน" maxLength={SOURCE_AUTHOR_MAX} value={draft.author} onChange={e => setDraft(d => ({ ...d, author: e.target.value }))} />
         <Input placeholder="https://wiki.biligame.com/wqmt/..." value={draft.url} onChange={e => setDraft(d => ({ ...d, url: e.target.value }))} />
         <Button variant="outline" onClick={add}><Plus size={14} /> เพิ่ม</Button>
       </div>
