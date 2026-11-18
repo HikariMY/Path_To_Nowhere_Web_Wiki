@@ -24,13 +24,18 @@ body {
 
 /* ── Slash theme (ธีมเดิม) ─────────────────────────────────── */
 /* พื้นหลัง: เส้นตารางจาง ๆ + แสงแดงด้านบน (ธีม Duck ไม่ใช้) */
-html:not(.theme-duck) body {
+/* ใช้ชั้น fixed แยก แทน background-attachment: fixed (iOS ไม่รองรับ และทำให้มือถือกระตุกตอนเลื่อน) */
+html:not(.theme-duck) body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-image:
     radial-gradient(ellipse 80% 45% at 50% -12%, rgba(200, 16, 46, 0.10), transparent 70%),
     linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
   background-size: 100% 100%, 48px 48px, 48px 48px;
-  background-attachment: fixed;
 }
 
 /* เส้นแดงจาง ๆ ใต้แถบเมนู */
@@ -60,7 +65,8 @@ html:not(.theme-duck) body {
   transform-origin: left;
   transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.nav-slash a:hover::before {
+.nav-slash a:hover::before,
+.nav-slash a:focus-visible::before {
   transform: skewX(-14deg) scaleX(1);
 }
 .nav-slash a[aria-current='page']::after {
@@ -81,6 +87,11 @@ html:not(.theme-duck) body {
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
   padding-left: 1.1rem !important;
   padding-right: 1.1rem !important;
+}
+/* clip-path ตัด outline ทิ้ง จึงวาดกรอบโฟกัสไว้ด้านในแทน */
+.btn-slash:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px #ECEEF2;
 }
 
 html.theme-duck .nav-slash a::before { background: #341550; }
