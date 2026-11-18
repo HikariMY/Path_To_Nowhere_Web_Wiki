@@ -15,10 +15,16 @@ let cache: Promise<SearchItem[]> | null = null
 /** โหลดครั้งแรกที่เปิดค้นหา แล้วจำไว้ทั้งเซสชัน — ถ้ามีส่วนไหนโหลดไม่ได้ ครั้งหน้าที่เปิดจะลองใหม่ */
 export function loadSearchItems(): Promise<SearchItem[]> {
   if (!cache) {
-    cache = fetchAll().then(({ items, complete }) => {
-      if (!complete) cache = null
-      return items
-    })
+    cache = fetchAll()
+      .then(({ items, complete }) => {
+        if (!complete) cache = null
+        return items
+      })
+      .catch(() => {
+        // เน็ตหลุดระหว่างโหลด — ยังค้นหาหน้าหลักได้ เปิดครั้งหน้าลองโหลดใหม่
+        cache = null
+        return []
+      })
   }
   return cache
 }
