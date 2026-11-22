@@ -1,12 +1,12 @@
 /* ============================================================
    ธีม Slash — หน้าตัวละคร (การ์ดในรายการ · ส่วนหัวหน้ารายละเอียด · แถบแท็บ)
-   ใช้เฉพาะธีมเดิม — ธีม Duck ไม่โดนทุกกฎในไฟล์นี้ (html:not(.theme-duck))
+   ใช้ทั้งสองธีม — สีในกฎหลักเป็นของธีมเดิม ธีม Duck เปลี่ยนสีในส่วน "สีธีม Duck" ท้ายไฟล์
    สีแรงค์มาจากตัวแปร --rc ที่คอมโพเนนต์ตั้งไว้ · ลบไฟล์นี้ = หน้าตากลับเป็นแบบเดิม
    ============================================================ */
 
 /* ---------- การ์ดตัวละคร: แสงปาดเฉียงตอน hover + แถบสีแรงค์เอียงเหนือชื่อ ---------- */
-html:not(.theme-duck) .slash-cc { border-radius: 2px; }
-html:not(.theme-duck) .slash-cc::before {
+html .slash-cc { border-radius: 2px; }
+html .slash-cc::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -16,9 +16,9 @@ html:not(.theme-duck) .slash-cc::before {
   transform: translateX(-110%);
   transition: transform 0.75s cubic-bezier(0.7, 0, 0.2, 1);
 }
-html:not(.theme-duck) .slash-cc:hover::before { transform: translateX(110%); }
+html .slash-cc:hover::before { transform: translateX(110%); }
 
-html:not(.theme-duck) .slash-cc-name::before {
+html .slash-cc-name::before {
   content: '';
   display: block;
   width: 1.4rem;
@@ -28,44 +28,43 @@ html:not(.theme-duck) .slash-cc-name::before {
   transform: skewX(-40deg);
   transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
-html:not(.theme-duck) .slash-cc-wrap:hover .slash-cc-name::before { width: 2.8rem; }
+html .slash-cc-wrap:hover .slash-cc-name::before { width: 2.8rem; }
 
 /* ป้ายบนการ์ด (New / Limited / Reforge ...) เป็นทรงสี่เหลี่ยมด้านขนาน แบบป้ายในเกม */
-html:not(.theme-duck) .slash-flag {
+html .slash-flag {
   border-radius: 0;
   clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
   padding-inline: 0.45rem;
 }
 /* ป้ายที่มีเส้นขอบ (Unreleased / Limited / Reforge) — ขอบเฉียงจะถูกตัดจนดูไม่ปิด
    จึงเอาเส้นขอบออกแล้วใช้พื้นทึบโปร่งตามสีตัวหนังสือแทน (ป้ายพื้นทึบอย่าง New / CN คงสีเดิม) */
-html:not(.theme-duck) .slash-flag.border {
+html .slash-flag.border {
   border-width: 0;
   background-color: color-mix(in srgb, currentColor 22%, rgba(0, 0, 0, 0.7));
 }
 
 /* ---------- ส่วนหัวหน้ารายละเอียด: มุมตัด · ภาพตัดเฉียง · ชื่อยักษ์ตัวโปร่งด้านหลัง ---------- */
-html:not(.theme-duck) .slash-ch-hero {
+html .slash-ch-hero {
   border-radius: 0;
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
 }
-html:not(.theme-duck) .slash-ch-portrait {
+html .slash-ch-portrait {
   border-right-width: 0;
   clip-path: polygon(0 0, 100% 0, 84% 100%, 0 100%);
 }
-html:not(.theme-duck) .slash-ch-portrait::after {
+html .slash-ch-portrait::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: linear-gradient(90deg, transparent 60%, color-mix(in srgb, var(--rc, #C8102E) 35%, transparent));
 }
-html:not(.theme-duck) .slash-ch-info {
+html .slash-ch-info {
   position: relative;
   isolation: isolate;
   overflow: hidden;
 }
-.slash-ch-ghost { display: none; }
-html:not(.theme-duck) .slash-ch-ghost {
+html .slash-ch-ghost {
   display: block;
   position: absolute;
   z-index: -1;
@@ -78,15 +77,15 @@ html:not(.theme-duck) .slash-ch-ghost {
   pointer-events: none;
   user-select: none;
 }
-html:not(.theme-duck) .slash-ch-name { text-shadow: 0 0 30px color-mix(in srgb, var(--rc, #C8102E) 35%, transparent); }
+html .slash-ch-name { text-shadow: 0 0 30px color-mix(in srgb, var(--rc, #C8102E) 35%, transparent); }
 
 /* ---------- แถบแท็บ: แท็บที่เลือกมีพื้นแดงจาง + รอยปาดเฉียงด้านล่าง ---------- */
-html:not(.theme-duck) .slash-tab { position: relative; }
-html:not(.theme-duck) .slash-tab[data-active] {
+html .slash-tab { position: relative; }
+html .slash-tab[data-active] {
   border-bottom-color: transparent;
   background: linear-gradient(0deg, rgba(200, 16, 46, 0.12), transparent);
 }
-html:not(.theme-duck) .slash-tab[data-active]::after {
+html .slash-tab[data-active]::after {
   content: '';
   position: absolute;
   /* เว้นจากขอบมากกว่ามุมตัด 16px ของส่วนหัว — แท็บแรกจะได้ไม่โดนตัดปลาย */
@@ -100,6 +99,14 @@ html:not(.theme-duck) .slash-tab[data-active]::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html:not(.theme-duck) .slash-cc::before { display: none; }
-  html:not(.theme-duck) .slash-cc-name::before { transition: none; }
+  html .slash-cc::before { display: none; }
+  html .slash-cc-name::before { transition: none; }
 }
+
+/* ---------- สีธีม Duck: แท็บที่เลือกเป็นม่วง/ชมพู (สีแรงค์ --rc ใช้เหมือนกันทั้งสองธีม) ---------- */
+/* index.css ทับ border-ptn-red ของธีม Duck ด้วย !important จึงต้องใช้ !important ซ่อนขอบล่างเดิมเช่นกัน */
+html.theme-duck .slash-tab[data-active] {
+  border-bottom-color: transparent !important;
+  background: linear-gradient(0deg, rgba(147, 51, 234, 0.18), transparent);
+}
+html.theme-duck .slash-tab[data-active]::after { background: #9333ea; box-shadow: 0 0 10px #f472b6; }

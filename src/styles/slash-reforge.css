@@ -1,19 +1,19 @@
 /* ============================================================
    ธีม Slash — Reforge (กระดานต้นไม้ · แถบ COST · ปุ่มสลับมุมมอง)
-   ใช้เฉพาะธีมเดิม — ธีม Duck ไม่โดนทุกกฎในไฟล์นี้ (html:not(.theme-duck))
+   ใช้ทั้งสองธีม — ต้นไม้ Reforge ใช้โทนแดงกุหลาบแบบในเกมทั้งสองธีม ธีม Duck เปลี่ยนแค่พื้นปุ่มสลับ (ท้ายไฟล์)
    ต้นไม้ / แถบ COST / แผงรายละเอียดใช้ทั้งแท็บ Reforge, ตัวเลือก build ในไกด์ และหน้าแอดมิน จึงได้หน้าตาเดียวกัน
    กล่องมุมตัดใช้ .slash-panel จาก slash-home.css · ลบไฟล์นี้ = หน้าตากลับเป็นแบบเดิม
    ============================================================ */
 
 /* ---------- กระดานต้นไม้: มุมตัด ---------- */
-html:not(.theme-duck) .slash-rf-board {
+html .slash-rf-board {
   border-radius: 0;
   clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
 }
 
 /* เลขสเตจตัวโปร่งขนาดใหญ่ด้านหลังแต่ละสเตจ (ข้อความจาก data-stage) */
-html:not(.theme-duck) .slash-rf-stage { isolation: isolate; }
-html:not(.theme-duck) .slash-rf-stage::before {
+html .slash-rf-stage { isolation: isolate; }
+html .slash-rf-stage::before {
   content: attr(data-stage);
   content: attr(data-stage) / '';
   position: absolute;
@@ -28,8 +28,8 @@ html:not(.theme-duck) .slash-rf-stage::before {
 }
 
 /* ป้าย STAGE 01: แถบแดงเฉียงนำหน้า — เว้นขวาเท่าความกว้างแถบ ตัวหนังสือจะยังอยู่กลาง */
-html:not(.theme-duck) .slash-rf-stage-no { padding-right: 1.35rem; }
-html:not(.theme-duck) .slash-rf-stage-no::before {
+html .slash-rf-stage-no { padding-right: 1.35rem; }
+html .slash-rf-stage-no::before {
   content: '';
   display: inline-block;
   width: 0.9rem;
@@ -42,19 +42,22 @@ html:not(.theme-duck) .slash-rf-stage-no::before {
 }
 
 /* ---------- แถบ COST และปุ่มสลับมุมมอง: ทรงสี่เหลี่ยมด้านขนาน ---------- */
-html:not(.theme-duck) .slash-rf-cost,
-html:not(.theme-duck) .slash-rf-seg {
+html .slash-rf-cost,
+html .slash-rf-seg {
   border-radius: 0;
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
 }
-html:not(.theme-duck) .slash-rf-cost { padding-inline: 1.1rem; }
+html .slash-rf-cost { padding-inline: 1.1rem; }
 /* เกิน COST: ขอบแดงด้านข้างถูกตัดเฉียงหายไป จึงขีดแดงใต้กล่องแทน */
-html:not(.theme-duck) .slash-rf-cost[data-over] { box-shadow: inset 0 -2px 0 #ef4444; }
+html .slash-rf-cost[data-over] { box-shadow: inset 0 -2px 0 #ef4444; }
 
 /* ปุ่มสลับมุมมอง: ขอบเฉียงถูกตัด จึงใช้พื้นแทนเส้นขอบ · ปุ่มยังชิดขอบรูปทรง เว้นแค่ปลายเฉียง */
-html:not(.theme-duck) .slash-rf-seg {
+html .slash-rf-seg {
   border-width: 0;
   background: #161922;
 }
-html:not(.theme-duck) .slash-rf-seg > :first-child { padding-left: 1rem; }
-html:not(.theme-duck) .slash-rf-seg > :last-child { padding-right: 1rem; }
+html .slash-rf-seg > :first-child { padding-left: 1rem; }
+html .slash-rf-seg > :last-child { padding-right: 1rem; }
+
+/* ---------- สีธีม Duck ---------- */
+html.theme-duck .slash-rf-seg { background: #341550; }

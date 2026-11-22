@@ -23,9 +23,9 @@ body {
 }
 
 /* ── Slash theme (ธีมเดิม) ─────────────────────────────────── */
-/* พื้นหลัง: เส้นตารางจาง ๆ + แสงแดงด้านบน (ธีม Duck ไม่ใช้) */
+/* พื้นหลัง: เส้นตารางจาง ๆ + แสงแดงด้านบน (ธีม Duck ใช้แสงชมพูแทน — ดูท้ายส่วนนี้) */
 /* ใช้ชั้น fixed แยก แทน background-attachment: fixed (iOS ไม่รองรับ และทำให้มือถือกระตุกตอนเลื่อน) */
-html:not(.theme-duck) body::before {
+body::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -96,6 +96,12 @@ html:not(.theme-duck) body::before {
 
 html.theme-duck .nav-slash a::before { background: #341550; }
 html.theme-duck .nav-slash a[aria-current='page']::after { background: #9333ea; box-shadow: 0 0 14px #f472b6; }
+html.theme-duck body::before {
+  background-image:
+    radial-gradient(ellipse 80% 45% at 50% -12%, rgba(244, 114, 182, 0.12), transparent 70%),
+    linear-gradient(rgba(240, 232, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(240, 232, 255, 0.025) 1px, transparent 1px);
+}
 html.theme-duck .slash-header::after { background: linear-gradient(90deg, transparent, rgba(244, 114, 182, 0.5), transparent); }
 
 @media (prefers-reduced-motion: reduce) {
