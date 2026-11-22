@@ -1,22 +1,17 @@
 /* ============================================================
    ธีม Slash — หน้าแรก (แบนเนอร์ · แถบตัวเลข · หัวข้อ · การ์ดอีเวนต์ · ตัวนับถอยหลัง)
    ตัวนับถอยหลัง (EventCountdown) ใช้ที่หน้าไกด์โหมดด้วย จึงได้หน้าตาเดียวกันทั้งสองหน้า
-   ใช้เฉพาะธีมเดิม — ธีม Duck ไม่โดนทุกกฎในไฟล์นี้ (html:not(.theme-duck))
+   ใช้ทั้งสองธีม — สีในกฎหลักเป็นของธีมเดิม ธีม Duck เปลี่ยนสีในส่วน "สีธีม Duck" ท้ายไฟล์
    มุมตัด (clip-path) ทำให้เงาเรืองแดงตอน hover ของการ์ดหายไป — ตั้งใจ ใช้แถบแดงเฉียงแทน
    คอมโพเนนต์แค่ใส่ class ไว้ ถ้าลบไฟล์นี้หน้าตาจะกลับเป็นแบบเดิมทันที
    ============================================================ */
 
 /* ---------- แบนเนอร์: มุมขวาล่างตัดเฉียง · เลขสไลด์โปร่ง · แถบเวลาเลื่อนสไลด์ ---------- */
-html:not(.theme-duck) .slash-hero {
+html .slash-hero {
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 28px), calc(100% - 28px) 100%, 0 100%);
 }
 
-.slash-hero-num,
-.slash-hero-count,
-.slash-hero-progress { display: none; }
-html:not(.theme-duck) .slash-hero-count { display: inline; }
-
-html:not(.theme-duck) .slash-hero-num {
+html .slash-hero-num {
   display: block;
   position: absolute;
   right: 1.5rem;
@@ -29,7 +24,7 @@ html:not(.theme-duck) .slash-hero-num {
   user-select: none;
 }
 
-html:not(.theme-duck) .slash-hero-progress {
+html .slash-hero-progress {
   display: block;
   position: absolute;
   z-index: 3;
@@ -39,7 +34,7 @@ html:not(.theme-duck) .slash-hero-progress {
   height: 3px;
   background: rgba(255, 255, 255, 0.06);
 }
-html:not(.theme-duck) .slash-hero-progress > span {
+html .slash-hero-progress > span {
   display: block;
   height: 100%;
   background: #C8102E;
@@ -50,24 +45,24 @@ html:not(.theme-duck) .slash-hero-progress > span {
 
 /* หัวข้อเผยแบบปาดจากซ้าย — backwards: จบแล้วถอด clip ออก ไม่ให้ตัดสระ/วรรณยุกต์ไทยหรือเงาตัวหนังสือ */
 @media (prefers-reduced-motion: no-preference) {
-  html:not(.theme-duck) .slash-hero-title { animation: slash-reveal 0.9s cubic-bezier(0.7, 0, 0.2, 1) backwards; }
+  html .slash-hero-title { animation: slash-reveal 0.9s cubic-bezier(0.7, 0, 0.2, 1) backwards; }
 }
 @keyframes slash-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 
-html:not(.theme-duck) .slash-dot { border-radius: 0; transform: skewX(-30deg); }
+html .slash-dot { border-radius: 0; transform: skewX(-30deg); }
 
 /* ---------- ตัวนับถอยหลัง: กล่องดำมุมตัด (ธีม Duck ยังเป็นกล่องม่วง) ---------- */
-html:not(.theme-duck) .slash-count-box {
+html .slash-count-box {
   border-radius: 0;
   background: rgba(0, 0, 0, 0.8);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 }
-html:not(.theme-duck) .slash-count-label { color: #8D95A5; }
+html .slash-count-label { color: #8D95A5; }
 
 /* ---------- แถบตัวเลข: ตัวคั่นเฉียง (จอ md ขึ้นไป ที่ตัวเลขอยู่แถวเดียวกัน) ---------- */
 @media (min-width: 768px) {
-  html:not(.theme-duck) .slash-stats > * + * { position: relative; }
-  html:not(.theme-duck) .slash-stats > * + *::before {
+  html .slash-stats > * + * { position: relative; }
+  html .slash-stats > * + *::before {
     content: '';
     position: absolute;
     left: -0.5rem;
@@ -81,8 +76,8 @@ html:not(.theme-duck) .slash-count-label { color: #8D95A5; }
 
 /* ---------- หัวข้อ: คำอังกฤษโปร่งขนาดใหญ่ซ้อนด้านหลัง (ข้อความจาก data-ghost) ---------- */
 /* หัวข้อบางอันกว้างแค่ตัวหนังสือ (อยู่ใน flex) จึงห้าม clip ที่หัวข้อ — คำโปร่งต้องยื่นออกไปได้ */
-html:not(.theme-duck) .slash-ghost { position: relative; isolation: isolate; }
-html:not(.theme-duck) .slash-ghost::before {
+html .slash-ghost { position: relative; isolation: isolate; }
+html .slash-ghost::before {
   content: attr(data-ghost);
   /* alt ว่าง = โปรแกรมอ่านหน้าจอไม่อ่านคำตกแต่งนี้ (เบราว์เซอร์เก่าใช้บรรทัดบน) */
   content: attr(data-ghost) / '';
@@ -99,12 +94,12 @@ html:not(.theme-duck) .slash-ghost::before {
 }
 
 /* ---------- การ์ดอีเวนต์ + กล่องด้านข้าง: มุมตัด · แถบแดงเฉียงเลื่อนเข้าตอน hover ---------- */
-html:not(.theme-duck) .slash-card,
-html:not(.theme-duck) .slash-panel {
+html .slash-card,
+html .slash-panel {
   border-radius: 0;
   clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
 }
-html:not(.theme-duck) .slash-card-banner::before {
+html .slash-card-banner::before {
   content: '';
   position: absolute;
   z-index: 2;
@@ -116,9 +111,18 @@ html:not(.theme-duck) .slash-card-banner::before {
   transform: skewX(-14deg) translateX(-8px);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
-html:not(.theme-duck) .slash-card-banner:hover::before { transform: skewX(-14deg) translateX(4px); }
+html .slash-card-banner:hover::before { transform: skewX(-14deg) translateX(4px); }
 
 @media (prefers-reduced-motion: reduce) {
-  html:not(.theme-duck) .slash-hero-progress { display: none; }
-  html:not(.theme-duck) .slash-card-banner::before { transition: none; }
+  html .slash-hero-progress { display: none; }
+  html .slash-card-banner::before { transition: none; }
 }
+
+/* ---------- สีธีม Duck: รูปทรงเหมือนกัน เปลี่ยนแดงเป็นม่วง/ชมพู · ตัวนับถอยหลังคงกล่องม่วงเดิม ---------- */
+html.theme-duck .slash-hero-num { -webkit-text-stroke-color: rgba(244, 114, 182, 0.55); }
+html.theme-duck .slash-hero-progress > span { background: #9333ea; box-shadow: 0 0 10px #f472b6; }
+html.theme-duck .slash-count-box { background: rgba(80, 40, 140, 0.85); }
+html.theme-duck .slash-count-label { color: #b8a4f0; }
+html.theme-duck .slash-stats > * + *::before { background: rgba(124, 58, 237, 0.33); }
+html.theme-duck .slash-ghost::before { -webkit-text-stroke-color: rgba(240, 232, 255, 0.14); }
+html.theme-duck .slash-card-banner::before { background: #9333ea; }
