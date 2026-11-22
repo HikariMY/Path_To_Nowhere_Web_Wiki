@@ -680,8 +680,8 @@ export function CharacterDetailPage() {
           <div className="slash-ch-info flex-1 min-w-0 p-4 sm:p-5 flex flex-col justify-between">
             <span className="slash-ch-ghost" aria-hidden="true">{character.name}</span>
 
-            {/* Top: name row + icons */}
-            <div className="flex items-start justify-between gap-3">
+            {/* Top: name row + icons — จอเล็กให้ไอคอนขึ้นบรรทัดบนสุด ชื่อจะได้ใช้ความกว้างเต็ม ไม่ถูกไอคอนทับ */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
               <div className="min-w-0">
                 {/* Name + Limited badge */}
                 <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -707,7 +707,7 @@ export function CharacterDetailPage() {
                 {tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {tags.map(tag => (
-                      <span key={tag} className="text-[11px] px-1.5 py-0.5 rounded font-mono text-ptn-disabled border border-ptn-border/50 bg-black/30">
+                      <span key={tag} className="whitespace-nowrap text-[11px] px-1.5 py-0.5 rounded font-mono text-ptn-disabled border border-ptn-border/50 bg-black/30">
                         {tag}
                       </span>
                     ))}
@@ -716,7 +716,7 @@ export function CharacterDetailPage() {
               </div>
 
               {/* Icons: faction + tendency + rank */}
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="order-first flex items-center gap-1.5 shrink-0 sm:order-none">
                 {ALIGNMENT_ICON[character.faction] && (
                   <div className="w-9 h-9 rounded-lg overflow-hidden border border-ptn-border/40 bg-black/30 flex items-center justify-center">
                     <img src={ALIGNMENT_ICON[character.faction]} alt={character.faction} className="w-7 h-7 object-contain" />
