@@ -107,7 +107,7 @@ export function HeroCarousel({ events }: { events: GameEvent[] }) {
         </div>
       ))}
 
-      {/* ธีม Slash: เลขสไลด์ตัวโปร่ง (ธีม Duck ซ่อนไว้ — styles/slash-home.css) */}
+      {/* ธีม Slash: เลขสไลด์ตัวโปร่ง (ทั้งสองธีม · ธีม Duck ขอบชมพู — styles/slash-home.css) */}
       <span className="slash-hero-num" aria-hidden="true">{String(active + 1).padStart(2, '0')}</span>
 
       {/* เนื้อหาของสไลด์ที่กำลังแสดง — key ทำให้ animate ใหม่ทุกครั้งที่สลับ */}
