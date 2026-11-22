@@ -1,0 +1,54 @@
+/* ============================================================
+   ธีม Slash — Reforge (กระดานต้นไม้ · แถบ COST · ปุ่มสลับมุมมอง)
+   ใช้เฉพาะธีมเดิม — ธีม Duck ไม่โดนทุกกฎในไฟล์นี้ (html:not(.theme-duck))
+   ต้นไม้ / แถบ COST / แผงรายละเอียดใช้ทั้งแท็บ Reforge, ตัวเลือก build ในไกด์ และหน้าแอดมิน จึงได้หน้าตาเดียวกัน
+   กล่องมุมตัดใช้ .slash-panel จาก slash-home.css · ลบไฟล์นี้ = หน้าตากลับเป็นแบบเดิม
+   ============================================================ */
+
+/* ---------- กระดานต้นไม้: มุมตัด ---------- */
+html:not(.theme-duck) .slash-rf-board {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+}
+
+/* เลขสเตจตัวโปร่งขนาดใหญ่ด้านหลังแต่ละสเตจ (ข้อความจาก data-stage) */
+html:not(.theme-duck) .slash-rf-stage { isolation: isolate; }
+html:not(.theme-duck) .slash-rf-stage::before {
+  content: attr(data-stage);
+  content: attr(data-stage) / '';
+  position: absolute;
+  z-index: -1;
+  right: 0.4rem;
+  top: 0.2rem;
+  font: 700 4.5rem / 1 'Rajdhani', sans-serif;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(251, 113, 133, 0.18);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ป้าย STAGE 01: แถบแดงเฉียงนำหน้า */
+html:not(.theme-duck) .slash-rf-stage-no::before {
+  content: '';
+  display: inline-block;
+  width: 0.9rem;
+  height: 3px;
+  margin-right: 0.45rem;
+  vertical-align: middle;
+  background: #e11d48;
+  box-shadow: 0 0 8px #fb7185;
+  transform: skewX(-40deg);
+}
+
+/* ---------- แถบ COST และปุ่มสลับมุมมอง: ทรงสี่เหลี่ยมด้านขนาน ---------- */
+html:not(.theme-duck) .slash-rf-cost,
+html:not(.theme-duck) .slash-rf-seg {
+  border-radius: 0;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  padding-inline: 1.1rem;
+}
+/* ขอบเฉียงถูกตัด จึงใช้พื้นแทนเส้นขอบ */
+html:not(.theme-duck) .slash-rf-seg {
+  border-width: 0;
+  background: #161922;
+}

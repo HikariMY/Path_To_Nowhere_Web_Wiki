@@ -23,7 +23,7 @@ interface PanelProps {
 export function ReforgeDetailPanel(props: PanelProps) {
   const { selection } = props
   return (
-    <aside className="rounded-lg border border-ptn-border bg-ptn-surface p-4 lg:min-h-[22rem]">
+    <aside className="slash-panel rounded-lg border border-ptn-border bg-ptn-surface p-4 lg:min-h-[22rem]">
       {selection === null && (
         <p className="py-10 text-center text-sm text-ptn-disabled">
           กดที่โหนด วงรางวัล หรือส่วนกลางของ Stage เพื่อดูรายละเอียด

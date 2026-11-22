@@ -93,7 +93,7 @@ export function CharacterReforgeTab({ character, data, initialBuild = null }: {
     <div className="space-y-3">
       {/* Reforge ยังไม่เปิดในเซิร์ฟ Global — บอกให้รู้ว่าข้อมูลมาจากเซิร์ฟจีน */}
       {!REFORGE_IN_GLOBAL && (
-        <div className="rounded-lg border border-ptn-border border-l-2 border-l-ptn-red bg-ptn-surface px-4 py-3">
+        <div className="slash-panel rounded-lg border border-ptn-border border-l-2 border-l-ptn-red bg-ptn-surface px-4 py-3">
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-ptn-muted">ข้อมูลเซิร์ฟจีน (ล่วงหน้า)</span>
             <span className="rounded border border-ptn-gold/25 bg-ptn-gold/10 px-2 py-0.5 text-xs text-ptn-gold">ยังไม่เปิดใน Global</span>
@@ -123,7 +123,7 @@ export function CharacterReforgeTab({ character, data, initialBuild = null }: {
           </Button>
         </div>
         <div className="flex items-start gap-3">
-          <div className="flex overflow-hidden rounded border border-ptn-border" role="group" aria-label="มุมมอง">
+          <div className="slash-rf-seg flex overflow-hidden rounded border border-ptn-border" role="group" aria-label="มุมมอง">
             {([['tree', Network, 'ต้นไม้'], ['list', List, 'รายการ']] as const).map(([v, Icon, label]) => (
               <button
                 key={v}
