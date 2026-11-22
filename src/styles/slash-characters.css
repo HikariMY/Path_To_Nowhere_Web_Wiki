@@ -1,0 +1,98 @@
+/* ============================================================
+   ธีม Slash — หน้าตัวละคร (การ์ดในรายการ · ส่วนหัวหน้ารายละเอียด · แถบแท็บ)
+   ใช้เฉพาะธีมเดิม — ธีม Duck ไม่โดนทุกกฎในไฟล์นี้ (html:not(.theme-duck))
+   สีแรงค์มาจากตัวแปร --rc ที่คอมโพเนนต์ตั้งไว้ · ลบไฟล์นี้ = หน้าตากลับเป็นแบบเดิม
+   ============================================================ */
+
+/* ---------- การ์ดตัวละคร: แสงปาดเฉียงตอน hover + แถบสีแรงค์เอียงเหนือชื่อ ---------- */
+html:not(.theme-duck) .slash-cc { border-radius: 2px; }
+html:not(.theme-duck) .slash-cc::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, color-mix(in srgb, var(--rc, #C8102E) 45%, transparent) 48%, rgba(255, 255, 255, 0.35) 50%, transparent 62%);
+  transform: translateX(-110%);
+  transition: transform 0.75s cubic-bezier(0.7, 0, 0.2, 1);
+}
+html:not(.theme-duck) .slash-cc:hover::before { transform: translateX(110%); }
+
+html:not(.theme-duck) .slash-cc-name::before {
+  content: '';
+  display: block;
+  width: 1.4rem;
+  height: 3px;
+  margin-bottom: 0.3rem;
+  background: var(--rc, #C8102E);
+  transform: skewX(-40deg);
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+html:not(.theme-duck) .group:hover .slash-cc-name::before { width: 2.8rem; }
+
+/* ป้ายบนการ์ด (New / Limited / Reforge ...) เป็นทรงสี่เหลี่ยมด้านขนาน */
+html:not(.theme-duck) .slash-flag {
+  border-radius: 0;
+  clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
+  padding-inline: 0.45rem;
+}
+
+/* ---------- ส่วนหัวหน้ารายละเอียด: มุมตัด · ภาพตัดเฉียง · ชื่อยักษ์ตัวโปร่งด้านหลัง ---------- */
+html:not(.theme-duck) .slash-ch-hero {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+html:not(.theme-duck) .slash-ch-portrait {
+  border-right-width: 0;
+  clip-path: polygon(0 0, 100% 0, 84% 100%, 0 100%);
+}
+html:not(.theme-duck) .slash-ch-portrait::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 60%, color-mix(in srgb, var(--rc, #C8102E) 35%, transparent));
+}
+html:not(.theme-duck) .slash-ch-info {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.slash-ch-ghost { display: none; }
+html:not(.theme-duck) .slash-ch-ghost {
+  display: block;
+  position: absolute;
+  z-index: -1;
+  right: -0.06em;
+  bottom: -0.22em;
+  font: 700 clamp(4rem, 11vw, 8rem) / 1 'Rajdhani', sans-serif;
+  color: transparent;
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--rc, #C8102E) 30%, transparent);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+html:not(.theme-duck) .slash-ch-name { text-shadow: 0 0 30px color-mix(in srgb, var(--rc, #C8102E) 35%, transparent); }
+
+/* ---------- แถบแท็บ: แท็บที่เลือกมีพื้นแดงจาง + รอยปาดเฉียงด้านล่าง ---------- */
+html:not(.theme-duck) .slash-tab { position: relative; }
+html:not(.theme-duck) .slash-tab[data-active] {
+  border-bottom-color: transparent;
+  background: linear-gradient(0deg, rgba(200, 16, 46, 0.12), transparent);
+}
+html:not(.theme-duck) .slash-tab[data-active]::after {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0;
+  height: 3px;
+  background: #C8102E;
+  transform: skewX(-40deg);
+  box-shadow: 0 0 10px #FF2B42;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(.theme-duck) .slash-cc::before { display: none; }
+  html:not(.theme-duck) .slash-cc-name::before { transition: none; }
+}
