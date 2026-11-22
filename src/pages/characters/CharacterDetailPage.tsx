@@ -639,9 +639,10 @@ export function CharacterDetailPage() {
       </Link>
 
       {/* ── Hero bar ── */}
+      {/* slash-* = ธีม Slash (styles/slash-characters.css) · --rc = สีแรงค์ */}
       <div
-        className="rounded-xl border overflow-hidden mb-1"
-        style={{ borderColor: `${rarityColor}30` }}
+        className="slash-ch-hero rounded-xl border overflow-hidden mb-1"
+        style={{ borderColor: `${rarityColor}30`, '--rc': rarityColor } as React.CSSProperties}
       >
         <div
           className="flex min-h-[160px]"
@@ -649,7 +650,7 @@ export function CharacterDetailPage() {
         >
           {/* ── Portrait panel ── */}
           <div
-            className="shrink-0 w-36 sm:w-48 md:w-56 relative overflow-hidden border-r"
+            className="slash-ch-portrait shrink-0 w-36 sm:w-48 md:w-56 relative overflow-hidden border-r"
             style={{ borderColor: `${rarityColor}20` }}
           >
             {(character.splash_url || character.portrait_url) ? (
@@ -676,7 +677,8 @@ export function CharacterDetailPage() {
           </div>
 
           {/* ── Info panel ── */}
-          <div className="flex-1 min-w-0 p-4 sm:p-5 flex flex-col justify-between">
+          <div className="slash-ch-info flex-1 min-w-0 p-4 sm:p-5 flex flex-col justify-between">
+            <span className="slash-ch-ghost" aria-hidden="true">{character.name}</span>
 
             {/* Top: name row + icons */}
             <div className="flex items-start justify-between gap-3">
@@ -684,7 +686,7 @@ export function CharacterDetailPage() {
                 {/* Name + Limited badge */}
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h1
-                    className="font-heading text-2xl sm:text-3xl font-bold leading-tight"
+                    className="slash-ch-name font-heading text-2xl sm:text-3xl font-bold leading-tight"
                     style={{ color: rarityColor }}
                   >
                     {character.name}
@@ -779,7 +781,8 @@ export function CharacterDetailPage() {
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); setGuideBuild(null) }}
-              className={`shrink-0 whitespace-nowrap px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+              data-active={currentTab === tab.id || undefined}
+              className={`slash-tab shrink-0 whitespace-nowrap px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
                 currentTab === tab.id
                   ? 'border-ptn-red text-ptn-text'
                   : 'border-transparent text-ptn-muted hover:text-ptn-text hover:border-ptn-border'

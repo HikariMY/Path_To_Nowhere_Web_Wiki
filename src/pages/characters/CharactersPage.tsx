@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, Filter, Users, ChevronDown, SlidersHorizontal, Network, Heart } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -531,9 +531,10 @@ function CharacterCard({ character, hasReforge, favorite, onToggleFavorite }: Ch
     <div className="group relative">
     <Link to={`/characters/${character.slug}`} className="block">
       <div
-        className="relative rounded-lg overflow-hidden aspect-[2/3] bg-ptn-elevated
+        className="slash-cc relative rounded-lg overflow-hidden aspect-[2/3] bg-ptn-elevated
           transition-all duration-300 hover:-translate-y-0.5"
-        style={{ border: borderDefault, boxShadow: shadowDefault }}
+        // --rc = สีแรงค์ ให้ธีม Slash ใช้กับแสงปาดและแถบเหนือชื่อ (styles/slash-characters.css)
+        style={{ border: borderDefault, boxShadow: shadowDefault, '--rc': color } as CSSProperties}
         onMouseEnter={e => {
           e.currentTarget.style.border = borderHover
           e.currentTarget.style.boxShadow = shadowHover
@@ -593,27 +594,27 @@ function CharacterCard({ character, hasReforge, favorite, onToggleFavorite }: Ch
         {/* Badges — top left */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
           {isCN && (
-            <span className="text-[8px] font-bold bg-ptn-red text-white px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
+            <span className="text-[8px] font-bold bg-ptn-red text-white slash-flag px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
               CN Exclusive
             </span>
           )}
           {unreleased && !isCN && (
-            <span className="text-[8px] font-bold bg-black/70 text-ptn-muted border border-ptn-border px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
+            <span className="text-[8px] font-bold bg-black/70 text-ptn-muted border border-ptn-border slash-flag px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
               Unreleased
             </span>
           )}
           {charIsNew && !unreleased && !isCN && (
-            <span className="text-[8px] font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
+            <span className="text-[8px] font-bold bg-blue-600 text-white slash-flag px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
               New
             </span>
           )}
           {character.is_limited && !isCN && (
-            <span className="text-[8px] font-bold border text-ptn-gold border-ptn-gold/40 bg-ptn-gold/10 px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
+            <span className="text-[8px] font-bold border text-ptn-gold border-ptn-gold/40 bg-ptn-gold/10 slash-flag px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
               Limited
             </span>
           )}
           {hasReforge && (
-            <span className="text-[8px] font-bold border text-rose-300 border-rose-400/50 bg-rose-500/20 px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
+            <span className="text-[8px] font-bold border text-rose-300 border-rose-400/50 bg-rose-500/20 slash-flag px-1.5 py-0.5 rounded tracking-wider leading-none uppercase">
               Reforge
             </span>
           )}
@@ -621,7 +622,7 @@ function CharacterCard({ character, hasReforge, favorite, onToggleFavorite }: Ch
 
         {/* Bottom info */}
         <div className="absolute bottom-0 left-0 right-0 pl-2 pr-7 pb-1.5 pt-8">
-          <p className="font-heading font-bold text-white text-sm leading-tight drop-shadow truncate">
+          <p className="slash-cc-name font-heading font-bold text-white text-sm leading-tight drop-shadow truncate">
             {character.name}
           </p>
           <p className="text-[10px] mt-0.5 truncate" style={{ color: `${color}99` }}>
