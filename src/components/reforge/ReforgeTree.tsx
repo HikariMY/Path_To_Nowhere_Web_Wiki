@@ -34,7 +34,7 @@ export function ReforgeTree({ data, activeIds, selection, onSelect, onToggle, ex
   const rowProps = { data, active, selection, onSelect, onToggle }
 
   return (
-    <div className="relative overflow-hidden rounded-lg border border-ptn-border bg-[radial-gradient(ellipse_at_center,rgba(190,18,60,0.35)_0%,rgba(10,10,15,1)_75%)]">
+    <div className="slash-rf-board relative overflow-hidden rounded-lg border border-ptn-border bg-[radial-gradient(ellipse_at_center,rgba(190,18,60,0.35)_0%,rgba(10,10,15,1)_75%)]">
       {/* เส้นพลังงานพาดกลาง */}
       <div
         aria-hidden
@@ -47,7 +47,8 @@ export function ReforgeTree({ data, activeIds, selection, onSelect, onToggle, ex
           <section
             key={stage}
             aria-label={stageLabel(stage)}
-            className="relative flex min-w-[17rem] shrink-0 snap-start flex-col justify-between gap-4 border-r border-white/5 px-4 py-5 last:border-r-0"
+            data-stage={String(stage).padStart(2, '0')}
+            className="slash-rf-stage relative flex min-w-[17rem] shrink-0 snap-start flex-col justify-between gap-4 border-r border-white/5 px-4 py-5 last:border-r-0"
           >
             <StageRow stage={stage} row="top" {...rowProps} />
             <StageMarker
@@ -56,7 +57,7 @@ export function ReforgeTree({ data, activeIds, selection, onSelect, onToggle, ex
               onClick={() => onSelect({ kind: 'stage', stage })}
             />
             <StageRow stage={stage} row="bottom" exSlot={stage === EX_SLOT_STAGE ? exSlot : undefined} {...rowProps} />
-            <p className="text-center font-heading text-xs font-bold tracking-[0.2em] text-white/30">{stageLabel(stage)}</p>
+            <p className="slash-rf-stage-no text-center font-heading text-xs font-bold tracking-[0.2em] text-white/30">{stageLabel(stage)}</p>
           </section>
         ))}
       </div>

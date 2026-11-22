@@ -14,7 +14,7 @@ export function CostMeter({ used }: { used: number }) {
     <div className="flex flex-col items-end gap-0.5">
       <div
         className={cn(
-          'flex items-baseline gap-2 rounded border px-3 py-1 font-heading',
+          'slash-rf-cost flex items-baseline gap-2 rounded border px-3 py-1 font-heading',
           over ? 'border-red-500/60 bg-red-950/40' : 'border-ptn-border bg-black/40',
         )}
         aria-live="polite"
