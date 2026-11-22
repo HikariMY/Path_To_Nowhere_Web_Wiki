@@ -18,6 +18,7 @@ export function CostMeter({ used }: { used: number }) {
           over ? 'border-red-500/60 bg-red-950/40' : 'border-ptn-border bg-black/40',
         )}
         aria-live="polite"
+        data-over={over || undefined}
       >
         <span className="text-xs tracking-widest text-ptn-muted">COST</span>
         <span className={cn('text-lg font-bold', over ? 'text-red-400' : 'text-ptn-text')}>
