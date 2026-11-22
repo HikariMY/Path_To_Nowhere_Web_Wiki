@@ -528,7 +528,7 @@ function CharacterCard({ character, hasReforge, favorite, onToggleFavorite }: Ch
 
   return (
     // ปุ่มหัวใจอยู่ข้าง Link (ไม่ใช่ข้างใน) — ปุ่มซ้อนใน <a> ผิดหลัก HTML และ screen reader อ่านเพี้ยน
-    <div className="group relative">
+    <div className="slash-cc-wrap group relative">
     <Link to={`/characters/${character.slug}`} className="block">
       <div
         className="slash-cc relative rounded-lg overflow-hidden aspect-[2/3] bg-ptn-elevated
